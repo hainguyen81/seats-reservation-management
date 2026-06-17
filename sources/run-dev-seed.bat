@@ -11,4 +11,4 @@ echo.
 echo -------------------------------------------------
 echo ► Start server on Local (http://localhost:3000)
 echo -------------------------------------------------
-npm run dev
+npm run dev_seed

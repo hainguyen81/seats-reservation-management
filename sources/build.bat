@@ -12,7 +12,7 @@ echo.
 echo -------------------------------------------------
 echo ► 2. Initial SQLite Prisma database
 echo -------------------------------------------------
-npx prisma db push
+npx prisma migrate dev --name init
 
 echo.
 echo -------------------------------------------------

@@ -13,12 +13,7 @@ export default function RootLayout({
 }) {
     return (
         <html lang="en">
-            <body className={`p-6 rounded text-center font-bold transition-all ${
-                    seat.status === 'BOOKED' ? 'seat-booked' :
-                    seat.status === 'PENDING' ? 'seat-reserved' :
-                    selectedSeat === seat.id ? 'seat-available ring-4 ring-emerald-500 scale-105' : 'seat-available'
-                }`}
-            >
+            <body className="bg-gray-950 text-gray-100 antialiased min-h-screen">
                 {children}
             </body>
         </html>

@@ -16,8 +16,6 @@ export async function GET() {
                     { id: 'seat-3', number: 'A3', status: 'AVAILABLE' },
                 ],
             });
-
-            // Lấy lại danh sách sau khi tạo
             seats = await prisma.seat.findMany({ orderBy: { number: 'asc' } });
         }
 
