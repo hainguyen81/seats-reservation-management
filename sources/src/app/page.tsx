@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 const SESSION_EXPIRY = process.env.SESSION_EXPIRY;
 const SESSION_EXPIRY_DAYS = SESSION_EXPIRY ? parseInt(SESSION_EXPIRY, 10) : 1;
@@ -10,10 +10,17 @@ export default function Home() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [seats, setSeats] = useState<any[]>([]);
-    const [selectedSeat, setSelectedSeat] = useState<string | null>(null);
+    const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
     const [message, setMessage] = useState('');
+    const [timeLeft, setTimeLeft] = useState<number | null>(null);
+    const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-    // 1. check Cookie for valid session and request 3 seats
+    // 1. check Cookie for valid session and request seats
+    const fetchSeats = () => {
+        fetch('/api/seats')
+            .then((res) => res.json())
+            .then((data) => setSeats(data));
+    };
     useEffect(() => {
         // check session status
         fetch('/api/auth/me')
@@ -21,6 +28,17 @@ export default function Home() {
             .then((data) => {
                 if (data && data.loggedIn) {
                     setUser(data.user);
+
+                    // restore HOLD seats
+                    if (data.heldSeatIds && data.heldSeatIds.length > 0) {
+                        setSelectedSeats(data.heldSeatIds);
+
+                        // calculate expired time
+                        const secondsLeft = Math.floor((new Date(data.expiresAt).getTime() - Date.now()) / 1000);
+                        if (secondsLeft > 0) {
+                            setTimeLeft(secondsLeft);
+                        }
+                    }
                 }
                 setLoading(false);
             })
@@ -30,7 +48,91 @@ export default function Home() {
         fetch('/api/seats')
             .then((res) => res.json())
             .then((data) => setSeats(data));
+        
+        const interval = setInterval(fetchSeats, 5000);
+        return () => clearInterval(interval);
     }, []);
+
+    // manage reserved seats
+    useEffect(() => {
+        if (selectedSeats.length > 0) {
+            if (timeLeft === null) {
+                setTimeLeft(300);
+            }
+        } else {
+            setTimeLeft(null);
+            if (timerRef.current) clearInterval(timerRef.current);
+        }
+    }, [selectedSeats]);
+
+    useEffect(() => {
+        if (timeLeft === null) return;
+
+        if (timeLeft === 0) {
+            // 💡 Timeout: cancel booking and reset seats Frontend
+            setSelectedSeats([]);
+            setTimeLeft(null);
+            setMessage('⚠️ Reservation window expired! Your selected seats have been released.');
+
+            // call API Backend to release expired seats
+            fetch('/api/release', { method: 'POST' }).then(() => fetchSeats());
+            return;
+        }
+
+        // timer counter
+        timerRef.current = setTimeout(() => {
+            setTimeLeft(timeLeft - 1);
+        }, 1000);
+
+        return () => {
+            if (timerRef.current) clearTimeout(timerRef.current);
+        };
+    }, [timeLeft]);
+
+    // beautify timer
+    const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    // handle select seats
+    const handleSeatClick = async (seatId: string) => {
+        const isSelected = selectedSeats.includes(seatId);
+
+        if (isSelected) {
+            // Un-select: call API to release
+            const res = await fetch('/api/reserve/release-single', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ seatId }),
+            });
+            if (res.ok) {
+                setSelectedSeats((prev) => prev.filter((id) => id !== seatId));
+                fetchSeats();
+            }
+        } else {
+            // Select: call API to booking PENDING
+            const res = await fetch('/api/reserve/hold', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ seatId }),
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                setSelectedSeats((prev) => [...prev, seatId]);
+                // calculate timer
+                const secondsLeft = Math.floor((new Date(data.expiresAt).getTime() - Date.now()) / 1000);
+                setTimeLeft(secondsLeft > 0 ? secondsLeft : 300);
+                fetchSeats();
+            } else {
+                setMessage(`❌ Cannot hold seat: ${data.error}`);
+            }
+        }
+    };
 
     // handle login
     const handleLogin = async () => {
@@ -62,28 +164,31 @@ export default function Home() {
         });
         if (res.ok) {
             setUser(null);
-            setSelectedSeat(null);
+            setSelectedSeats([]);
             setMessage('🔒 Session terminated safely.');
         }
     };
 
     // handle reserving seat
     const handleReserve = async (mockSuccess: boolean) => {
-        if (!selectedSeat) return;
-        setMessage('Processing transaction...');
+        if (selectedSeats.length === 0) return;
+        setMessage('⏳ Processing payment transaction...');
+
         const res = await fetch('/api/reserve', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify({ seatId: selectedSeat, mockPaymentSuccess: mockSuccess }),
+            body: JSON.stringify({ seatIds: selectedSeats, mockPaymentSuccess: mockSuccess }),
         });
+
         const data = await res.json();
         if (data.success) {
-            setMessage('🎉 Seat successfully reserved!');
-            // Reload seats list
-            fetch('/api/seats').then(res => res.json()).then(data => setSeats(data));
+            setMessage(mockSuccess ? '🎉 Seats successfully booked!' : '❌ Payment failed. Seats released.');
+            setSelectedSeats([]);
+            setTimeLeft(null);
+            fetchSeats();
         } else {
-            setMessage(`❌ Failed: ${data.error}`);
+            setMessage(`❌ Transaction Error: ${data.error}`);
         }
     };
 
@@ -146,7 +251,6 @@ export default function Home() {
                 <div
                     style={{
                         display: 'flex',
-                        justifyContent: 'between',
                         alignItems: 'center',
                         backgroundColor: 'rgba(16, 185, 129, 0.05)',
                         border: '1px solid rgba(16, 185, 129, 0.2)',
@@ -224,27 +328,29 @@ export default function Home() {
                             let textStyle = '#1f2937';
                             let borderStyle = '1px solid #e5e7eb';
                             let isCursorAllowed = 'pointer';
+                            const isSelected = selectedSeats.includes(seat.id);
 
-                            if (seat.status === 'PENDING') {
+                            if (isSelected) {
+                                bgStyle = '#065f46'; // SELECTED
+                                textStyle = '#ffffff';
+                                borderStyle = '2px solid #10b981';
+                            } else if (seat.status === 'PENDING') {
                                 bgStyle = 'linear-gradient(135deg, #ffedd5 0%, #f97316 100%)'; // RESERVED
                                 textStyle = '#ffffff';
                                 borderStyle = '1px solid #ea580c';
+                                isCursorAllowed = 'not-allowed';
                             } else if (seat.status === 'BOOKED') {
                                 bgStyle = 'linear-gradient(135deg, #fca5a5 0%, #ef4444 100%)'; // BOOKED
                                 textStyle = '#ffffff';
                                 borderStyle = '1px solid #dc2626';
                                 isCursorAllowed = 'not-allowed';
-                            } else if (selectedSeat === seat.id) {
-                                bgStyle = '#065f46'; // SELETED
-                                textStyle = '#ffffff';
-                                borderStyle = '2px solid #10b981';
                             }
 
                             return (
                                 <button
                                     key={seat.id}
                                     disabled={seat.status !== 'AVAILABLE'}
-                                    onClick={() => setSelectedSeat(seat.id)}
+                                    onClick={() => handleSeatClick(seat.id)}
                                     style={{
                                         padding: '12px 8px',
                                         background: bgStyle,
@@ -284,7 +390,7 @@ export default function Home() {
                                             letterSpacing: '0.05em'
                                         }}
                                     >
-                                        {seat.status === 'PENDING' ? 'Reserved' : seat.status.toLowerCase()}
+                                        {isSelected ? 'SELECTED' : seat.status === 'PENDING' ? 'Reserved' : seat.status.toLowerCase()}
                                     </span>
                                 </button>
                             );
@@ -294,18 +400,29 @@ export default function Home() {
             )}
 
             {/* Payments Mock Up block */}
-            {selectedSeat && user && (
+            {selectedSeats.length > 0 && timeLeft !== null && user && (
                 <div className="panel-container" style={{ marginTop: '24px', padding: '24px' }}>
+                    {/* Timer countdown */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', backgroundColor: 'rgba(249, 115, 22, 0.08)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(249, 115, 22, 0.2)' }}>
+                        <span style={{ fontSize: '0.85rem', color: '#ffeddf' }}>
+                            {'⚠️ Complete payment before timeout:'}
+                        </span>
+                        <strong style={{ fontSize: '1.15rem', color: '#f97316', fontFamily: 'monospace', letterSpacing: '1px' }}>
+                            {formatTime(timeLeft)}
+                        </strong>
+                    </div>
+
+                    {/* Selected seats */}
                     <p style={{ margin: '0 0 16px 0', fontSize: '0.875rem', color: '#9ca3af' }}>
                         Staging Reservation Target: <strong style={{ color: '#10b981', fontSize: '1.125rem' }}>
-                            {seats.find(s => s.id === selectedSeat)?.number}
+                            {selectedSeats.map(id => seats.find(s => s.id === id)?.number).join(', ')}
                         </strong>
                     </p>
 
-                    {/* Bọc Flexbox hàng ngang cho 2 nút bấm, tự động bẻ dọc trên mobile */}
+                    {/* Mock Payment */}
                     <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
 
-                        {/* NÚT THANH TOÁN THÀNH CÔNG (TÔNG XANH LÁ) */}
+                        {/* Mock Success Payment */}
                         <button
                             onClick={() => handleReserve(true)}
                             style={{
@@ -328,7 +445,7 @@ export default function Home() {
                             Simulate Success Payment
                         </button>
 
-                        {/* NÚT THANH TOÁN THẤT BẠI (TÔNG ĐỎ) */}
+                        {/* Mock Fail Payment */}
                         <button
                             onClick={() => handleReserve(false)}
                             style={{

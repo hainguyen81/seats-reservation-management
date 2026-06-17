@@ -6,59 +6,72 @@ export async function POST(req: Request) {
     const session = await getSession();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { seatId, mockPaymentSuccess } = await req.json();
+    const { seatIds, mockPaymentSuccess } = await req.json();
+    if (!seatIds || !Array.isArray(seatIds) || seatIds.length === 0) {
+        return NextResponse.json({ error: 'Invalid or empty seat list' }, { status: 400 });
+    }
 
     try {
         // sequential (ACID Transaction) to prevent Race Condition
         const result = await prisma.$transaction(async (tx) => {
-            const seat = await tx.seat.findUnique({
-                where: { id: seatId },
+            const targetSeats = await tx.seat.findMany({
+                where: { id: { in: seatIds } },
             });
-
-            if (!seat || seat.status !== 'AVAILABLE') {
-                throw new Error('Seat is no longer available');
+            if (targetSeats.length !== seatIds.length) {
+                throw new Error('Some requested seats do not exist');
             }
 
-            // 1. Reserve seat - `PENDING`
-            await tx.seat.update({
-                where: { id: seatId },
-                data: { status: 'PENDING' },
-            });
-
-            // 2. Booking
-            const booking = await tx.booking.create({
-                data: {
+            // check AVAILABLE
+            const currentBookings = await tx.booking.findMany({
+                where: {
+                    seatId: { in: seatIds },
                     userId: session.userId,
-                    seatId: seatId,
                     status: 'PENDING',
-                    expiresAt: new Date(Date.now() + 5 * 60 * 1000), // expired in 5 minutes if payment gateway is down
+                    expiresAt: { gte: new Date() }, // not expired in reserving
                 },
             });
-
-            // 3. Mock Payment
-            if (!mockPaymentSuccess) {
-                throw new Error('Payment Failed'); // Trigger rollback
+            if (currentBookings.length !== seatIds.length) {
+                throw new Error('Transaction timeout: Your temporary seat holds have already expired and been released.');
             }
 
-            // 4. Success payment -> `BOOKED`
-            await tx.seat.update({
-                where: { id: seatId },
-                data: { status: 'BOOKED' },
-            });
+            // Mock Payment
+            if (mockPaymentSuccess) {
+                // Payment Success -> `BOOKED`
+                await tx.seat.updateMany({
+                    where: { id: { in: seatIds } },
+                    data: { status: 'BOOKED' },
+                });
 
-            // 5. Completed booking -> `COMPLETED`
-            return await tx.booking.update({
-                where: { id: booking.id },
-                data: { status: 'COMPLETED' },
-            });
+                // `COMPLETED` booking
+                await tx.booking.updateMany({
+                    where: {
+                        seatId: { in: seatIds },
+                        userId: session.userId,
+                        status: 'PENDING',
+                    },
+                    data: { status: 'COMPLETED' },
+                });
+            } else {
+                // Payment Failed -> reset to `AVAILABLE`
+                await tx.seat.updateMany({
+                    where: { id: { in: seatIds } },
+                    data: { status: 'AVAILABLE' },
+                });
+
+                // `FAILED` booking
+                await tx.booking.updateMany({
+                    where: {
+                        seatId: { in: seatIds },
+                        userId: session.userId,
+                        status: 'PENDING',
+                    },
+                    data: { status: 'FAILED' },
+                });
+            }
         });
 
-        return NextResponse.json({ success: true, booking: result });
+        return NextResponse.json({ success: true });
     } catch (error: any) {
-        // General exception, revert seat status -> `AVAILABLE`
-        if (error.message === 'Payment Failed') {
-            await prisma.seat.update({ where: { id: seatId }, data: { status: 'AVAILABLE' } });
-        }
         return NextResponse.json({ error: error.message }, { status: 400 });
     }
 }

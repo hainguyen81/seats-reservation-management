@@ -17,5 +17,29 @@ export async function GET() {
 
     // not found user
     if (!user) return NextResponse.json({ loggedIn: false }, { status: 404 });
-    return NextResponse.json({ loggedIn: true, user });
+
+    // seats by me -> PENDING
+    const activeHolds = await prisma.booking.findMany({
+        where: {
+            userId: user.id,
+            status: 'PENDING',
+            expiresAt: { gte: new Date() }, // Phải còn trong hạn giữ chỗ
+        },
+        select: {
+            seatId: true,
+            expiresAt: true,
+        },
+    });
+
+    // early expired
+    let earliestExpiry = null;
+    if (activeHolds.length > 0) {
+        const expTimes = activeHolds.map(h => h.expiresAt.getTime());
+        earliestExpiry = new Date(Math.min(...expTimes)).toISOString();
+    }
+    return NextResponse.json({
+        loggedIn: true, user,
+        heldSeatIds: activeHolds.map(h => h.seatId),
+        expiresAt: earliestExpiry
+    });
 }
