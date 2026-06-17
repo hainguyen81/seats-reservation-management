@@ -1,6 +1,7 @@
 # Public Seat Reservation Platform
 
 ## Project Source Code Structure
+```
 ├── prisma/
 │   └── schema.prisma					# SQLite schema
 ├── src/
@@ -18,3 +19,4 @@
 ├── .env
 ├── README.md
 └── package.json
+```
