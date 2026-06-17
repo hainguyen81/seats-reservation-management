@@ -1,0 +1,14 @@
+name: seats-reservation-management
+
+services:
+  web-app:
+    image: seats-reservation-management
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - SHOULD_SEED=true
