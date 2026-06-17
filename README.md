@@ -1,6 +1,6 @@
 # Public Seat Reservation Platform
 
-## Technical Decisions & Architecture (Senior Alignment)
+## Technical Decisions & Architecture
 - **Concurrency Control**: DB level transactional isolation to completely eliminate double-booking at the exact same millisecond.
 - **Session Duration**: Mandated 90-day expiry using HTTP-Only JWT tokens for security.
 - **Resiliency & Fault Tolerance**: Includes a 5-minute timeout window pattern on pending seats to gracefully release deadlocks if users abandon the payment popup screen.
