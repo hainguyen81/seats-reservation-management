@@ -19,13 +19,13 @@ model Seat {
   number     String        @unique
   status     String        // AVAILABLE, PENDING, BOOKED
   version    Int           @default(0) // for Optimistic Locking
-  Booking    Booking?
+  Booking    Booking[]
 }
 
 model Booking {
   id        String   @id @default(uuid())
   userId    String
-  seatId    String   @unique
+  seatId    String
   status    String   // PENDING, COMPLETED, FAILED
   createdAt DateTime @default(now())
   expiresAt DateTime // expired reservation if not paying

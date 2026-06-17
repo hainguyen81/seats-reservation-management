@@ -15,10 +15,25 @@ export async function POST(req: Request) {
         const expiresAt = new Date(Date.now() + RESERVE_EXPIRY_MINUTES * 60 * 1000); // expired in 5 minutes
 
         const result = await prisma.$transaction(async (tx) => {
+            // validate 1: seat is not BOOKED
             const seat = await tx.seat.findUnique({ where: { id: seatId } });
+            if (!seat || seat.status === 'BOOKED') {
+                throw new Error('This seat has already been fully booked and sold.');
+            }
 
-            if (!seat || seat.status !== 'AVAILABLE') {
-                throw new Error('Seat is no longer available');
+            // validate 2: seat whether is RESERVED for other
+            const activeHoldByOthers = await tx.booking.findFirst({
+                where: {
+                    seatId: seatId,
+                    status: 'PENDING',
+                    expiresAt: { gte: new Date() },  // in expired 5 minutes
+                    NOT: {
+                        userId: session.userId, // not for me
+                    },
+                },
+            });
+            if (activeHoldByOthers) {
+                throw new Error('This seat is temporarily reserved by another user. Please choose another one.');
             }
 
             // Lock seat with status PENDING

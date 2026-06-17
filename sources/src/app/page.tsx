@@ -28,7 +28,8 @@ export default function Home() {
             .then((data) => {
                 if (data && data.loggedIn) {
                     setUser(data.user);
-
+                    console.log("=== CHECK DATA REFRESH ===");
+                    console.log("Mảng ghế đang giữ từ DB:", data);
                     // restore HOLD seats
                     if (data.heldSeatIds && data.heldSeatIds.length > 0) {
                         setSelectedSeats(data.heldSeatIds);
@@ -98,33 +99,49 @@ export default function Home() {
 
     // handle select seats
     const handleSeatClick = async (seatId: string) => {
-        const isSelected = selectedSeats.includes(seatId);
+        const currentSelectedStrings = selectedSeats.map(id => String(id).trim());
+        const targetSeatString = String(seatId).trim();
 
-        if (isSelected) {
-            // Un-select: call API to release
+        const isCurrentlySelectedByMe = currentSelectedStrings.includes(targetSeatString);
+
+        if (isCurrentlySelectedByMe) {
+            // ===================================================
+            // 🔓 RELEASE
+            // ===================================================
+            setMessage('⏳ Releasing seat reservation...');
             const res = await fetch('/api/reserve/release-single', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({ seatId }),
+                body: JSON.stringify({ seatId: targetSeatString }),
             });
+
             if (res.ok) {
-                setSelectedSeats((prev) => prev.filter((id) => id !== seatId));
-                fetchSeats();
+                setSelectedSeats((prev) => prev.map(id => String(id).trim()).filter((id) => id !== targetSeatString));
+                setMessage('✅ Seat released successfully.');
+                fetchSeats(); // Tải lại sơ đồ ghế từ DB
+            } else {
+                const data = await res.json();
+                setMessage(`❌ Failed to release seat: ${data.error}`);
             }
+
         } else {
-            // Select: call API to booking PENDING
+            // ===================================================
+            // 🔒 HOLD: Reserve in expired minutes
+            // ===================================================
+            setMessage('⏳ Holding seat...');
             const res = await fetch('/api/reserve/hold', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({ seatId }),
+                body: JSON.stringify({ seatId: targetSeatString }),
             });
             const data = await res.json();
 
             if (data.success) {
-                setSelectedSeats((prev) => [...prev, seatId]);
-                // calculate timer
+                setSelectedSeats((prev) => [...prev.map(id => String(id).trim()), targetSeatString]);
+
+                // reset expiry timer
                 const secondsLeft = Math.floor((new Date(data.expiresAt).getTime() - Date.now()) / 1000);
                 setTimeLeft(secondsLeft > 0 ? secondsLeft : 300);
                 fetchSeats();
@@ -349,7 +366,7 @@ export default function Home() {
                             return (
                                 <button
                                     key={seat.id}
-                                    disabled={seat.status !== 'AVAILABLE'}
+                                    disabled={seat.status !== 'AVAILABLE' && !isSelected}
                                     onClick={() => handleSeatClick(seat.id)}
                                     style={{
                                         padding: '12px 8px',
