@@ -2,13 +2,18 @@ name: seats-reservation-management
 
 services:
   web-app:
-    image: seats-reservation-management
+    container_name: seats-reservation-app
+    image: seats-reservation-management:latest
     build:
       context: .
       dockerfile: Dockerfile
+    volumes:
+      - .:/app
     ports:
       - "3000:3000"
     env_file:
       - .env
     environment:
+      - DATABASE_PROVIDER=sqlite
+      - DATABASE_URL="file:./dev.db"
       - SHOULD_SEED=true

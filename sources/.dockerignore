@@ -12,3 +12,8 @@ dev.db-journal
 Dockerfile
 .dockerignore
 *.bat
+*.yml
+*.yaml
+.gitignore
+.gitkeep
+tsconfig.json

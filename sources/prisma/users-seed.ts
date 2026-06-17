@@ -1,3 +1,4 @@
+import { hashPassword } from '@/lib/hash';
 import { PrismaClient } from '@prisma/client';
 
 export async function seedUsers(prisma: PrismaClient) {
@@ -8,10 +9,12 @@ export async function seedUsers(prisma: PrismaClient) {
 
     const user = await prisma.user.upsert({
         where: { username: testUsername },
-        update: {},
+        update: {
+            password: hashPassword(testPassword),
+        },
         create: {
             username: testUsername,
-            password: testPassword,
+            password: hashPassword(testPassword),
         },
     });
 

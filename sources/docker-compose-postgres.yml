@@ -1,0 +1,53 @@
+name: seats-reservation-management
+
+services:
+  # ===================================================
+  # 1. DATABASE
+  # ===================================================
+  postgres-db:
+    image: postgres:15-alpine
+    container_name: seats-reservation-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: seat_reservation
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data_volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d seat_reservation"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - seats-reservation-network
+
+  web-app:
+    container_name: seats-reservation-app
+    image: seats-reservation-management:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_PROVIDER=postgres
+      - DATABASE_URL=postgresql://postgres:password123@postgres-db:5432/seat_reservation?schema=public
+      - SHOULD_SEED=true
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+    networks:
+      - seats-reservation-network
+
+networks:
+  seats-reservation-network:
+    driver: bridge
+
+volumes:
+  pg_data_volume:
