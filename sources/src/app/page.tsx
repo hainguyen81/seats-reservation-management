@@ -68,7 +68,6 @@ export default function Home() {
 
     useEffect(() => {
         if (timeLeft === null) return;
-
         if (timeLeft === 0) {
             // 💡 Timeout: cancel booking and reset seats Frontend
             setSelectedSeats([]);
