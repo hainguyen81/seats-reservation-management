@@ -127,33 +127,61 @@ If a payment gateway suffers a catastrophic outage and fails to fire webhooks en
 
 ---
 
-## ❓ 5. Architectural Q&A: Session Management & Future Mobile App Support
+## 🕵️ 5. Audit Logging for Financial & Critical Mutations
 
-### ❓ 5.1. Question:
+### Architectural Mandate
+To comply with enterprise security auditing, financial reconciliation, and anomaly detection standards, the platform features an asynchronous, **Append-Only Audit Logging Infrastructure**. 
+
+This component acts as an immutable ledger designed to monitor and store data related to high-risk business state changes without introducing performance overhead to the primary seating pipeline.
+
+---
+
+### 🛡️ Core Audit System Specifications
+
+#### 1. Tamper-Proof & Append-Only Topology
+* **Structural Isolation**: The `AuditLog` database entity behaves as a data-sink. The backend service architecture purposefully exposes no `Update` or `Delete` endpoints for this model.
+* **Fail-Safe Mechanism**: The logging layer is isolated with dedicated error-handling boundaries. If the storage persistence layer of the log fails, the core system gracefully intercepts the error, emits a system warning (`console.error`), and permits the user’s primary financial transaction to proceed uninterrupted.
+
+#### 2. Deep Network Forensics & IP Traversal
+To enforce non-repudiation and defend against malicious automated scripts or distributed attacks, the logger extracts metadata passing through Kubernetes Ingress or reverse-proxies:
+* It reads headers like `X-Forwarded-For` and `X-Real-IP`.
+* In multi-proxy routing environments, it programmatically parses the composite string to isolate the origin client IP address.
+
+#### 3. Structured Behavioral Telemetry
+Each generated log captures a strict, standardized state dictionary:
+* `action`: High-level operational type classification (`HOLD_SEAT`, `PAYMENT_SUCCESS`, `PAYMENT_FAILED`).
+* `target`: Clear text representation of the mutated resources (e.g., `Seats: seat-1, seat-2`).
+* `details`: A comprehensive JSON payload capturing contextual data, exception trace messages, or raw webhook identifiers for subsequent cross-referencing.
+
+---
+
+## ❓ 6. Architectural Q&A: Session Management & Future Mobile App Support
+
+### ❓ 6.1. Question:
 **Does the current session approach have the ability to handle a mobile app integration in the future?**
 
-### 💡 5.1. Answer:
+### 💡 6.1. Answer:
 **Yes, absolutely.** The core authentication architecture of this platform was engineered from day one to be completely **stateless and API-first**, ensuring seamless horizontal scalability across multiple client channels, including **Web, iOS, Android, and third-party API integrations**.
 
 ---
 
-### 🧠 5.1. Detailed Architectural Scalability & Implementation Strategy
+### 🧠 6.1. Detailed Architectural Scalability & Implementation Strategy
 
 To satisfy enterprise-grade mobile requirements, the platform deliberately avoids traditional, stateful server-side sessions (such as Redis-backed or sticky session stores). Instead, it implements a strict **Stateless Dual-Token Framework (JWT Access Token + Refresh Token)**:
 
-#### 5.1.1. Decoupled Token Storage Strategy
+#### 6.1.1. Decoupled Token Storage Strategy
 While the Web client securely encapsulates tokens within `HTTP-Only, SameSite=Lax` Cookies to mitigate Cross-Site Scripting (XSS) and Cross-Site Request Forgery (CSRF) vulnerabilities, the mobile client is decoupled from browser-native cookie management:
 * **iOS / Android Clients**: Mobile applications will receive the exact same cryptographic tokens (Access & Refresh JWTs) in the JSON payload response during the authentication handshake.
 * **Secure Device Hardware**: The mobile application will securely persist these tokens inside hardware-backed keychains (e.g., **iOS Keychain Services** or **Android Keystore / EncryptedSharedPreferences System**).
 * **Authorization Headers**: For subsequent resource requests or seat matrix mutations, the mobile client will attach the Access Token inside the standard HTTP `Authorization: Bearer <JWT>` header, ensuring total compatibility with the existing backend parsing logic.
 
-#### 5.1.2. Cross-Platform Token Rotation Loop
+#### 6.1.2. Cross-Platform Token Rotation Loop
 The backend's **Silent Token Rotation** endpoint (`/api/auth/refresh`) is completely decoupled from Web context [^8]:
 * When a mobile user’s short-lived Access Token expires (15-minute window), the mobile networking layer (e.g., Axios Interceptors or Retrofit Authenticator) will automatically catch the `401 Unauthorized` status.
 * The client will fire a headless POST request containing the Refresh Token to the rotation endpoint.
 * Once cross-referenced with the database whitelist, the server mints a new token pair and returns it in the response body [^8]. This guarantees a zero-friction, uninterrupted seat booking experience on mobile devices.
 
-#### 5.1.3. API-First Architecture Readiness
+#### 6.1.3. API-First Architecture Readiness
 Because the backend endpoints—such as `/api/reserve/hold` and `/api/reserve`—rely entirely on a stateless contract contract interface (`verifyAccessToken()`), they are fully agnostic of the client’s architecture. 
 
 ```text
@@ -169,39 +197,39 @@ Because the backend endpoints—such as `/api/reserve/hold` and `/api/reserve`�
 +-----------------------+                              +---------------------------------+
 ```
 
-#### 5.1.4. Unified Firebase Support for Mobile
+#### 6.1.4. Unified Firebase Support for Mobile
 When operating in Cloud-Native Mode (`AUTH_PROVIDER="firebase"`), migrating to mobile introduces zero backend friction. The native iOS/Android Firebase SDKs will authenticate users directly against Google OAuth endpoints. The generated `IdToken` will then be transmitted to our API gateway via raw request bodies to establish the same verified session context.
 
 ---
 
-### 🏁 5.1. Summary of Architectural Alignment
+### 🏁 6.1. Summary of Architectural Alignment
 By adopting a **Stateless Token Pipeline** rather than traditional server-bound cookie sessions, the platform eliminates infrastructure lock-in. This delivers a unified, production-ready backend capable of powering responsive desktop layouts and native mobile viewports under a single, shared security blueprint.
 
 ---
 
-### ❓ 5.2. Question:
+### ❓ 6.2. Question:
 **How would you handle a failed webhook from the payment gateway?**
 
-### 💡 5.2.Answer:
+### 💡 6.2.Answer:
 Handling a failed webhook requires a multi-layered defensive strategy to ensure **eventual consistency** and prevent deadlocks (where a seat remains permanently locked in `PENDING` status or a user pays but never gets their seat) [^2, 3]. 
 
 The platform guarantees data reconciliation and transactional recovery through four coordinated engineering patterns:
 
-#### 5.2.1. Native Exponential Backoff Retries
+#### 6.2.1. Native Exponential Backoff Retries
 Most modern payment gateways (e.g., Stripe, Adyen) do not expect an immediate single handshake. If our server fails to return a `200 OK` response due to transient network drops or database lock contention, the gateway automatically queues the webhook for retry using an exponential backoff strategy (e.g., retrying up to 3–5 times over a 24-hour window). 
 * *System Behavior*: Our endpoint relies on an **Idempotency Layer**. If a previous partial transaction failed and rollbacked, the subsequent retry will safely execute the query from scratch without side effects.
 
-#### 5.2.2. Event Ingestion via Durable Message Broker (Queue Decoupling)
+#### 6.2.2. Event Ingestion via Durable Message Broker (Queue Decoupling)
 In a high-concurrency production scenario, the webhook landing endpoint does not process business logic or communicate with the database directly. 
 * *Mechanism*: The HTTP POST request simply pushes the raw payload into a message broker (such as **RabbitMQ** or **AWS SQS**). 
 * *Failure Mitigation*: If our Next.js backend crashes or suffers a temporary outage, the message remains safely persisted inside the queue. Once the backend services recover, they consume the message from the queue sequentially, ensuring no user financial events are permanently dropped [^8].
 
-#### 5.2.3. Proactive Self-Healing & Asynchronous Sweep Logic (The Ultimate Fallback)
+#### 6.2.3. Proactive Self-Healing & Asynchronous Sweep Logic (The Ultimate Fallback)
 If the payment gateway suffers an internal disaster and completely fails to broadcast webhooks, the system activates its dual passive/active sweeping architecture to prevent seating state deadlocks [^2, 3]:
 * **Passive Evaluation on Request**: Every time any user hits the `/api/seats` endpoint, the server runs a sub-millisecond query to locate any `PENDING` bookings that have outlived their 5-minute lifespan (`expiresAt < NOW()`) and automatically reverts those seats back to `AVAILABLE` [^2, 3].
 * **Active Reconciliation Cron (Out-of-Band Sync)**: A scheduled microservice worker runs every 10 minutes, pulling all `PENDING` rows close to expiration. It makes an outbound secure REST API request directly to the payment gateway's logs (e.g., GET `/v1/payment_intents/id`) to verify the factual status. If the gateway reports the transaction was successful, our script bypasses the missing webhook, upgrades the seat to `BOOKED`, and confirms the order [^2].
 
-#### 5.2.4. Dead-Letter Queue (DLQ) & Observability Guardrails
+#### 6.2.4. Dead-Letter Queue (DLQ) & Observability Guardrails
 If a webhook payload contains malformed data or fails processing after maximum message broker retries, it is quarantined inside a **Dead-Letter Queue (DLQ)**.
 * *Alerting*: The mutation triggers an automated Slack/PagerDuty notification to the DevOps team.
 * *Governance Tooling*: Administrative operators can access a secure internal dashboard to review the structural anomaly of the isolated payload and trigger a manual, programmatic force-sync once the underlying data structure issue is remediated.
