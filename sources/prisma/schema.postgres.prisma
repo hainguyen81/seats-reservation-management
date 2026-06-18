@@ -1,6 +1,7 @@
 datasource db {
-  provider = "postgres"
-  url      = env("DATABASE_URL")
+  provider  = "postgres"
+  url       = env("DATABASE_URL")         // 💡 URL via PgBouncer (Port 6432)
+  directUrl = env("DIRECT_DATABASE_URL")  // 💡 Direct URL to Postgres (Port 5432) for migration
 }
 
 generator client {

@@ -4,7 +4,7 @@
 # use node >= 22 for firebase 14
 FROM node:22.14-alpine AS deps
 # install required Prisma dependencies
-RUN apk add --no-cache openssl libc6-compat
+RUN apk add --no-cache openssl libc6-compat gcompat
 
 WORKDIR /app
 
@@ -26,7 +26,7 @@ RUN npm ci
 # use node >= 22 for firebase 14
 FROM node:22.14-alpine AS builder
 # install required Prisma dependencies
-RUN apk add --no-cache openssl libc6-compat
+RUN apk add --no-cache openssl libc6-compat gcompat
 
 WORKDIR /app
 
@@ -43,25 +43,29 @@ RUN echo "STEP 2: Build" \
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
+# Copy correct schema prisma (mock database URL for building)
 ARG DATABASE_PROVIDER="sqlite"
 ENV DATABASE_PROVIDER=$DATABASE_PROVIDER
-
-# Copy correct schema prisma
 RUN if [ "$DATABASE_PROVIDER" = "postgres" ]; then \
-  echo "🔌 [Build-time] Config Prisma Next.js to POSTGRESQL..."; \
+  echo "🔌 Use POSTGRESQL..."; \
   cp prisma/schema.postgres.prisma prisma/schema.prisma; \
+  DATABASE_URL="postgresql://mock:mock@localhost:5432/mock" DIRECT_DATABASE_URL="postgresql://mock:mock@localhost:5432/mock" npx prisma generate; \
+  DATABASE_URL="postgresql://mock:mock@localhost:5432/mock" DIRECT_DATABASE_URL="postgresql://mock:mock@localhost:5432/mock" npm run build; \
   else \
-  echo "🔌 [Build-time] Config Prisma Next.js to SQLITE..."; \
+  echo "🔌 Use SQLITE (Default)..."; \
   cp prisma/schema.sqlite.prisma prisma/schema.prisma; \
+  DATABASE_URL="file:./mock.db" npx prisma generate; \
+  DATABASE_URL="file:./mock.db" npm run build; \
   fi
-RUN npx prisma generate
-RUN npm run build
 
 # ===================================================
 # STEP 3: Start application on Production (Image)
 # ===================================================
 # use node >= 22 for firebase 14
 FROM node:22.14-alpine AS runner
+# install required Prisma dependencies
+RUN apk add --no-cache openssl libc6-compat gcompat
+
 WORKDIR /app
 
 # Debug
@@ -76,6 +80,9 @@ RUN adduser --system --uid 1001 nextjs
 
 # Copy static files
 COPY --from=builder /app/public ./public
+
+# Copy all standalone to root for running
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 
 # Copy standalone folders of Next.js
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
@@ -99,17 +106,15 @@ ENV HOSTNAME="0.0.0.0"
 
 # 'db push' and 'db seed' for testing
 # auto create file dev.db and load test data at start-up!
-ARG DATABASE_PROVIDER="sqlite"
-ENV DATABASE_PROVIDER=$DATABASE_PROVIDER
+ENV DATABASE_PROVIDER="sqlite"
 ENV SHOULD_SEED="false"
-CMD if [ "$DATABASE_PROVIDER"="postgres"]; then \
+CMD if [ "$DATABASE_PROVIDER" = "postgres" ]; then \
   echo "🔌 Use POSTGRESQL..."; \
   cp prisma/schema.postgres.prisma prisma/schema.prisma; \
   else \
   echo "🔌 Use SQLITE (Default)..."; \
   cp prisma/schema.sqlite.prisma prisma/schema.prisma; \
   fi && \
-  npx prisma generate && \
   npx prisma db push && \
   if [ "$SHOULD_SEED" = "true" ]; then \
   echo "🚀 Seeding sample data..."; \

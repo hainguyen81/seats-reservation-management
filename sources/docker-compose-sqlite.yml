@@ -1,6 +1,25 @@
 name: seats-reservation-management
 
 services:
+  # ===================================================
+  # 1. REDIS CACHE
+  # ===================================================
+  redis-cache:
+    image: redis:7-alpine
+    container_name: seats-redis-cache
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d seat_reservation"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - seats-reservation-network
+
+  # ===================================================
+  # 2. NEXT.JS
+  # ===================================================
   web-app:
     container_name: seats-reservation-app
     image: seats-reservation-management:latest
@@ -15,5 +34,20 @@ services:
       - .env
     environment:
       - DATABASE_PROVIDER=sqlite
-      - DATABASE_URL="file:./dev.db"
+      - AUTH_PROVIDER=custom
+      - NEXT_PUBLIC_AUTH_PROVIDER=custom
+      - DATABASE_URL=file:./dev.db
+      - REDIS_URL=redis://redis-cache:6379
+      - JWT_SECRET=linkz-assessment-senior-lead-secret-key-2026
+      - TOTAL_SEATS=15
       - SHOULD_SEED=true
+    depends_on:
+      redis-cache:
+        condition: service_healthy
+    networks:
+      - seats-reservation-network
+
+networks:
+  seats-reservation-network:
+    driver: bridge
+

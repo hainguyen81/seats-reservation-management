@@ -19,7 +19,7 @@ export async function auditLog({ userId, action, target, status, details, req }:
                 req.headers.get('x-real-ip') || '127.0.0.1';
         }
 
-        // Ghi trực tiếp xuống DB
+        // write to DB
         await prisma.auditLog.create({
             data: {
                 userId: userId || null,

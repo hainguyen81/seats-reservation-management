@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { auditLog } from '@/lib/audit';
 import { verifyAccessToken } from '@/lib/auth';
+import { Prisma } from '@prisma/client';
 
 /**
  * Passive Release Expired Booking
@@ -14,44 +15,29 @@ export async function POST(req: Request) {
     }
 
     const { seatId } = await req.json();
+    const targetSeatId = String(seatId).trim();
 
     try {
-        const now = new Date();
+        await prisma.$transaction(async (tx) => {
+            // check seat existing
+            const seat = await tx.seat.findUnique({ where: { id: targetSeatId } });
+            if (!seat) throw new Error('Seat not found.');
 
-        // 🕵️ Step 1: Find all `EXPIRED` booking `PENDING`
-        const expiredBookings = await prisma.booking.findMany({
-            where: {
-                status: 'PENDING',
-                expiresAt: { lt: now },
-            },
-            select: {
-                id: true,
-                seatId: true,
-            },
+            // check booking
+            const booking = await tx.booking.findFirst({
+                where: { seatId: targetSeatId, userId: session.userId, status: 'PENDING' },
+            });
+            if (!booking) throw new Error('No active reservation found under your account.');
+
+            // 💡 SOLUTION Optimistic Concurrency Control OCC: Reset `AVAILABLE` seat
+            await tx.seat.update({
+                where: { id: targetSeatId, version: seat.version },
+                data: { status: 'AVAILABLE', version: seat.version + 1 },
+            });
+
+            // delete temporary booking
+            await tx.booking.delete({ where: { id: booking.id } });
         });
-
-        // Not found any expired booking, do nothing
-        if (expiredBookings.length === 0) {
-            return NextResponse.json({ success: true, releasedCount: 0, message: 'No expired seats found.' });
-        }
-
-        const expiredBookingIds = expiredBookings.map((b) => b.id);
-        const expiredSeatIds = expiredBookings.map((b) => b.seatId);
-
-        // 🕵️ Step 2: in transaction
-        await prisma.$transaction([
-            // update booking -> `FAILED`
-            prisma.booking.updateMany({
-                where: { id: { in: expiredBookingIds } },
-                data: { status: 'FAILED' },
-            }),
-
-            // Reset `AVAILABLE` seats
-            prisma.seat.updateMany({
-                where: { id: { in: expiredSeatIds } },
-                data: { status: 'AVAILABLE' },
-            }),
-        ]);
 
         // audit
         await auditLog({
@@ -61,13 +47,24 @@ export async function POST(req: Request) {
             status: 'SUCCESS',
             req
         });
-
-        return NextResponse.json({
-            success: true,
-            releasedCount: expiredBookings.length,
-            message: `Successfully released ${expiredBookings.length} expired seat reservations.`,
-        });
+        return NextResponse.json({ success: true });
     } catch (error: any) {
+        // 💡 CACHE CONCURRENCY VIOLATION:
+        // if error is P2025, it means WHERE (id + old version) didn't exist;
+        // because other Pod/Request already changed version.
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+            // audit
+            await auditLog({
+                userId: session.userId,
+                action: 'HOLD',
+                target: seatId.join(', '),
+                status: 'FAILED',
+                details: { error: "[ P2025 ] Conflict: This seat state was modified. Refreshing dashboard." },
+                req
+            });
+            return NextResponse.json({ error: '[ P2025 ] Conflict: This seat state was modified. Refreshing dashboard.' }, { status: 409 });
+        }
+        
         // audit
         await auditLog({
             userId: session.userId,
@@ -77,6 +74,6 @@ export async function POST(req: Request) {
             details: { error: error.message },
             req
         });
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: error.message }, { status: 400 });
     }
 }

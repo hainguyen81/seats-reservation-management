@@ -2,9 +2,12 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { verifyAccessToken } from '@/lib/auth';
 import { auditLog } from '@/lib/audit';
+import { Prisma } from '@prisma/client';
+import { redis } from '@/lib/redis';
 
 const RESERVE_EXPIRY = process.env.RESERVE_EXPIRY;
 const RESERVE_EXPIRY_MINUTES = RESERVE_EXPIRY ? parseInt(RESERVE_EXPIRY, 10) : 1;
+const SEATS_CACHE_KEY = 'seat_matrix_layout';
 
 export async function POST(req: Request) {
     const session = await verifyAccessToken();
@@ -39,10 +42,17 @@ export async function POST(req: Request) {
                 throw new Error('This seat is temporarily reserved by another user. Please choose another one.');
             }
 
+            // 💡 SOLUTION Optimistic Concurrency Control OCC (COMPARE-AND-SWAP):
             // Lock seat with status PENDING
             await tx.seat.update({
-                where: { id: seatId },
-                data: { status: 'PENDING' },
+                where: {
+                    id: String(seatId),
+                    version: seat.version
+                },
+                data: {
+                    status: 'PENDING',
+                    version: seat.version + 1
+                },
             });
 
             // Create Booking PENDING
@@ -56,6 +66,13 @@ export async function POST(req: Request) {
             });
         });
 
+        // cache invalidation
+        try {
+            await redis.del(SEATS_CACHE_KEY);
+        } catch (e) {
+            console.error('📊 [Cache Miss - Redis Down]: [ HOLD ] Could not clear seats cache', e);
+        }
+
         // audit
         await auditLog({
             userId: session.userId,
@@ -67,6 +84,22 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ success: true, expiresAt: expiresAt.toISOString() });
     } catch (error: any) {
+        // 💡 CACHE CONCURRENCY VIOLATION:
+        // if error is P2025, it means WHERE (id + old version) didn't exist;
+        // because other Pod/Request already changed version.
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+            // audit
+            await auditLog({
+                userId: session.userId,
+                action: 'HOLD',
+                target: seatId.join(', '),
+                status: 'FAILED',
+                details: { error: "[ P2025 ] Race condition detected: This seat was captured by another user at the same millisecond!" },
+                req
+            });
+            return NextResponse.json({ error: '[ P2025 ] Race condition detected: This seat was captured by another user at the same millisecond!' }, { status: 409 });
+        }
+
         // audit
         await auditLog({
             userId: session.userId,

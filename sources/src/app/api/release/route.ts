@@ -2,36 +2,52 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { auditLog } from '@/lib/audit';
 
+/**
+ * Background Sweeper for releasing EXPIRED seats
+ */
+
 export async function POST(req: Request) {
     try {
         const now = new Date();
 
         const result = await prisma.$transaction(async (tx) => {
-            // Check expired booking that hasn't paid yet
-            const expiredBookings = await prisma.booking.findMany({
-                where: {
-                    status: 'PENDING',
-                    expiresAt: { lt: now },
-                },
+            // find EXPIRED Booking PENDING
+            const expiredBookings = await tx.booking.findMany({
+                where: { status: 'PENDING', expiresAt: { lt: now } },
+                select: { id: true, seatId: true },
             });
+            if (expiredBookings.length === 0) return { count: 0, seatIds: [] };
 
-            if (expiredBookings.length === 0) {
-                return { count: 0, seatIds: [] };
+            let count = 0;
+            let releasedSeats = [];
+
+            // 🕵️ SOLUTION Optimistic Concurrency Control OCC
+            for (const booking of expiredBookings) {
+                try {
+                    const seat = await tx.seat.findUnique({ where: { id: booking.seatId } });
+                    if (seat && seat.status === 'PENDING') {
+                        // reset seat
+                        await tx.seat.update({
+                            where: { id: booking.seatId, version: seat.version },
+                            data: { status: 'AVAILABLE', version: seat.version + 1 },
+                        });
+
+                        // FAILED booking
+                        await tx.booking.update({
+                            where: { id: booking.id },
+                            data: { status: 'FAILED' },
+                        });
+
+                        releasedSeats.push(seat.id);
+                        count++;
+                    }
+                } catch (err) {
+                    // if conflict P2025 (by other request booked this seat),
+                    // ignore and continue other seats because this is background sweeper
+                    continue;
+                }
             }
-
-            const expiredBookingIds = expiredBookings.map((b) => b.id);
-            const expiredSeatIds = expiredBookings.map((b) => b.seatId);
-
-            // Cancel booking and reverse seat to `AVAILABLE`
-            await tx.booking.updateMany({
-                where: { id: { in: expiredBookingIds } },
-                data: { status: 'FAILED' },
-            });
-            await tx.seat.updateMany({
-                where: { id: { in: expiredSeatIds } },
-                data: { status: 'AVAILABLE' },
-            });
-            return { count: expiredBookings.length, seatIds: expiredSeatIds };
+            return { count: expiredBookings.length, seatIds: releasedSeats };
         });
 
         // audit

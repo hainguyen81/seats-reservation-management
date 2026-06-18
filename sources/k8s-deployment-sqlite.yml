@@ -1,22 +1,62 @@
 # ===================================================
-# 1. RESOURCE CONFIGMAP
+# 1. REDIS CACHE
+# ===================================================
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis-cache
+  namespace: default
+spec:
+  serviceName: "redis-service"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis-cache
+  template:
+    metadata:
+      labels:
+        app: redis-cache
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  namespace: default
+spec:
+  ports:
+  - port: 6379
+  selector:
+    app: redis-cache
+---
+# ===================================================
+# 2. RESOURCE CONFIGMAP
 # ===================================================
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: seat-reservation-config
+  name: seats-reservation-config
   namespace: default
 data:
+  DATABASE_PROVIDER: "sqlite"             # postgres/sqlite
+  REDIS_URL: "redis://redis-service:6379" # to K8s Service Redis
+  AUTH_PROVIDER: "custom"                 # firebase/custom
+  NEXT_PUBLIC_AUTH_PROVIDER: "custom"
   TOTAL_SEATS: "12"
-  SHOULD_SEED: "false" # change to "false" after the first deployment for safe
+  SHOULD_SEED: "true"                     # change to "false" after the first deployment for safe
 ---
 # ===================================================
-# 2. RESOURCE SECRET: encrypt Base64
+# 3. RESOURCE SECRET: encrypt Base64
 # ===================================================
 apiVersion: v1
 kind: Secret
 metadata:
-  name: seat-reservation-secret
+  name: seats-reservation-secret
   namespace: default
 type: Opaque
 data:
@@ -31,20 +71,20 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: seat-reservation-deployment
+  name: seats-reservation-deployment
   namespace: default
 spec:
   replicas: 1 # SQLite, only 1 replica to avoid data mismatch.
   selector:
     matchLabels:
-      app: seat-reservation
+      app: seats-reservation
   template:
     metadata:
       labels:
-        app: seat-reservation
+        app: seats-reservation
     spec:
       containers:
-      - name: seat-reservation-app
+      - name: seats-reservation-app
         image: seats-reservation-management:latest # Docker Hub/Registry Image
         imagePullPolicy: IfNotPresent
         ports:
@@ -52,25 +92,45 @@ spec:
         
         # 💡 bypass enviroment from RESOURCE CONFIGMAP & SECRET
         env:
+        - name: DATABASE_PROVIDER
+          valueFrom:
+            configMapKeyRef:
+              name: seats-reservation-config
+              key: DATABASE_PROVIDER
+        - name: AUTH_PROVIDER
+          valueFrom:
+            configMapKeyRef:
+              name: seats-reservation-config
+              key: AUTH_PROVIDER
+        - name: NEXT_PUBLIC_AUTH_PROVIDER
+          valueFrom:
+            configMapKeyRef:
+              name: seats-reservation-config
+              key: NEXT_PUBLIC_AUTH_PROVIDER
         - name: TOTAL_SEATS
           valueFrom:
             configMapKeyRef:
-              name: seat-reservation-config
+              name: seats-reservation-config
               key: TOTAL_SEATS
         - name: SHOULD_SEED
           valueFrom:
             configMapKeyRef:
-              name: seat-reservation-config
+              name: seats-reservation-config
               key: SHOULD_SEED
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: seats-reservation-config
+              key: REDIS_URL
         - name: DATABASE_URL
           valueFrom:
             secretKeyRef:
-              name: seat-reservation-secret
+              name: seats-reservation-secret
               key: DATABASE_URL
         - name: JWT_SECRET
           valueFrom:
             secretKeyRef:
-              name: seat-reservation-secret
+              name: seats-reservation-secret
               key: JWT_SECRET
               
         # Health Check
@@ -87,7 +147,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: seat-reservation-service
+  name: seats-reservation-service
   namespace: default
 spec:
   type: ClusterIP
@@ -95,7 +155,7 @@ spec:
   - port: 80
     targetPort: 3000
   selector:
-    app: seat-reservation
+    app: seats-reservation
 ---
 # ===================================================
 # 5. RESOURCE INGRESS: Traffic Router from external
@@ -103,7 +163,7 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: seat-reservation-ingress
+  name: seats-reservation-ingress
   namespace: default
   annotations:
     ingress.class: nginx
@@ -117,11 +177,11 @@ spec:
   rules:
   - http:
       paths:
-        # Route prefix /seat-app to rewrite
-        - path: /seat-app(/|$)(.*)
+        # Route prefix /seats-app to rewrite
+        - path: /seats-app(/|$)(.*)
           pathType: ImplementationSpecific
           backend:
             service:
-              name: seat-reservation-service
+              name: seats-reservation-service
               port:
                 number: 80

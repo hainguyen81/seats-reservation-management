@@ -9,12 +9,28 @@ services:
     container_name: seats-reservation-db
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password123
-      POSTGRES_DB: seat_reservation
+      POSTGRES_PASSWORD: postgres_secret_pass
+      POSTGRES_DB: seats_reservation
     ports:
       - "5432:5432"
     volumes:
       - pg_data_volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d seats_reservation"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - seats-reservation-network
+
+  # ===================================================
+  # 2. REDIS CACHE
+  # ===================================================
+  redis-cache:
+    image: redis:7-alpine
+    container_name: seats-redis-cache
+    ports:
+      - "6379:6379"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d seat_reservation"]
       interval: 5s
@@ -23,6 +39,9 @@ services:
     networks:
       - seats-reservation-network
 
+  # ===================================================
+  # 3. NEXT.JS
+  # ===================================================
   web-app:
     container_name: seats-reservation-app
     image: seats-reservation-management:latest
@@ -37,10 +56,18 @@ services:
       - .env
     environment:
       - DATABASE_PROVIDER=postgres
-      - DATABASE_URL=postgresql://postgres:password123@postgres-db:5432/seat_reservation?schema=public
+      - AUTH_PROVIDER=custom
+      - NEXT_PUBLIC_AUTH_PROVIDER=custom
+      - DATABASE_URL=postgresql://postgres:postgres_secret_pass@postgres-db:5432/seats_reservation?schema=public&pgbouncer=true
+      - DIRECT_DATABASE_URL=postgresql://postgres:postgres_secret_pass@postgres-db:5432/seats_reservation?schema=public
+      - REDIS_URL=redis://redis-cache:6379
+      - JWT_SECRET=linkz-assessment-senior-lead-secret-key-2026
+      - TOTAL_SEATS=15
       - SHOULD_SEED=true
     depends_on:
       postgres-db:
+        condition: service_healthy
+      redis-cache:
         condition: service_healthy
     networks:
       - seats-reservation-network
