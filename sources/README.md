@@ -1,8 +1,6 @@
 # Seats Reservation Platform
 
----
-
-## 🔐 1. Project Source Code Structure
+## 📂 1. Project Source Code Structure
 ```
 ├── prisma/
 │   └── schema.prisma					# SQLite schema
@@ -25,7 +23,7 @@
 
 ---
 
-## 🔐 2. Local Setup Instructions
+## 💻 2. Local Setup Instructions
 1. Clone the project and install packages:
    ```bash
    npm install
@@ -61,7 +59,7 @@ The platform implements a highly resilient, hybrid identity management architect
 
 ---
 
-### 🏛️ Mode 1: Cloud-Native Identity (Firebase Session Cookie Pattern)
+### ☁️ Mode 1: Cloud-Native Identity (Firebase Session Cookie Pattern)
 To eliminate the security vulnerabilities of standard client-side SDK implementations—where ID tokens stored in LocalStorage are exposed to Cross-Site Scripting (XSS) attacks—this platform strictly enforces the **Server-Side Session Cookie Pattern**.
 
 * **Token Exchange**: The frontend SDK captures a short-lived Firebase `IdToken` and transmits it to the Next.js backend. The `firebase-admin` SDK validates the token and exchanges it for a secure, HTTP-Only Session Cookie with a 14-day validity window.
