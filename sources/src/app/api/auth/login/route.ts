@@ -1,11 +1,32 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { createTokensSession } from '@/lib/auth'; // 💡 Gọi hàm sinh 2 token mới
-import { hashPassword, comparePassword } from '@/lib/hash'; // Hàm mã hóa Bcrypt
+import { createTokensSession } from '@/lib/auth';
+import { hashPassword, comparePassword } from '@/lib/hash';
 
 export async function POST(req: Request) {
     try {
-        const { username, password } = await req.json();
+        const body = await req.json();
+        const provider = process.env.AUTH_PROVIDER || 'custom';
+
+        // firebase
+        if (provider === 'firebase') {
+            const { idToken, username } = body;
+            if (!idToken) return NextResponse.json({ error: 'Identity token is missing' }, { status: 400 });
+
+            // handle DB
+            let user = await prisma.user.findUnique({ where: { username } });
+            if (!user) {
+                user = await prisma.user.create({
+                    data: { username, password: 'EXTERNAL_FIREBASE_AUTH' }
+                });
+            }
+
+            await createTokensSession(idToken); // process idToken by Firebase Admin
+            return NextResponse.json({ success: true, user: { id: user.id, username: user.username } });
+        }
+
+        // custom
+        const { username, password } = body;
 
         // 🕵️ Validate
         if (!username || !password) {

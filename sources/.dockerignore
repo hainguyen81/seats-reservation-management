@@ -16,4 +16,3 @@ Dockerfile
 *.yaml
 .gitignore
 .gitkeep
-tsconfig.json

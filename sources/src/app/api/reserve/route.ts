@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { getSession } from '@/lib/auth';
+import { verifyAccessToken } from '@/lib/auth';
 
 export async function POST(req: Request) {
-    const session = await getSession();
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const session = await verifyAccessToken();
+    if (!session) {
+        return NextResponse.json({ error: 'Unauthorized - Access Token Expired' }, { status: 401 });
+    }
 
     const { seatIds, mockPaymentSuccess } = await req.json();
     if (!seatIds || !Array.isArray(seatIds) || seatIds.length === 0) {

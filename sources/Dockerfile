@@ -1,29 +1,43 @@
 # ===================================================
 # STEP 1: Install all dependencies (include devDependencies)
 # ===================================================
-FROM node:20-alpine AS deps
+# use node >= 22 for firebase 14
+FROM node:22.14-alpine AS deps
 # install required Prisma dependencies
 RUN apk add --no-cache openssl libc6-compat
 
 WORKDIR /app
+
+# Debug
+RUN echo "STEP 1: Install all dependencies (include devDependencies)"
 
 # Copy package
 COPY package.json package-lock.json* ./
 # Copy Prisma to generate Client
 COPY prisma ./prisma
 
+# Generate Prisma Client and build Next.js
+RUN npm install
 RUN npm ci
 
 # ===================================================
 # STEP 2: Build
 # ===================================================
-FROM node:20-alpine AS builder
+# use node >= 22 for firebase 14
+FROM node:22.14-alpine AS builder
 # install required Prisma dependencies
 RUN apk add --no-cache openssl libc6-compat
 
 WORKDIR /app
+
+# Copy project and node modules
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+
+# Debug
+RUN echo "STEP 2: Build" \
+    && echo "--- List directory ---" \
+    && ls -la .
 
 # Setup Enviroment Variables to build
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -32,8 +46,6 @@ ENV NODE_ENV=production
 ARG DATABASE_PROVIDER="sqlite"
 ENV DATABASE_PROVIDER=$DATABASE_PROVIDER
 
-# Generate Prisma Client and build Next.js
-RUN npm install
 # Copy correct schema prisma
 RUN if [ "$DATABASE_PROVIDER" = "postgres" ]; then \
   echo "🔌 [Build-time] Config Prisma Next.js to POSTGRESQL..."; \
@@ -48,8 +60,12 @@ RUN npm run build
 # ===================================================
 # STEP 3: Start application on Production (Image)
 # ===================================================
-FROM node:20-alpine AS runner
+# use node >= 22 for firebase 14
+FROM node:22.14-alpine AS runner
 WORKDIR /app
+
+# Debug
+RUN echo "STEP 3: Start application on Production (Image)"
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1

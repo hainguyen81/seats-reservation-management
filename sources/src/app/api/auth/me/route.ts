@@ -7,7 +7,7 @@ export async function GET() {
     let session = await verifyAccessToken();
     let isRefreshed = false;
 
-    // 2. REFRESH: if Access Token expired, change token
+    // 2. REFRESH: if Access Token expired, change token [SILENT REFRESH]
     if (!session) {
         // call API refresh
         const cookieStore = require('next/headers').cookies();

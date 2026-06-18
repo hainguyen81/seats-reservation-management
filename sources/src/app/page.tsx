@@ -156,6 +156,45 @@ export default function Home() {
             setMessage('⚠️ Please enter both username and password.');
             return;
         }
+
+        const isFirebaseEnabled = process.env.NEXT_PUBLIC_AUTH_PROVIDER === 'firebase';
+        if (isFirebaseEnabled) {
+            setMessage('⏳ Authenticating via Firebase Cloud...');
+            try {
+                const { authClient } = require('../lib/firebase-client');
+                const { signInWithEmailAndPassword, createUserWithEmailAndPassword } = require('firebase/auth');
+
+                let userCredential;
+                try {
+                    userCredential = await signInWithEmailAndPassword(authClient, username, password);
+                } catch (err: any) {
+                    if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+                        userCredential = await createUserWithEmailAndPassword(authClient, username, password);
+                    } else { throw err; }
+                }
+
+                // check/store firebase login information to DB
+                const idToken = await userCredential.user.getIdToken();
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ idToken, username: userCredential.user.email }),
+                });
+
+                // login success
+                const data = await res.json();
+                if (data.success) {
+                    setUser(data.user);
+                    setPassword('');
+                    setMessage('🎉 Firebase Session connected!');
+                } else { setMessage(`❌ Error: ${data.error}`); }
+            } catch (error: any) {
+                setMessage(`❌ Firebase Refused: ${error.message}`);
+            }
+            return;
+        }
+
+        // custom
         const res = await fetch('/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
