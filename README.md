@@ -270,10 +270,10 @@ npx playwright show-report
 ```
 
 ### Test Result
-Running 2 tests using 1 worker
+1. Running 2 tests using 1 worker
   2 passed (4.2s)
 
-To open last HTML report run:
+2. To open last HTML report run:
   ```bash
   npx playwright show-report
   ```

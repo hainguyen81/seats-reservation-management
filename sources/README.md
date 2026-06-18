@@ -7,15 +7,24 @@
 ├── src/
 │   ├── app/
 │   │   ├── api/
-│   │   │   ├── auth/login/route.ts		# API Login (90 days)
-│   │   │   ├── seats/route.ts        	# API to get the seats list
-│   │   │   └── reserve/route.ts      	# API to reserve seat and payment (Transaction)
-│   │   │   └── release/route.ts      	# API to release seat if expired/cancelled
+│   │   │   ├── auth/login/route.ts					# API Login
+│   │   │   ├── auth/logout/route.ts				# API Logout
+│   │   │   ├── auth/me/route.ts					# API for Current Login Instance
+│   │   │   ├── auth/refresh/route.ts				# API for Refresh UI/Token
+│   │   │   ├── seats/route.ts        				# API to get the seats list
+│   │   │   ├── reserve/hold/route.ts   			# API to reserve PENDING selected seats to avoid conflicts from other (Transaction)
+│   │   │   ├── reserve/release-single/route.ts		# API to release the HOLD seats (Transaction)
+│   │   │   ├── reserve/route.ts      				# API to reserve seats and payment (Transaction)
+│   │   │   └── release/route.ts      				# API to release seats if expired/cancelled
 │   │   ├── layout.tsx
-│   │   └── page.tsx                  	# Main UI (Dashboard)
+│   │   └── page.tsx                  				# Main UI (Dashboard)
 │   └── lib/
-│       ├── db.ts           			# Initial Prisma Client
-│       └── auth.ts         			# Hash/Encode JWT
+│       ├── db.ts           						# Initial Prisma Client
+│       ├── auth.ts           						# Authentication
+│       ├── audit.ts         						# Audit Log
+│       ├── firebase-admin.ts         				# Firebase Admin Integration
+│       ├── firebase-client.ts						# Firebase Client/Analytics Integration
+│       └── hash.ts         						# Hash/Encode Library
 ├── .env
 ├── README.md
 └── package.json
@@ -285,10 +294,10 @@ npx playwright show-report
 ```
 
 ### Test Result
-Running 2 tests using 1 worker
+1. Running 2 tests using 1 worker
   2 passed (4.2s)
 
-To open last HTML report run:
+2. To open last HTML report run:
   ```bash
   npx playwright show-report
   ```
