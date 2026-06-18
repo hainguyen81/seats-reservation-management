@@ -1,8 +1,6 @@
 # Seats Reservation Platform
 
----
-
-## 🔐 1. Technical Decisions & Architecture
+## 🏛️ 1. Technical Decisions & Architecture
 - **Concurrency Control**: DB level transactional isolation to completely eliminate double-booking at the exact same millisecond.
 - **Session Duration**: Mandated 90-day expiry using HTTP-Only JWT tokens for security.
 - **Resiliency & Fault Tolerance**: Includes a 5-minute timeout window pattern on pending seats to gracefully release deadlocks if users abandon the payment popup screen.
@@ -53,7 +51,7 @@ Both authentication subsystems converge into a single defensive interface (`veri
 
 ---
 
-## 🔐 3. Local Setup Instructions
+## 💻 3. Local Setup Instructions
 1. Clone the project and install packages:
    ```bash
    npm install
