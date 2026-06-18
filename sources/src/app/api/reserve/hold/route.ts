@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { verifyAccessToken } from '@/lib/auth';
+import { auditLog } from '@/lib/audit';
 
 const RESERVE_EXPIRY = process.env.RESERVE_EXPIRY;
 const RESERVE_EXPIRY_MINUTES = RESERVE_EXPIRY ? parseInt(RESERVE_EXPIRY, 10) : 1;
@@ -55,8 +56,26 @@ export async function POST(req: Request) {
             });
         });
 
+        // audit
+        await auditLog({
+            userId: session.userId,
+            action: 'HOLD',
+            target: seatId.join(', '),
+            status: 'SUCCESS',
+            req
+        });
+
         return NextResponse.json({ success: true, expiresAt: expiresAt.toISOString() });
     } catch (error: any) {
+        // audit
+        await auditLog({
+            userId: session.userId,
+            action: 'HOLD',
+            target: seatId.join(', '),
+            status: 'FAILED',
+            details: { error: error.message },
+            req
+        });
         return NextResponse.json({ error: error.message }, { status: 400 });
     }
 }

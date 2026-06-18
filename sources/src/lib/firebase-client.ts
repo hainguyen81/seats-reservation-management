@@ -1,5 +1,6 @@
-import { initializeApp, getApps, getAuth, getAnalytics } from 'firebase/app';
-import { getAuth as getFirebaseAuth, getAnalytics as getFirebaseAnalytics } from 'firebase/auth';
+import { initializeApp, getApps } from 'firebase/app';
+import { getAuth as getFirebaseAuth } from 'firebase/auth';
+import { getAnalytics as getFirebaseAnalytics, isSupported } from 'firebase/analytics';
 
 const firebaseConfig = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "MOCK_KEY",
@@ -20,7 +21,20 @@ if (process.env.NEXT_PUBLIC_AUTH_PROVIDER === 'firebase') {
     try {
         const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
         firebaseClientAuthInstance = getFirebaseAuth(app);
-        firebaseClientAnalyticsInstance = getFirebaseAnalytics(app);
+        if (typeof window !== 'undefined') {
+            isSupported().then((supported) => {
+                if (supported) {
+                    try {
+                        firebaseClientAnalyticsInstance = getFirebaseAnalytics(app);
+                        console.log("📊 Firebase Analytics initialized successfully.");
+                    } catch(ae) {
+                        console.warn("⚠️ Firebase Analytics failed to initialize. Fallback active.", ae);
+                    }
+                } else {
+                    console.warn("⚠️ Browser doesn't support for Firebase Analytics.");
+                }
+            });
+        }
     } catch (e) {
         console.warn("⚠️ Firebase Client failed to initialize. Fallback active.", e);
     }

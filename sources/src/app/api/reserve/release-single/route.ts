@@ -1,11 +1,20 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { auditLog } from '@/lib/audit';
+import { verifyAccessToken } from '@/lib/auth';
 
 /**
  * Passive Release Expired Booking
  */
 
-export async function POST() {
+export async function POST(req: Request) {
+    const session = await verifyAccessToken();
+    if (!session) {
+        return NextResponse.json({ error: 'Unauthorized - Access Token Expired' }, { status: 401 });
+    }
+
+    const { seatId } = await req.json();
+
     try {
         const now = new Date();
 
@@ -44,12 +53,30 @@ export async function POST() {
             }),
         ]);
 
+        // audit
+        await auditLog({
+            userId: session.userId,
+            action: 'RELEASE',
+            target: seatId.join(', '),
+            status: 'SUCCESS',
+            req
+        });
+
         return NextResponse.json({
             success: true,
             releasedCount: expiredBookings.length,
             message: `Successfully released ${expiredBookings.length} expired seat reservations.`,
         });
     } catch (error: any) {
+        // audit
+        await auditLog({
+            userId: session.userId,
+            action: 'HOLD',
+            target: seatId.join(', '),
+            status: 'FAILED',
+            details: { error: error.message },
+            req
+        });
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

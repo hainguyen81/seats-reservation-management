@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { verifyAccessToken } from '@/lib/auth';
+import { auditLog } from '@/lib/audit';
 
 export async function POST(req: Request) {
     const session = await verifyAccessToken();
@@ -72,8 +73,27 @@ export async function POST(req: Request) {
             }
         });
 
+        // audit
+        await auditLog({
+            userId: session.userId,
+            action: mockPaymentSuccess ? 'PAYMENT_SUCCESS' : 'PAYMENT_FAILED',
+            target: seatIds.join(', '),
+            status: 'SUCCESS',
+            details: { mockPaymentSuccess },
+            req
+        });
+
         return NextResponse.json({ success: true });
     } catch (error: any) {
+        // audit
+        await auditLog({
+            userId: session.userId,
+            action: mockPaymentSuccess ? 'PAYMENT_SUCCESS' : 'PAYMENT_FAILED',
+            target: seatIds.join(', '),
+            status: 'FAILED',
+            details: { error: error.message },
+            req
+        });
         return NextResponse.json({ error: error.message }, { status: 400 });
     }
 }

@@ -1,8 +1,10 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import { logEvent } from 'firebase/analytics';
+import { firebaseClientAnalytics } from '../lib/firebase-client';
 
-const SESSION_EXPIRY = process.env.SESSION_EXPIRY;
-const SESSION_EXPIRY_DAYS = SESSION_EXPIRY ? parseInt(SESSION_EXPIRY, 10) : 1;
+const REFRESH_TOKEN_EXPIRY = process.env.REFRESH_TOKEN_EXPIRY;
+const REFRESH_TOKEN_EXPIRY_DAYS = REFRESH_TOKEN_EXPIRY ? parseInt(REFRESH_TOKEN_EXPIRY, 10) : 1;
 
 export default function Home() {
     const [user, setUser] = useState<any>(null);
@@ -49,7 +51,7 @@ export default function Home() {
         fetch('/api/seats')
             .then((res) => res.json())
             .then((data) => setSeats(data));
-        
+
         const interval = setInterval(fetchSeats, 5000);
         return () => clearInterval(interval);
     }, []);
@@ -238,6 +240,14 @@ export default function Home() {
 
         const data = await res.json();
         if (data.success) {
+            // firebase analytics
+            if (firebaseClientAnalytics && process.env.NEXT_PUBLIC_AUTH_PROVIDER === 'firebase') {
+                logEvent(firebaseClientAnalytics, 'purchase_seats', {
+                    seat_count: selectedSeats.length,
+                    seat_numbers: selectedSeats.map(id => seats.find(s => s.id === id)?.number).join(','),
+                    transaction_status: mockSuccess ? 'SUCCESS' : 'FAILED'
+                });
+            }
             setMessage(mockSuccess ? '🎉 Seats successfully booked!' : '❌ Payment failed. Seats released.');
             setSelectedSeats([]);
             setTimeLeft(null);
@@ -331,7 +341,7 @@ export default function Home() {
                                     display: 'inline-block'
                                 }}
                             >
-                                Session Active ({SESSION_EXPIRY_DAYS}d)
+                                Session Active ({REFRESH_TOKEN_EXPIRY_DAYS}d)
                             </span>
                         </div>
                     </div>
@@ -368,7 +378,7 @@ export default function Home() {
             {user && (
                 <div className="panel-container" style={{ marginTop: '24px', padding: '24px' }}>
                     <h3 style={{ margin: '0 0 16px 0', fontSize: '1.125rem', color: '#10b981', fontWeight: 600 }}>
-                        Select an Available Seat
+                        Select available seats
                     </h3>
 
                     <div

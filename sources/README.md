@@ -75,6 +75,15 @@ Data confidentiality and operational integrity (including read/write loops and s
 
 Consequently, exposing the `apiKey` within the client-side bundle complies with Google’s architectural specifications and introduces zero vulnerability to the core security posture of the platform.
 
+#### 📊 Client-Side Telemetry & Firebase Analytics Integration
+
+The platform integrates **Firebase Analytics** to capture user behavioral metrics and conversion funnels (such as seat selections and checkout completions) without introducing render-blocking delays to the UI.
+
+To prevent build-time failures and server runtime crashes during Next.js Pre-rendering (SSR), the application implements a strict **Isomorphic Safe Initialization Pattern**:
+1. **Runtime Context Guard**: The initialization query is explicitly wrapped within a `typeof window !== "undefined"` conditional block, insulating the Node.js server context from web-browser-native variables.
+2. **Feature Support Verification**: Utilizes Firebase’s asynchronous `isSupported()` interface to safely suppress tracking on strict storage environments, legacy browsers, or aggressive stealth/incognito viewports.
+3. **Out-of-Band Event Dispatching**: High-value client events (e.g., `purchase_seats`) are dispatched asynchronously using non-blocking telemetry primitives, decoupled from the critical path of the local transactional database state machine.
+
 ---
 
 ### 🛡️ Mode 2: Self-Managed Identity (Dual-Token JWT & Cryptographic Isolation)
@@ -248,3 +257,39 @@ If the payment gateway suffers an internal disaster and completely fails to broa
 If a webhook payload contains malformed data or fails processing after maximum message broker retries, it is quarantined inside a **Dead-Letter Queue (DLQ)**.
 * *Alerting*: The mutation triggers an automated Slack/PagerDuty notification to the DevOps team.
 * *Governance Tooling*: Administrative operators can access a secure internal dashboard to review the structural anomaly of the isolated payload and trigger a manual, programmatic force-sync once the underlying data structure issue is remediated.
+
+---
+
+## 🤖 7. Automated End-to-End (E2E) Testing Suite
+
+The platform packages a production-ready **Playwright** automation suite to perform end-to-end regression testing on the core distributed business state machine.
+
+### Test Coverage Blueprint
+The automated matrix simulates headless user actors to validate non-deterministic edge scenarios:
+1. **Defensive Authorization Barrier**: Verifies the dynamic locking layer blocks access to the database seating configuration for unauthenticated connections.
+2. **Concurrent Multi-Select Mechanics**: Automates multi-row selection, verifying asynchronous array parsing (`seatIds`) across runtime memory.
+3. **Reactive Telemetry & Timeouts**: Decodes regex timestamp primitives to ensure the countdown timer accurately hooks into the server-defined `expiresAt` window.
+4. **State Machine Transitions**: Simulates the payment reconciliation loop, executing cross-platform verification that successful gates transition seats to disabled `BOOKED` structures, while failures gracefully execute rollback workflows.
+
+### Execution Instructions
+To execute the automated regression test matrix locally, instantiate the test runner via:
+```bash
+# Install framework binaries
+npm install
+
+# Run the test matrix in headless parallel threads
+npx playwright test
+
+# Launch the visual reporting dashboard
+npx playwright show-report
+```
+
+### Test Result
+Running 2 tests using 1 worker
+  2 passed (4.2s)
+
+To open last HTML report run:
+  ```bash
+  npx playwright show-report
+  ```
+

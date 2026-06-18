@@ -34,3 +34,15 @@ model Booking {
   user      User     @relation(fields: [userId], references: [id])
   seat      Seat     @relation(fields: [seatId], references: [id])
 }
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String?  // null or unauthorized webhook
+  action      String   // HOLD, RELEASE, RELEASE_EXPIRED, PAYMENT_SUCCESS, PAYMENT_FAIL
+  target      String   // seat id (Ex: "Seats: seat-1, seat-2")
+  status      String   // SUCCESS, FAILED
+  details     String?  // error detail or payload
+  ipAddress   String?  // referal request IP
+  ipAddresses String?  // referal request IP if many IPs via proxies
+  createdAt   DateTime @default(now())
+}
