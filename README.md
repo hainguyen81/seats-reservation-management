@@ -1,5 +1,7 @@
 # Seats Reservation Platform
 
+---
+
 ## 🔐 1. Technical Decisions & Architecture
 - **Concurrency Control**: DB level transactional isolation to completely eliminate double-booking at the exact same millisecond.
 - **Session Duration**: Mandated 90-day expiry using HTTP-Only JWT tokens for security.
@@ -51,7 +53,6 @@ Both authentication subsystems converge into a single defensive interface (`veri
 
 ---
 
-
 ## 🔐 2. Local Setup Instructions
 1. Clone the project and install packages:
    ```bash
@@ -72,6 +73,13 @@ Both authentication subsystems converge into a single defensive interface (`veri
    run-dev.bat # no seeding sample data
    or run-dev-seed.bat # include seeding sample data (user: hainguyenjc@gmail.com; password: password123)
    ```
+7. Optional (Docker/K8s): you could run by MS DOS batch to deploy and run under Docker/K8s platform
+   ```bash
+   docker-compose-up.bat # for SQLite
+   or docker-compose-up.bat postgres # for PostgreSQL
+   ```
+
+---
 
 
 
