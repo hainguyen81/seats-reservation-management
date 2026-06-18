@@ -146,15 +146,15 @@ If a payment gateway suffers a catastrophic outage and fails to fire webhooks en
 
 ## ❓ 5. Architectural Q&A: Session Management & Future Mobile App Support
 
-### 5.1. Question:
+### ❓ 5.1. Question:
 **Does the current session approach have the ability to handle a mobile app integration in the future?**
 
-### 5.1. Answer:
+### 💡 5.1. Answer:
 **Yes, absolutely.** The core authentication architecture of this platform was engineered from day one to be completely **stateless and API-first**, ensuring seamless horizontal scalability across multiple client channels, including **Web, iOS, Android, and third-party API integrations**.
 
 ---
 
-### 🏛️ 5.1. Detailed Architectural Scalability & Implementation Strategy
+### 🧠 5.1. Detailed Architectural Scalability & Implementation Strategy
 
 To satisfy enterprise-grade mobile requirements, the platform deliberately avoids traditional, stateful server-side sessions (such as Redis-backed or sticky session stores). Instead, it implements a strict **Stateless Dual-Token Framework (JWT Access Token + Refresh Token)**:
 
@@ -196,10 +196,10 @@ By adopting a **Stateless Token Pipeline** rather than traditional server-bound 
 
 ---
 
-### 5.2. Question:
+### ❓ 5.2. Question:
 **How would you handle a failed webhook from the payment gateway?**
 
-### 5.2.Answer:
+### 💡 5.2.Answer:
 Handling a failed webhook requires a multi-layered defensive strategy to ensure **eventual consistency** and prevent deadlocks (where a seat remains permanently locked in `PENDING` status or a user pays but never gets their seat) [^2, 3]. 
 
 The platform guarantees data reconciliation and transactional recovery through four coordinated engineering patterns:
