@@ -49,11 +49,11 @@ When operating in decoupled or on-premise environments, the platform switches to
 ---
 
 ### 🎛️ Hybrid Architecture Governance
-Both authentication subsystems converge into a single defensive interface (`verifyAccessToken()`). All downstream seat booking endpoints—such as `/api/reserve/hold` and `/api/reserve/confirm`—interact with this unified contract, remaining entirely agnostic of the underlying auth provider. This strict separation of concerns allows developers to swap the entire identity core via environment variables (`.env`) without refactoring a single line of business logic.
+Both authentication subsystems converge into a single defensive interface (`verifyAccessToken()`). All downstream seat booking endpoints—such as `/api/reserve/hold` and `/api/reserve`—interact with this unified contract, remaining entirely agnostic of the underlying auth provider. This strict separation of concerns allows developers to swap the entire identity core via environment variables (`.env`) without refactoring a single line of business logic.
 
 ---
 
-## 🔐 2. Local Setup Instructions
+## 🔐 3. Local Setup Instructions
 1. Clone the project and install packages:
    ```bash
    npm install
@@ -80,6 +80,56 @@ Both authentication subsystems converge into a single defensive interface (`veri
    ```
 
 ---
+
+## ❓ 4. Architectural Q&A: Session Management & Future Mobile App Support
+
+### Question:
+**Does the current session approach have the ability to handle a mobile app integration in the future?**
+
+### Answer:
+**Yes, absolutely.** The core authentication architecture of this platform was engineered from day one to be completely **stateless and API-first**, ensuring seamless horizontal scalability across multiple client channels, including **Web, iOS, Android, and third-party API integrations**.
+
+---
+
+### 🏛️ Detailed Architectural Scalability & Implementation Strategy
+
+To satisfy enterprise-grade mobile requirements, the platform deliberately avoids traditional, stateful server-side sessions (such as Redis-backed or sticky session stores). Instead, it implements a strict **Stateless Dual-Token Framework (JWT Access Token + Refresh Token)**:
+
+#### 4.1. Decoupled Token Storage Strategy
+While the Web client securely encapsulates tokens within `HTTP-Only, SameSite=Lax` Cookies to mitigate Cross-Site Scripting (XSS) and Cross-Site Request Forgery (CSRF) vulnerabilities, the mobile client is decoupled from browser-native cookie management:
+* **iOS / Android Clients**: Mobile applications will receive the exact same cryptographic tokens (Access & Refresh JWTs) in the JSON payload response during the authentication handshake.
+* **Secure Device Hardware**: The mobile application will securely persist these tokens inside hardware-backed keychains (e.g., **iOS Keychain Services** or **Android Keystore / EncryptedSharedPreferences System**).
+* **Authorization Headers**: For subsequent resource requests or seat matrix mutations, the mobile client will attach the Access Token inside the standard HTTP `Authorization: Bearer <JWT>` header, ensuring total compatibility with the existing backend parsing logic.
+
+#### 4.2. Cross-Platform Token Rotation Loop
+The backend's **Silent Token Rotation** endpoint (`/api/auth/refresh`) is completely decoupled from Web context [^8]:
+* When a mobile user’s short-lived Access Token expires (15-minute window), the mobile networking layer (e.g., Axios Interceptors or Retrofit Authenticator) will automatically catch the `401 Unauthorized` status.
+* The client will fire a headless POST request containing the Refresh Token to the rotation endpoint.
+* Once cross-referenced with the database whitelist, the server mints a new token pair and returns it in the response body [^8]. This guarantees a zero-friction, uninterrupted seat booking experience on mobile devices.
+
+#### 4.3. API-First Architecture Readiness
+Because the backend endpoints—such as `/api/reserve/hold` and `/api/reserve`—rely entirely on a stateless contract contract interface (`verifyAccessToken()`), they are fully agnostic of the client’s architecture. 
+
+```text
++-----------------------+      (HTTP-Only Cookie)      +---------------------------------+
+
+|       Web App         | <--------------------------> |                                 |
++-----------------------+                              |                                 |
+
+                                                       |      Next.js API Gateway        |
++-----------------------+    (Authorization Header)    |  (Stateless Token Verification) |
+
+|   Mobile App (iOS)    | <--------------------------> |                                 |
++-----------------------+                              +---------------------------------+
+```
+
+#### 4.4. Unified Firebase Support for Mobile
+When operating in Cloud-Native Mode (`AUTH_PROVIDER="firebase"`), migrating to mobile introduces zero backend friction. The native iOS/Android Firebase SDKs will authenticate users directly against Google OAuth endpoints. The generated `IdToken` will then be transmitted to our API gateway via raw request bodies to establish the same verified session context.
+
+---
+
+### 🏁 Summary of Architectural Alignment
+By adopting a **Stateless Token Pipeline** rather than traditional server-bound cookie sessions, the platform eliminates infrastructure lock-in. This delivers a unified, production-ready backend capable of powering responsive desktop layouts and native mobile viewports under a single, shared security blueprint.
 
 
 
