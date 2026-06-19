@@ -26,12 +26,6 @@ jobs:
         image: redis:7-alpine
         ports:
           - 6379:6379
-        # health check
-        options: >-
-          --health-cmd "reis-cli ping"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 5
 
       # postgres
       postgres-db:
