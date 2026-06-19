@@ -376,7 +376,7 @@ export default function Home() {
 
             {/* seats map */}
             {user && (
-                <div className="panel-container" style={{ marginTop: '24px', padding: '24px' }}>
+                <div className="panel-container seat-map-container" style={{ marginTop: '24px', padding: '24px' }}>
                     <h3 style={{ margin: '0 0 16px 0', fontSize: '1.125rem', color: '#10b981', fontWeight: 600 }}>
                         Select available seats
                     </h3>

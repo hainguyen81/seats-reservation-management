@@ -23,6 +23,13 @@ test.describe('Seats Reservation Management - End-to-End Business Flow', () => {
         // wait for UI loaded
         await page.waitForLoadState('networkidle');
 
+        const seatMapContainer = page.locator('.seat-map-container');
+        await seatMapContainer.waitFor({ state: 'attached', timeout: 5000 }).catch(() => { });
+        const seatMapHtml = await seatMapContainer.innerHTML();
+        console.log("============== [DEBUG] HTML BÊN TRONG SƠ ĐỒ GHẾ: ==============");
+        console.log(seatMapHtml);
+        console.log("===============================================================");
+
         // check UI
         await expect(page.locator('text=Secured Operator:')).toBeVisible();
         await expect(page.locator('text=Session Active')).toBeVisible();
@@ -34,8 +41,8 @@ test.describe('Seats Reservation Management - End-to-End Business Flow', () => {
         // 🕵️ CASE 4: Multi-select and Countdown Timer
         // Find available seats (AVAILABLE)
         // Click select 2 seats A1, A2 to simulate multi-select
-        const seatA1 = page.locator('xpath=//button[contains(., "A1")]').first();
-        const seatA2 = page.locator('xpath=//button[contains(., "A2")]').first();
+        const seatA1 = page.locator('button:has-text("A1")]').first();
+        const seatA2 = page.locator('button:has-text("A2")').first();
 
         await seatA1.click();
         await seatA2.click();
@@ -75,7 +82,15 @@ test.describe('Seats Reservation Management - End-to-End Business Flow', () => {
         // wait for UI loaded
         await page.waitForLoadState('networkidle');
 
-        const seatA3 = page.locator('xpath=//button[contains(., "A3")]').first();
+        const seatMapContainer = page.locator('.seat-map-container');
+        await seatMapContainer.waitFor({ state: 'attached', timeout: 5000 }).catch(() => { });
+        const seatMapHtml = await seatMapContainer.innerHTML();
+        console.log("============== [DEBUG] HTML BÊN TRONG SƠ ĐỒ GHẾ: ==============");
+        console.log(seatMapHtml);
+        console.log("===============================================================");
+
+        // locate seat A3
+        const seatA3 = page.locator('button:has-text("A3")').first();
 
         // click 1: select A3
         await seatA3.click();
