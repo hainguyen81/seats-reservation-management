@@ -50,11 +50,11 @@ jobs:
     - name: 🟢 Setup Node.js Environment
       uses: actions/setup-node@v4
       with:
-        node_version: 22.14
+        node-version: 22.14
         cache: 'npm'
 
     - name: 📦 Install Package Dependencies
-      run: npm ci
+      run: npm install
 
     - name: 🔌 Generate Prisma Client & Sync Database Schema
       run: |

@@ -77,31 +77,38 @@ RUN echo "STEP 3: Start application on Production (Image)"
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Create user, non-root to run container
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+# # Create user, non-root to run container
+# RUN addgroup --system --gid 1001 nodejs
+# RUN adduser --system --uid 1001 nextjs
 
-# Copy next standalone to application folder
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./seat-app
+# # Copy next standalone to application folder
+# COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./seat-app
 
-# Copy static asset to application folder
-COPY --from=builder /app/public ./seat-app/public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./seat-app/.next/static
+# # Copy static asset to application folder
+# COPY --from=builder /app/public ./seat-app/public
+# COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./seat-app/.next/static
 
-# Copy prisma to work dir (not application folder)
+# # Copy prisma to work dir (not application folder)
+# COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
+# COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+
+# # ⚠️ !!!IMPORTANT!!!: Grant write right for prisma folder
+# # to allow user 'nextjs' run 'cp' to swap schema file at runtime
+# USER root
+# RUN chown -R nextjs:nodejs /app
+# RUN chmod -R 777 /app/prisma
+
+# COPY built project to run
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
-
-# ⚠️ !!!IMPORTANT!!!: Grant write right for prisma folder
-# to allow user 'nextjs' run 'cp' to swap schema file at runtime
-USER root
-RUN chown -R nextjs:nodejs /app
-RUN chmod -R 777 /app/prisma
 
 # prisma require tsx to run
 RUN npm install -g tsx
 
-USER nextjs
+# USER nextjs
 
 EXPOSE 3000
 ENV PORT=3000
@@ -123,10 +130,7 @@ CMD if [ "$DATABASE_PROVIDER" = "postgres" ]; then \
   echo "🚀 Seeding sample data..."; \
   npx prisma db seed; \
   fi && \
-  REAL_SERVER_PATH=$(find seat-app -name server.js | head -n 1) && \
+  REAL_SERVER_PATH=$(find . -name server.js | head -n 1) && \
   REAL_SERVER_DIR=$(dirname "$REAL_SERVER_PATH") && \
   echo "🎯 Next.js Target Execution Context: $REAL_SERVER_DIR" && \
-  cp -r seat-app/public "$REAL_SERVER_DIR"/public 2>/dev/null || true && \
-  cp -r seat-app/.next/static "$REAL_SERVER_DIR"/.next/static 2>/dev/null || true && \
-  cd "$REAL_SERVER_DIR" && \
   node server.js
