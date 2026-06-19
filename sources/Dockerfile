@@ -96,6 +96,7 @@ COPY --from=builder /app/.next/standalone/server.js ./server.js
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
 
 # In runner stage, after copying prisma from builder:
@@ -104,7 +105,7 @@ RUN if [ ! -f prisma/schema.prisma ]; then \
   fi
 
 # Install runtime dependencies only (tsx for seed script)
-RUN npm install -g tsx @esbuild/linux-x64
+# RUN npm install -g tsx @esbuild/linux-x64
 
 # ⚠️ !!!IMPORTANT!!!: Grant write right for prisma folder
 # Fix permissions for prisma folder (needed for runtime schema swap)
