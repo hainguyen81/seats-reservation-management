@@ -21,7 +21,9 @@ export async function seedSeats(prisma: PrismaClient) {
 
         await prisma.seat.upsert({
             where: { id: seatId },
-            update: {}, // do nothing if seat existed
+            update: {
+                status: 'AVAILABLE'
+            },
             create: {
                 id: seatId,
                 number: seatNumber,
