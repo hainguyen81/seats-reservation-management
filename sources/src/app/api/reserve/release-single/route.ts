@@ -43,7 +43,7 @@ export async function POST(req: Request) {
         await auditLog({
             userId: session.userId,
             action: 'RELEASE',
-            target: seatId.join(', '),
+            target: targetSeatId,
             status: 'SUCCESS',
             req
         });
@@ -57,7 +57,7 @@ export async function POST(req: Request) {
             await auditLog({
                 userId: session.userId,
                 action: 'HOLD',
-                target: seatId.join(', '),
+                target: targetSeatId,
                 status: 'FAILED',
                 details: { error: "[ P2025 ] Conflict: This seat state was modified. Refreshing dashboard." },
                 req
