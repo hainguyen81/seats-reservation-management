@@ -28,6 +28,8 @@ services:
       dockerfile: Dockerfile
     volumes:
       - .:/app
+      - ./sources:/app:rw
+      - /app/node_modules  # This creates an anonymous volume for node_modules only
     ports:
       - "3000:3000"
     env_file:

@@ -3,6 +3,8 @@ set -e
 
 cd /app
 
+echo "🔌 Database Provider: $DATABASE_PROVIDER"
+
 if [ "$DATABASE_PROVIDER" = "postgres" ]; then
   echo "🔌 Use POSTGRESQL..."
   cp prisma/schema.postgres.prisma prisma/schema.prisma
@@ -11,6 +13,7 @@ else
   cp prisma/schema.sqlite.prisma prisma/schema.prisma
 fi
 
+echo "📊 Running Prisma DB Push..."
 npx prisma db push
 
 if [ "$SHOULD_SEED" = "true" ]; then
@@ -19,4 +22,4 @@ if [ "$SHOULD_SEED" = "true" ]; then
 fi
 
 echo "🎯 Executing core standalone server..."
-node server.js
+exec node server.js

@@ -50,6 +50,8 @@ services:
       dockerfile: Dockerfile
     volumes:
       - .:/app
+      - ./sources:/app:rw
+      - /app/node_modules  # This creates an anonymous volume for node_modules only
     ports:
       - "3000:3000"
     env_file:
@@ -63,7 +65,7 @@ services:
       - REDIS_URL=redis://redis-cache:6379
       - JWT_SECRET=linkz-assessment-senior-lead-secret-key-2026
       - TOTAL_SEATS=15
-      - SHOULD_SEED=true
+      - SHOULD_SEED=false
     depends_on:
       postgres-db:
         condition: service_healthy
