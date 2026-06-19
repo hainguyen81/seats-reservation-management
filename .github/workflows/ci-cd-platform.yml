@@ -77,7 +77,7 @@ jobs:
         cp prisma/schema.postgres.prisma prisma/schema.prisma
         DATABASE_URL="postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public&pgbouncer=true" DIRECT_DATABASE_URL="postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public" npx prisma generate
         DATABASE_URL="postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public&pgbouncer=true" DIRECT_DATABASE_URL="postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public" npx prisma db push
-        DATABASE_URL="postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public&pgbouncer=true" DIRECT_DATABASE_URL="postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public" npx prisma seed
+        DATABASE_URL="postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public&pgbouncer=true" DIRECT_DATABASE_URL="postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public" npx prisma db seed
       env:
         DATABASE_PROVIDER: "postgres"
         AUTH_PROVIDER: "custom"
@@ -163,7 +163,7 @@ jobs:
         cp prisma/schema.sqlite.prisma prisma/schema.prisma
         DATABASE_URL="file:./sqlite-test.db" npx prisma generate
         DATABASE_URL="file:./sqlite-test.db" npx prisma db push
-        DATABASE_URL="file:./sqlite-test.db" npx prisma seed
+        DATABASE_URL="file:./sqlite-test.db" npx prisma db seed
       env:
         DATABASE_PROVIDER: "sqlite"
         AUTH_PROVIDER: "custom"
