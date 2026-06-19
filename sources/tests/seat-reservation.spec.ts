@@ -31,8 +31,8 @@ test.describe('Seats Reservation Management - End-to-End Business Flow', () => {
         // 🕵️ CASE 4: Multi-select and Countdown Timer
         // Find available seats (AVAILABLE)
         // Click select 2 seats A1, A2 to simulate multi-select
-        const seatA1 = page.locator('button:has-text("A1")').first();
-        const seatA2 = page.locator('button:has-text("A2")').first();
+        const seatA1 = page.getByRole('button', { name: 'A1' }).first();
+        const seatA2 = page.getByRole('button', { name: 'A2' }).first();
 
         await seatA1.click();
         await seatA2.click();
@@ -69,7 +69,7 @@ test.describe('Seats Reservation Management - End-to-End Business Flow', () => {
         await page.locator('input[placeholder="••••••••"]').fill('password123');
         await page.locator('button:has-text("Login / Register")').click();
 
-        const seatA3 = page.locator('button:has-text("A3")').first();
+        const seatA3 = page.getByRole('button', { name: 'A3' }).first();
 
         // click 1: select A3
         await seatA3.click();
