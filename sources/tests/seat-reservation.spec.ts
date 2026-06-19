@@ -41,7 +41,7 @@ test.describe('Seats Reservation Management - End-to-End Business Flow', () => {
         // 🕵️ CASE 4: Multi-select and Countdown Timer
         // Find available seats (AVAILABLE)
         // Click select 2 seats A1, A2 to simulate multi-select
-        const seatA1 = page.locator('button:has-text("A1")]').first();
+        const seatA1 = page.locator('button:has-text("A1")').first();
         const seatA2 = page.locator('button:has-text("A2")').first();
 
         await seatA1.click();
