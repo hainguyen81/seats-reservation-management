@@ -84,7 +84,7 @@ jobs:
         DATABASE_URL: "postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public&pgbouncer=true"
         DIRECT_DATABASE_URL: "postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public"
         REDIS_URL: "redis://localhost:6379"
-        JWT_SECRET: "linkz-assessment-senior-lead-secret-key-2026"
+        JWT_SECRET: "github-actions-testing-secret-key-padding-2026"
         TOTAL_SEATS: "15"
         SHOULD_SEED: "true"
 
@@ -152,7 +152,7 @@ jobs:
     - name: 🔌 Generate Prisma Client & Sync Database Schema
       run: |
         cd sources
-        cp prisma/schema.postgres.prisma prisma/schema.prisma
+        cp prisma/schema.sqlite.prisma prisma/schema.prisma
         DATABASE_URL="file:./sqlite-test.db" npx prisma generate
         DATABASE_URL="file:./sqlite-test.db" npx prisma db push
       env:
@@ -162,7 +162,7 @@ jobs:
         DATABASE_URL: "file:./sqlite-test.db"
         DIRECT_DATABASE_URL: "file:./sqlite-test.db"
         REDIS_URL: "redis://localhost:6379"
-        JWT_SECRET: "linkz-assessment-senior-lead-secret-key-2026"
+        JWT_SECRET: "github-actions-testing-secret-key-padding-2026"
         TOTAL_SEATS: "15"
         SHOULD_SEED: "true"
 
@@ -176,9 +176,9 @@ jobs:
         cd sources
         npx playwright test --config=playwright.config.ts
       env:
-        DATABASE_PROVIDER: "postgres"
-        DATABASE_URL: "postgresql://postgres:password123@localhost:5432/seat_reservation?schema=public"
-        DIRECT_DATABASE_URL: "postgresql://postgres:password123@localhost:5432/seat_reservation?schema=public"
+        DATABASE_PROVIDER: "sqlite"
+        DATABASE_URL: "file:./sqlite-test.db"
+        DIRECT_DATABASE_URL: "file:./sqlite-test.db"
         JWT_SECRET: "github-actions-testing-secret-key-padding-2026"
         TOTAL_SEATS: 12
         SHOULD_SEED: "true"
