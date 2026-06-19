@@ -56,7 +56,7 @@ jobs:
     - name: 📦 Install Package Dependencies
       # run: npm ci
       run: |
-        cd seats-reservation-management/sources
+        cd seats-reservation-management
         npm install
 
     - name: 🔌 Generate Prisma Client & Sync Database Schema
