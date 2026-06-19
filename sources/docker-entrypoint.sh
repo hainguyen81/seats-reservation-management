@@ -24,4 +24,5 @@ if [ "$SHOULD_SEED" = "true" ]; then
 fi
 
 echo "🎯 Executing core standalone server..."
-exec node server.js
+# exec node server.js
+npm run start

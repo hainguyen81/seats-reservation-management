@@ -66,6 +66,7 @@ RUN if [ "$DATABASE_PROVIDER" = "postgres" ]; then \
 # Verify standalone server exists
 RUN echo "✅ Build verification..." && \
     test -f .next/standalone/server.js && echo "✅ server.js found" || echo "❌ server.js NOT found"
+RUN ls -la /app/.next/standalone/ || echo "❌ .next/standalone/ does not exist"
 
 # ===================================================
 # STEP 3: Start application on Production (Image)
@@ -88,11 +89,11 @@ ENV DATABASE_PROVIDER=sqlite
 ENV SHOULD_SEED=false
 
 # Create user, non-root to run container
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
+# RUN addgroup --system --gid 1001 nodejs && \
+#     adduser --system --uid 1001 nextjs
 
 # Copy next standalone to application folder
-COPY --from=builder /app/.next/standalone/server.js ./server.js
+COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/package.json ./package.json
@@ -109,14 +110,14 @@ RUN if [ ! -f prisma/schema.prisma ]; then \
 
 # ⚠️ !!!IMPORTANT!!!: Grant write right for prisma folder
 # Fix permissions for prisma folder (needed for runtime schema swap)
-RUN chown -R nextjs:nodejs /app && chmod -R 755 /app && chmod -R 777 /app/prisma
+# RUN chown -R nextjs:nodejs /app && chmod -R 755 /app && chmod -R 777 /app/prisma
 
 # Copy entrypoint script
-COPY --chown=nextjs:nodejs docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+# COPY --chown=nextjs:nodejs docker-entrypoint.sh /usr/local/bin/
+# RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Switch to non-root user
-USER nextjs
+# USER nextjs
 
 EXPOSE 3000
 

@@ -1,12 +1,14 @@
 @echo off
-chcp 65001 > nul
+chcp 65001 > nul 2>&1
 
 set "DB=%~1"
 set "NO_CACHE=%~2"
+set "TAB=	"
 
 set DOCKER_BUILDKIT=1
 set COMPOSE_DOCKER_CLI_BUILD=1
 
+echo %TAB%- Build and compose (%NO_CACHE%)
 if /I "%DB%"=="postgres" (
 	if /I "%NO_CACHE%"=="--no-cache" (
 		docker compose -f docker-compose-postgres.yml build --build-arg DATABASE_PROVIDER=postgres --no-cache && docker compose -f docker-compose-postgres.yml up --force-recreate -d

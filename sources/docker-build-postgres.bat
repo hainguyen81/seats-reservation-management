@@ -12,7 +12,7 @@ echo.
 
 REM go to root project folder to build image
 if /I "%NO_CACHE%"=="--no-cache" (
-	echo %TAB%- ^[ No Cache ^] Build image %NO_CACHE%
+	echo %TAB%- ^[ No Cache ^] Build image (%NO_CACHE%)
 	docker build --build-arg DATABASE_PROVIDER=postgres --no-cache -f Dockerfile -t seats-reservation-management:latest .
 	goto :done
 

@@ -53,6 +53,7 @@ services:
       - ./sources:/app:rw
       - /app/node_modules     # Preserve image node_modules
       - /app/prisma           # Preserve image prisma schemas
+      - /app/.next            # Preserve image .next
     ports:
       - "3000:3000"
     env_file:
