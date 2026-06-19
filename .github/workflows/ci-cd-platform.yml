@@ -218,13 +218,13 @@ jobs:
       matrix:
         # run parallel threads for services
         service:
-          # postgres
-          - name: seats-reservation-sqlite
-            DATABASE_PROVIDER: postgres
-          
           # sqlite
-          - name: seats-reservation-postgres
+          - name: seats-reservation-sqlite
             DATABASE_PROVIDER: sqlite
+          
+          # postgres
+          - name: seats-reservation-postgres
+            DATABASE_PROVIDER: postgres
         
     steps:
       # Check out source code
@@ -344,27 +344,27 @@ jobs:
       matrix:
         # run parallel threads for services
         service:
-          # postgres
-          - name: seats-reservation-sqlite
-            deploy_env_vars: |
-              DATABASE_PROVIDER=postgres
-              AUTH_PROVIDER=custom
-              NEXT_PUBLIC_AUTH_PROVIDER=custom
-              DATABASE_URL=postgresql://postgres:postgres_secret_pass@postgres-db:5432/seats_reservation?schema=public&pgbouncer=true
-              DIRECT_DATABASE_URL=postgresql://postgres:postgres_secret_pass@postgres-db:5432/seats_reservation?schema=public
-              REDIS_URL=redis://redis-cache:6379
-              JWT_SECRET=seats-reservation-management-secret-key-2026
-              TOTAL_SEATS=9
-              SHOULD_SEED=true
-          
           # sqlite
-          - name: seats-reservation-postgres
+          - name: seats-reservation-sqlite
             deploy_env_vars: |
               DATABASE_PROVIDER=sqlite
               AUTH_PROVIDER=custom
               NEXT_PUBLIC_AUTH_PROVIDER=custom
               DATABASE_URL=file:./seats_reservation.db
               DIRECT_DATABASE_URL=file:./seats_reservation.db
+              REDIS_URL=redis://redis-cache:6379
+              JWT_SECRET=seats-reservation-management-secret-key-2026
+              TOTAL_SEATS=9
+              SHOULD_SEED=true
+
+          # postgres
+          - name: seats-reservation-postgres
+            deploy_env_vars: |
+              DATABASE_PROVIDER=postgres
+              AUTH_PROVIDER=custom
+              NEXT_PUBLIC_AUTH_PROVIDER=custom
+              DATABASE_URL=postgresql://postgres:postgres_secret_pass@postgres-db:5432/seats_reservation?schema=public&pgbouncer=true
+              DIRECT_DATABASE_URL=postgresql://postgres:postgres_secret_pass@postgres-db:5432/seats_reservation?schema=public
               REDIS_URL=redis://redis-cache:6379
               JWT_SECRET=seats-reservation-management-secret-key-2026
               TOTAL_SEATS=9
