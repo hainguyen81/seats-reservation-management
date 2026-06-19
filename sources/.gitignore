@@ -8,6 +8,7 @@ next-env.d.ts
 # Local database SQLite
 prisma/*.db
 prisma/*.db-journal
+prisma/migrations/
 dev.db
 dev.db-journal
 

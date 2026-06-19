@@ -50,8 +50,13 @@
 5. Open browser at `http://localhost:3000` to evaluate.
 6. Optional: you could run by MS DOS batch under Windows platform
    ```bash
+   # DEV Mode
    run-dev.bat build								# MS Dos batch script (included step 1,2) without seeding sample data / with build to install dependencies
    or run-dev-seed.bat build						# MS Dos batch script (included step 1,2) with seeding sample data (user: hainguyenjc@gmail.com; password: password123) / with build to install dependencies
+
+   # PROD Mode
+   run-prod.bat build								# MS Dos batch script (included step 1,2) without seeding sample data / with build to install dependencies
+   or run-prod-seed.bat build						# MS Dos batch script (included step 1,2) with seeding sample data (user: hainguyenjc@gmail.com; password: password123) / with build to install dependencies
    ```
 7. Optional (Docker/K8s): you could run by MS DOS batch to deploy and run under Docker/K8s platform
    ```bash
