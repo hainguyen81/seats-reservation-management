@@ -445,6 +445,7 @@ export default function Home() {
                                 >
                                     {seat.number}
                                     <span
+                                        className='seat-status'
                                         style={{
                                             display: 'block',
                                             fontSize: '0.55rem',

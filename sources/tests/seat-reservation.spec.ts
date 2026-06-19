@@ -51,8 +51,8 @@ test.describe('Seats Reservation Management - End-to-End Business Flow', () => {
         await page.waitForLoadState('networkidle');
 
         // confirm SELECTED/PENDING
-        await expect(seatA1).toContainText('SELECTED');
-        await expect(seatA2).toContainText('SELECTED');
+        await expect(seatA1.locator('.seat-status')).toContainText('SELECTED', { ignoreCase: true });
+        await expect(seatA2.locator('.seat-status')).toContainText('SELECTED', { ignoreCase: true });
 
         // confirm countdown timer
         await expect(page.locator('text=Complete payment before timeout:')).toBeVisible();
@@ -69,8 +69,8 @@ test.describe('Seats Reservation Management - End-to-End Business Flow', () => {
         await expect(page.locator('text=Seats successfully booked!')).toBeVisible();
 
         // check UI: seats A1, A2 to BOOKED
-        await expect(seatA1).toContainText('BOOKED');
-        await expect(seatA2).toContainText('BOOKED');
+        await expect(seatA1.locator('.seat-status')).toContainText('BOOKED', { ignoreCase: true });
+        await expect(seatA2.locator('.seat-status')).toContainText('BOOKED', { ignoreCase: true });
 
         // and could be selected again
         await expect(seatA1).toBeDisabled();
@@ -101,7 +101,7 @@ test.describe('Seats Reservation Management - End-to-End Business Flow', () => {
         await page.waitForLoadState('networkidle');
 
         // assert SELECTED
-        await expect(seatA3).toContainText('SELECTED');
+        await expect(seatA3.locator('.seat-status')).toContainText('SELECTED', { ignoreCase: true });
 
         // click 2: unselect A3 (call API release-single)
         await seatA3.click();
