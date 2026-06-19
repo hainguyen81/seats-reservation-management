@@ -88,10 +88,15 @@ Both authentication subsystems converge into a single defensive interface (`veri
    ```
 7. Optional (Docker/K8s): you could run by MS DOS batch to deploy and run under Docker/K8s platform
    ```bash
+   # Compose up
    docker-compose-up.bat							# for SQLite		- build image with cache
    or docker-compose-up.bat postgres				# for PostgreSQL	- build image with cache
    docker-compose-up.bat sqlite --no-cache			# for SQLite		- build image without cache, fresh build
-   or docker-compose-up.bat postgres --no-cache		# for PostgreSQL	- build image without cache, fresh build	
+   or docker-compose-up.bat postgres --no-cache		# for PostgreSQL	- build image without cache, fresh build
+   
+   # Compose down
+   docker-compose-down.bat							# for SQLite
+   or docker-compose-down.bat postgres				# for PostgreSQL
    ```
 
 ---
