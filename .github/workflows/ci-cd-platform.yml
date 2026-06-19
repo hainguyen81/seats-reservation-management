@@ -24,7 +24,6 @@ jobs:
       # redis
       redis-cache:
         image: redis:7-alpine
-        container_name: seats-redis-cache
         ports:
           - 6379:6379
         # health check
@@ -37,7 +36,6 @@ jobs:
       # postgres
       postgres-db:
         image: postgres:15-alpine
-        container_name: seats-reservation-db
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres_secret_pass

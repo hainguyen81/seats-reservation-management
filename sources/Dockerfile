@@ -123,4 +123,10 @@ CMD if [ "$DATABASE_PROVIDER" = "postgres" ]; then \
   echo "🚀 Seeding sample data..."; \
   npx prisma db seed; \
   fi && \
-  node ./seat-app/server.js
+  REAL_SERVER_PATH=$(find seat-app -name server.js | head -n 1) && \
+  REAL_SERVER_DIR=$(dirname "$REAL_SERVER_PATH") && \
+  echo "🎯 Next.js Target Execution Context: $REAL_SERVER_DIR" && \
+  cp -r seat-app/public "$REAL_SERVER_DIR"/public 2>/dev/null || true && \
+  cp -r seat-app/.next/static "$REAL_SERVER_DIR"/.next/static 2>/dev/null || true && \
+  cd "$REAL_SERVER_DIR" && \
+  node server.js
