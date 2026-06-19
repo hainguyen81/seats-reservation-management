@@ -60,6 +60,10 @@ jobs:
         npm install
         npm ci
 
+    # ==============================================================================
+    # !!!IMPORTANT!!! GitHub CI/CD could not found the `postgres-db:5432` by service name because CI/CD is external
+    # It could not found `postgres-db`, so using `localhost:5432` to access from external host
+    # ==============================================================================
     - name: 🔌 Generate Prisma Client & Sync Database Schema
       run: |
         cd sources
@@ -81,7 +85,7 @@ jobs:
       run: npx playwright install --with-deps
 
     - name: 🚀 Run End-to-End Automation Test Matrix
-      run: npx playwright test
+      run: npx playwright test --config=playwright.config.ts
       env:
         DATABASE_PROVIDER: "postgres"
         DATABASE_URL: "postgresql://postgres:password123@localhost:5432/seat_reservation?schema=public"

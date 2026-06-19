@@ -44,19 +44,21 @@
 3. Run Seed Script (or execute inside your db tool) to create 3 seats: `SEAT-1`, `SEAT-2`, `SEAT-3`.
 4. Start development web server:
    ```bash
-   npm run dev							# no seeding sample data
-   or npm run dev_seed					# with seeding sample data
+   npm run dev										# no seeding sample data - DEV mode
+   or npm run dev_seed								# with seeding sample data - DEV mode
    ```
 5. Open browser at `http://localhost:3000` to evaluate.
 6. Optional: you could run by MS DOS batch under Windows platform
    ```bash
-   run-dev.bat							# MS Dos batch script (included step 1,2) without seeding sample data
-   or run-dev-seed.bat					# MS Dos batch script (included step 1,2) with seeding sample data (user: hainguyenjc@gmail.com; password: password123)
+   run-dev.bat build								# MS Dos batch script (included step 1,2) without seeding sample data / with build to install dependencies
+   or run-dev-seed.bat build						# MS Dos batch script (included step 1,2) with seeding sample data (user: hainguyenjc@gmail.com; password: password123) / with build to install dependencies
    ```
 7. Optional (Docker/K8s): you could run by MS DOS batch to deploy and run under Docker/K8s platform
    ```bash
-   docker-compose-up.bat				# for SQLite
-   or docker-compose-up.bat postgres	# for PostgreSQL
+   docker-compose-up.bat							# for SQLite		- build image with cache
+   or docker-compose-up.bat postgres				# for PostgreSQL	- build image with cache
+   docker-compose-up.bat sqlite --no-cache			# for SQLite		- build image without cache, fresh build
+   or docker-compose-up.bat postgres --no-cache		# for PostgreSQL	- build image without cache, fresh build	
    ```
 
 ---

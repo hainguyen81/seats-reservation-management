@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
     testDir: './tests', // tesst scripts folder
+    testMatch: '**/*.spec.ts',
     fullyParallel: true, // parallel test
     forbidOnly: !!process.env.CI,
     retries: process.env.CI ? 2 : 0, // try times if deploying on CI/CD
