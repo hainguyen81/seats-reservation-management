@@ -290,6 +290,21 @@ npx playwright show-report
 >   Containers share an isolated, internal Docker virtual network. Therefore, you must use the service name as the hostname (e.g., `redis://redis-cache:6379`).
 > * **When running commands directly from a GitHub Actions Workflow:** 
 >   Commands execute directly on the host runner (outside the container network) and communicate through mapped ports. Consequently, all backing services (`postgres`, `redis`, `mongodb`, etc.) must be accessed via **`localhost`**.
-
+>
+> ### 🚀 Production Scaling Strategy (K8s & Cloud Architecture)
+>
+> The repository comes fully equipped with production-ready codebase architectures designed for horizontal scaling. Follow these infrastructural patterns when transitioning from Docker Compose to Kubernetes (K8s):
+>
+> * **K8s Load Balancer & Pod Autoscaling (HPA):** 
+>   The stateless Next.js/Node layers are configured to scale horizontally via `HorizontalPodAutoscaler` (HPA) based on CPU/Memory thresholds. Ensure your K8s Ingress is backed by a cloud-managed **LoadBalancer** to distribute incoming traffic evenly across dynamically scaling replica Pods.
+>
+> * **Database Replication Matrix:** 
+>   To support intense read traffic, the database connection layer is architected to separate Read/Write transactions. In a K8s production environment, route all `mutations` (Write) to your Primary Database instance, and leverage multi-availability zone **Database Replicas** for handling `queries` (Read) via dedicated read-replica pooling.
+>
+> * **Distributed Caching (Redis):** 
+>   As Pods scale up and down dynamically, memory state cannot be local. **Redis** serves as the centralized, shared infrastructure layer handling session stores, rate-limiting, and real-time pub/sub mechanisms across all parallel microservice nodes.
+>
+> * **Firebase Serverless Operations:** 
+>   File uploads, assets hosting, and client-side notifications bypass the main server compute footprint entirely. They leverage direct, secure client-to-cloud tokens to guarantee low latency and optimize compute resource usage.
 
 
