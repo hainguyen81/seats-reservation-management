@@ -56,6 +56,6 @@ Because the system manages time-sensitive seating layouts, parallel atomic opera
 | API Endpoint | Trigger Scenario | Failure Capture | System Recovery Response |
 | :--- | :--- | :--- | :--- |
 | `/api/reserve/hold` | Two users select the same seat at the exact same millisecond. | Prisma returns `count: 0` updated rows due to modified `version`. | Rejects the second thread payload; appends a telemetry failure entry into `AuditLog`; returns an explicit `HTTP 409 Conflict` error to the interface. |
-| `/api/reserve/hold` | Malicious script attempts brute-force socket pool exhaustion. | Multiple rapid identical requests detected within proxy array headers. | Network firewall/rate-limiting middleware blocks originating IP footprint; logs details in telemetry structures without hitting DB tables. |
+| `/api/auth/login` | Malicious script attempts brute-force socket pool exhaustion. | Multiple rapid identical requests detected within proxy array headers. | Network firewall/rate-limiting middleware blocks originating IP footprint; logs details in telemetry structures without hitting DB tables. |
 | `/api/release` | User holds a seat, moves to payment window, but closes the browser app. | Scheduler finds current time surpasses the stored `expiresAt` parameter. | Drops the invalid booking; resets the seat status back to `AVAILABLE`; logs a data event tagged under `RELEASE_EXPIRED`. |
 
