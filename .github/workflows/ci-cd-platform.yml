@@ -58,9 +58,11 @@ jobs:
       run: |
         cd sources
         npm install
+        npm ci
 
     - name: 🔌 Generate Prisma Client & Sync Database Schema
       run: |
+        cd sources
         cp prisma/schema.postgres.prisma prisma/schema.prisma
         DATABASE_URL="postgresql://postgres:postgres_secret_pass@postgres-db:5432/seats_reservation?schema=public&pgbouncer=true" DIRECT_DATABASE_URL="postgresql://postgres:postgres_secret_pass@postgres-db:5432/seats_reservation?schema=public" npx prisma db push
       env:
