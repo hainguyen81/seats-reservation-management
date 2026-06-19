@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-    title: 'Seat Reservation Management',
+    title: 'Seats Reservation Management',
     description: 'Senior/Lead Engineer Coding Challenge - Author: hainguyenjc@gmail.com',
 };
 

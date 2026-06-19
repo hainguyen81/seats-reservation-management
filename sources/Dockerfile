@@ -58,6 +58,9 @@ RUN if [ "$DATABASE_PROVIDER" = "postgres" ]; then \
   DATABASE_URL="file:./mock.db" npm run build; \
   fi
 
+# debug
+RUN echo "🔍 Check standalone path (server.js): " && find .next/standalone -name server.js
+
 # ===================================================
 # STEP 3: Start application on Production (Image)
 # ===================================================
@@ -78,26 +81,26 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy static files
-COPY --from=builder /app/public ./public
+# Copy next standalone to application folder
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./seat-app
 
-# Copy all standalone to root for running
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+# Copy static asset to application folder
+COPY --from=builder /app/public ./seat-app/public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./seat-app/.next/static
 
-# Copy standalone folders of Next.js
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-# Secure SQLITE in DOCKER
-# Copy standalone Prisma Client, copy prisma folder
+# Copy prisma to work dir (not application folder)
+COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
 
 # ⚠️ !!!IMPORTANT!!!: Grant write right for prisma folder
 # to allow user 'nextjs' run 'cp' to swap schema file at runtime
 USER root
-RUN chown -R nextjs:nodejs /app/prisma
+RUN chown -R nextjs:nodejs /app
+RUN chmod -R 777 /app/prisma
+
+# prisma require tsx to run
+RUN npm install -g tsx
+
 USER nextjs
 
 EXPOSE 3000
@@ -120,4 +123,4 @@ CMD if [ "$DATABASE_PROVIDER" = "postgres" ]; then \
   echo "🚀 Seeding sample data..."; \
   npx prisma db seed; \
   fi && \
-  node server.js
+  node ./seat-app/server.js

@@ -37,25 +37,26 @@
    ```bash
    npm install
    ```
-2. Initialize SQLite Database & Seed 3 seats:
+2. Initialize SQLite Database & Seed some sample seats:
    ```bash
    npx prisma db push
    ```
 3. Run Seed Script (or execute inside your db tool) to create 3 seats: `SEAT-1`, `SEAT-2`, `SEAT-3`.
 4. Start development web server:
    ```bash
-   npm run dev
+   npm run dev							# no seeding sample data
+   or npm run dev_seed					# with seeding sample data
    ```
 5. Open browser at `http://localhost:3000` to evaluate.
 6. Optional: you could run by MS DOS batch under Windows platform
    ```bash
-   run-dev.bat # no seeding sample data
-   or run-dev-seed.bat # include seeding sample data (user: hainguyenjc@gmail.com; password: password123)
+   run-dev.bat							# MS Dos batch script (included step 1,2) without seeding sample data
+   or run-dev-seed.bat					# MS Dos batch script (included step 1,2) with seeding sample data (user: hainguyenjc@gmail.com; password: password123)
    ```
 7. Optional (Docker/K8s): you could run by MS DOS batch to deploy and run under Docker/K8s platform
    ```bash
-   docker-compose-up.bat # for SQLite
-   or docker-compose-up.bat postgres # for PostgreSQL
+   docker-compose-up.bat				# for SQLite
+   or docker-compose-up.bat postgres	# for PostgreSQL
    ```
 
 ---
