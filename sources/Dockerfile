@@ -18,7 +18,7 @@ COPY package.json package-lock.json* ./
 COPY prisma ./prisma
 
 # Generate Prisma Client and build Next.js
-RUN npm ci # installs dependencies fresh in Linux
+RUN npm ci # installs fresh dependencies in Linux
 
 # 💡 Force esbuild and prisma engine compability with Linux x64
 RUN npm install @esbuild/linux-x64 --save-optional
@@ -87,20 +87,24 @@ ENV HOSTNAME=0.0.0.0
 ENV DATABASE_PROVIDER=sqlite
 ENV SHOULD_SEED=false
 
-# # Create user, non-root to run container
+# Create user, non-root to run container
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
-# # Copy next standalone to application folder
+# Copy next standalone to application folder
 COPY --from=builder /app/.next/standalone/server.js ./server.js
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/prisma ./prisma
 
+# In runner stage, after copying prisma from builder:
+RUN if [ ! -f prisma/schema.prisma ]; then \
+  cp "prisma/schema.${DATABASE_PROVIDER}.prisma" prisma/schema.prisma || true; \
+  fi
+
 # Install runtime dependencies only (tsx for seed script)
-RUN npm ci --only=production && \
-    npm install -g tsx @esbuild/linux-x64
+RUN npm install -g tsx @esbuild/linux-x64
 
 # ⚠️ !!!IMPORTANT!!!: Grant write right for prisma folder
 # Fix permissions for prisma folder (needed for runtime schema swap)

@@ -51,7 +51,8 @@ services:
     volumes:
       - .:/app
       - ./sources:/app:rw
-      - /app/node_modules  # This creates an anonymous volume for node_modules only
+      - /app/node_modules     # Preserve image node_modules
+      - /app/prisma           # Preserve image prisma schemas
     ports:
       - "3000:3000"
     env_file:
