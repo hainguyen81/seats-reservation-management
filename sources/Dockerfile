@@ -78,8 +78,8 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # # Create user, non-root to run container
-# RUN addgroup --system --gid 1001 nodejs
-# RUN adduser --system --uid 1001 nextjs
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
 
 # # Copy next standalone to application folder
 # COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./seat-app
@@ -99,16 +99,17 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # RUN chmod -R 777 /app/prisma
 
 # COPY built project to run
-COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/standalone/server.js ./server.js
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
-COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/prisma ./prisma
 
 # prisma require tsx to run
+USER root
+RUN chown -R nextjs:nodejs /app && chmod -R 777 /app/prisma
 RUN npm install -g tsx
-
-# USER nextjs
+USER nextjs
 
 EXPOSE 3000
 ENV PORT=3000
@@ -130,7 +131,5 @@ CMD if [ "$DATABASE_PROVIDER" = "postgres" ]; then \
   echo "🚀 Seeding sample data..."; \
   npx prisma db seed; \
   fi && \
-  echo "🧹 [DevOps] Clearing conflicting local node_modules..." && \
-  rm -rf node_modules && \
   echo "🎯 Executing core standalone server..." && \
   node server.js

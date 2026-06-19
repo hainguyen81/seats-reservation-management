@@ -82,10 +82,14 @@ jobs:
         SHOULD_SEED: "true"
 
     - name: 🎭 Install Playwright Browser Binaries
-      run: npx playwright install --with-deps
+      run: |
+        cd sources
+        npx playwright install --with-deps
 
     - name: 🚀 Run End-to-End Automation Test Matrix
-      run: npx playwright test --config=playwright.config.ts
+      run: |
+        cd sources
+        npx playwright test --config=playwright.config.ts
       env:
         DATABASE_PROVIDER: "postgres"
         DATABASE_URL: "postgresql://postgres:password123@localhost:5432/seat_reservation?schema=public"
