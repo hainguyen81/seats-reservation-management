@@ -4,9 +4,25 @@
 # ===================================================
 
 ---
+# ===================================================
+# 1. PERSISTENT VOLUME CLAIM - SQLite Database Storage
+# ===================================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sqlite-db-pvc
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
 
 # ===================================================
-# 1. REDIS CACHE
+# 2. REDIS CACHE
 # ===================================================
 apiVersion: apps/v1
 kind: StatefulSet
@@ -14,7 +30,7 @@ metadata:
   name: redis-cache
   namespace: default
 spec:
-  serviceName: "redis-service"
+  serviceName: redis-service
   replicas: 1
   selector:
     matchLabels:
@@ -106,6 +122,8 @@ metadata:
   namespace: default
 spec:
   replicas: 1             # SQLite, only 1 replica to avoid data mismatch.
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: seats-reservation
@@ -114,19 +132,6 @@ spec:
       labels:
         app: seats-reservation
     spec:
-      affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                  - seats-reservation
-              topologyKey: kubernetes.io/hostname
-      
       # depend on other services
       initContainers:
       - name: wait-for-redis
@@ -184,6 +189,16 @@ spec:
           capabilities:
             drop:
             - ALL
+        
+        # persistent storage
+        volumeMounts:
+        - name: sqlite-storage
+          mountPath: /app
+          
+      volumes:
+      - name: sqlite-storage
+        persistentVolumeClaim:
+          claimName: sqlite-db-pvc
 ---
 
 # ===================================================
@@ -222,37 +237,7 @@ spec:
 ---
 
 # ===================================================
-# 8. HORIZONTAL POD AUTOSCALER
-# ===================================================
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: seats-reservation-hpa
-  namespace: default
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: seats-reservation-deployment
-  minReplicas: 2
-  maxReplicas: 5
-  metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      target:
-        type: Utilization
-        averageUtilization: 70
-  - type: Resource
-    resource:
-      name: memory
-      target:
-        type: Utilization
-        averageUtilization: 80
----
-
-# ===================================================
-# 9. NETWORK POLICY - Security
+# 8. NETWORK POLICY - Security
 # ===================================================
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -275,13 +260,6 @@ spec:
   - to:
     - podSelector:
         matchLabels:
-          app: postgres-db
-    ports:
-    - protocol: TCP
-      port: 5432
-  - to:
-    - podSelector:
-        matchLabels:
           app: redis-cache
     ports:
     - protocol: TCP
@@ -296,7 +274,7 @@ spec:
 ---
 
 # ===================================================
-# 10. RESOURCE INGRESS: Traffic Router from external
+# 9. RESOURCE INGRESS: Traffic Router from external
 # ===================================================
 apiVersion: networking.k8s.io/v1
 kind: Ingress

@@ -113,7 +113,7 @@ metadata:
   name: redis-cache
   namespace: default
 spec:
-  serviceName: "redis-service"
+  serviceName: redis-service
   replicas: 1
   selector:
     matchLabels:
