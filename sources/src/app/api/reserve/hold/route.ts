@@ -77,7 +77,7 @@ export async function POST(req: Request) {
         await auditLog({
             userId: session.userId,
             action: 'HOLD',
-            target: seatId.join(', '),
+            target: seatId,
             status: 'SUCCESS',
             req
         });
@@ -92,7 +92,7 @@ export async function POST(req: Request) {
             await auditLog({
                 userId: session.userId,
                 action: 'HOLD',
-                target: seatId.join(', '),
+                target: seatId,
                 status: 'FAILED',
                 details: { error: "[ P2025 ] Race condition detected: This seat was captured by another user at the same millisecond!" },
                 req
