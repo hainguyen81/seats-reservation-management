@@ -305,3 +305,13 @@ npx playwright show-report
   npx playwright show-report
   ```
 
+---
+
+> [!TIP]
+> ### 💡 Core Rule to Avoid Future Confusion
+>
+> * **When running with Docker Compose (Local Machine or Production Environment):** 
+>   Containers share an isolated, internal Docker virtual network. Therefore, you must use the service name as the hostname (e.g., `redis://redis-cache:6379`).
+> * **When running commands directly from a GitHub Actions Workflow:** 
+>   Commands execute directly on the host runner (outside the container network) and communicate through mapped ports. Consequently, all backing services (`postgres`, `redis`, `mongodb`, etc.) must be accessed via **`localhost`**.
+
