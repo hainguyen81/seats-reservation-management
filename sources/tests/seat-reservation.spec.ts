@@ -20,6 +20,9 @@ test.describe('Seats Reservation Management - End-to-End Business Flow', () => {
         // Click Login / Register
         await page.locator('button:has-text("Login / Register")').click();
 
+        // wait for UI loaded
+        await page.waitForLoadState('networkidle');
+
         // check UI
         await expect(page.locator('text=Secured Operator:')).toBeVisible();
         await expect(page.locator('text=Session Active')).toBeVisible();
@@ -68,6 +71,9 @@ test.describe('Seats Reservation Management - End-to-End Business Flow', () => {
         await page.locator('input[placeholder*="hainguyenjc@gmail.com"]').fill('hainguyenjc@gmail.com');
         await page.locator('input[placeholder="••••••••"]').fill('password123');
         await page.locator('button:has-text("Login / Register")').click();
+
+        // wait for UI loaded
+        await page.waitForLoadState('networkidle');
 
         const seatA3 = page.locator('xpath=//button[contains(., "A3")]').first();
 
