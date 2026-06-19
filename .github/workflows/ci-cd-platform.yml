@@ -54,7 +54,10 @@ jobs:
         # cache: 'npm'
 
     - name: 📦 Install Package Dependencies
-      run: npm install
+      # run: npm ci
+      run: |
+        cd seats-reservation-management/sources
+        npm install
 
     - name: 🔌 Generate Prisma Client & Sync Database Schema
       run: |
