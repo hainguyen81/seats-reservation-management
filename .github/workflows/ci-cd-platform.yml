@@ -229,18 +229,20 @@ jobs:
           # sqlite
           - name: seats-reservation-postgres
             DATABASE_PROVIDER: sqlite
+        
+    steps:
+      # Check out source code
+      - name: ⬇️ Checkout Source Code
+        uses: actions/checkout@v4
 
+      # Login docker
       - name: 🔓 Log in to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-        
-    steps:
-      - name: ⬇️ Checkout Source Code
-        uses: actions/checkout@v4
       
-      # 🌟 Check DockerHub Repository: Auto creating repository if not existing on DockerHub
+      # Check DockerHub Repository: Auto creating repository if not existing on DockerHub
       - name: 🏗️ Auto-Create Docker Hub Repository If Not Exist
         env:
           DH_USER: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -292,10 +294,11 @@ jobs:
             echo "✅ Repository $REPO_NAME already exists (Status $STATUS_CODE). Skipping creation step."
           fi
 
+      # Setup docker build kit
       - name: 🛠️ Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # Step 1: Build and set Metadata labels to docker image
+      # Build and set Metadata labels to docker image
       - name: 🏗️ Build and Push Service Image
         uses: docker/build-push-action@v5
         with:
@@ -317,7 +320,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       
-      # Step 2: push README to Docker Hub UI
+      # Push README to Docker Hub UI
       - name: 📝 Update Docker Hub Short Description & Overview (README)
         uses: peter-evans/dockerhub-description@v4
         with:
@@ -372,27 +375,23 @@ jobs:
               SHOULD_SEED=${{ env.SHOULD_SEED }}
 
     steps:
-    # Step 1: Check out
-    - name: Checkout source code
-      uses: actions/checkout@v4
-
-    # Step 2: Login to Google Cloud by OIDC
-    - name: Authenticate to Google Cloud via OIDC
+    # Login to Google Cloud by OIDC
+    - name: 🔑 Authenticate to Google Cloud via OIDC
       uses: google-github-actions/auth@v2
       with:
         workload_identity_provider: ${{ secrets.GCP_WORKLOAD_PROVIDER }}
         service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
     
     # Temporary Step: Convert deploy enviroment variables
-    - name: Format Environment Variables
+    - name: 🔍 Format Environment Variables
       id: convert-deploy-env-vars
       run: |
         # Convert new line to comma (,)
         ENV_COMMA=$(echo "${{ matrix.service.deploy_env_vars }}" | tr '\n' ',' | sed 's/,$//' | sed 's/,*$//')
         echo "converted_env_vars=$ENV_COMMA" >> $GITHUB_OUTPUT
 
-    # Step 3: Deploy to Google Cloud Run by pulling image from Docker Hub
-    - name: Deploy to Cloud Run
+    # Deploy to Google Cloud Run by pulling image from Docker Hub
+    - name: 🚀 Deploy to Cloud Run
       uses: google-github-actions/deploy-cloudrun@v2
       with:
         service: ${{ matrix.service }}
