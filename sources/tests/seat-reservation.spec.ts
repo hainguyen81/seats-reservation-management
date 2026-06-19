@@ -14,7 +14,7 @@ test.describe('Seats Reservation Management - End-to-End Business Flow', () => {
         await expect(page.locator('text=Select available seats')).not.toBeVisible();
 
         // 🕵️ CASE 2: check login
-        await page.locator('input[placeholder*="Username"]').fill('hainguyenjc@gmail.com');
+        await page.locator('input[placeholder*="hainguyenjc@gmail.com"]').fill('hainguyenjc@gmail.com');
         await page.locator('input[placeholder="••••••••"]').fill('password123');
 
         // Click Login / Register
@@ -65,7 +65,7 @@ test.describe('Seats Reservation Management - End-to-End Business Flow', () => {
 
     test('Should handle user unselecting a seat properly before payment timeout', async ({ page }) => {
         // Login -> Select seat -> select it again to un-selecting (Unselect)
-        await page.locator('input[placeholder*="Username"]').fill('hainguyenjc@gmail.com');
+        await page.locator('input[placeholder*="hainguyenjc@gmail.com"]').fill('hainguyenjc@gmail.com');
         await page.locator('input[placeholder="••••••••"]').fill('password123');
         await page.locator('button:has-text("Login / Register")').click();
 

@@ -284,7 +284,7 @@ export default function Home() {
                             <input
                                 type="text"
                                 className="form-input"
-                                placeholder="e.g. linkz_senior_lead"
+                                placeholder="e.g. hainguyenjc@gmail.com"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
                             />
