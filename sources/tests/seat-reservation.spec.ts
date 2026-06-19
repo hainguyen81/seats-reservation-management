@@ -45,7 +45,10 @@ test.describe('Seats Reservation Management - End-to-End Business Flow', () => {
         const seatA2 = page.locator('button:has-text("A2")').first();
 
         await seatA1.click();
+        await page.waitForLoadState('networkidle');
+
         await seatA2.click();
+        await page.waitForLoadState('networkidle');
 
         // confirm SELECTED/PENDING
         await expect(seatA1).toContainText('SELECTED');
@@ -55,8 +58,8 @@ test.describe('Seats Reservation Management - End-to-End Business Flow', () => {
         await expect(page.locator('text=Complete payment before timeout:')).toBeVisible();
 
         // read countdown text mm:ss
-        const timerValue = page.locator('strong:has-text("04:")');
-        await expect(timerValue).toBeVisible();
+        const timerValue = page.locator('#countdown-time');
+        await expect(timerValue).toHaveText(/^\d{2}[\:]\d{2}$/);
 
         // 🕵️ CASE 5: Simute payment success
         await page.locator('button:has-text("Simulate Success Payment")').click();
@@ -94,10 +97,14 @@ test.describe('Seats Reservation Management - End-to-End Business Flow', () => {
 
         // click 1: select A3
         await seatA3.click();
+        await page.waitForLoadState('networkidle');
+
+        // assert SELECTED
         await expect(seatA3).toContainText('SELECTED');
 
         // click 2: unselect A3 (call API release-single)
         await seatA3.click();
+        await page.waitForLoadState('networkidle');
 
         // check UI: back to AVAILABLE
         await expect(seatA3).toContainText('available');

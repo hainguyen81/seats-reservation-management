@@ -472,7 +472,7 @@ export default function Home() {
                         <span style={{ fontSize: '0.85rem', color: '#ffeddf' }}>
                             {'⚠️ Complete payment before timeout:'}
                         </span>
-                        <strong style={{ fontSize: '1.15rem', color: '#f97316', fontFamily: 'monospace', letterSpacing: '1px' }}>
+                        <strong id="countdown-time" style={{ fontSize: '1.15rem', color: '#f97316', fontFamily: 'monospace', letterSpacing: '1px' }}>
                             {formatTime(timeLeft)}
                         </strong>
                     </div>
