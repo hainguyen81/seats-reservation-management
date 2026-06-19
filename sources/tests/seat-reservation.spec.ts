@@ -63,9 +63,10 @@ test.describe('Seats Reservation Management - End-to-End Business Flow', () => {
 
         // 🕵️ CASE 5: Simute payment success
         await page.locator('button:has-text("Simulate Success Payment")').click();
+        await page.waitForLoadState('networkidle');
 
         // wait for payment process: call API Backend, run Database ACID Transaction
-        await expect(page.locator('text=Successfully reserved')).toBeVisible();
+        await expect(page.locator('text=Seats successfully booked!')).toBeVisible();
 
         // check UI: seats A1, A2 to BOOKED
         await expect(seatA1).toContainText('BOOKED');
