@@ -7,7 +7,100 @@ on:
     branches: [ "master" ]
   workflow_dispatch:
 
+# permissions for GitHub Actions READ/WRITE
+permissions:
+  contents: read
+  packages: write
+
 jobs:
+  # ===================================================
+  # 📋 REGRESSION & AUTOMATION E2E TEST (CI)
+  # ===================================================
+  test:
+    name: 🧪 Automated Playwright E2E Verification
+    runs-on: ubuntu-latest
+
+    services:
+      # redis
+      redis-cache:
+        image: redis:7-alpine
+        container_name: seats-redis-cache
+        ports:
+          - 6379:6379
+        # health check
+        options: >-
+          --health-cmd "reis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+      # postgres
+      postgres-db:
+        image: postgres:15-alpine
+        container_name: seats-reservation-db
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres_secret_pass
+          POSTGRES_DB: seats_reservation
+        ports:
+          - 5432:5432
+        # health check
+        options: >-
+          --health-cmd "pg_isready -U postgres -d seat_reservation"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - name: 📥 Check out repository code
+      uses: actions/checkout@v4
+
+    - name: 🟢 Setup Node.js Environment
+      uses: actions/setup-node@v4
+      with:
+        node_version: 22.14
+        cache: 'npm'
+
+    - name: 📦 Install Package Dependencies
+      run: npm ci
+
+    - name: 🔌 Generate Prisma Client & Sync Database Schema
+      run: |
+        cp prisma/schema.postgres.prisma prisma/schema.prisma
+        DATABASE_URL="postgresql://postgres:postgres_secret_pass@postgres-db:5432/seats_reservation?schema=public&pgbouncer=true" DIRECT_DATABASE_URL="postgresql://postgres:postgres_secret_pass@postgres-db:5432/seats_reservation?schema=public" npx prisma db push
+      env:
+        DATABASE_PROVIDER: "postgres"
+        AUTH_PROVIDER: "custom"
+        NEXT_PUBLIC_AUTH_PROVIDER: "custom"
+        DATABASE_URL: "postgresql://postgres:postgres_secret_pass@postgres-db:5432/seats_reservation?schema=public&pgbouncer=true"
+        DIRECT_DATABASE_URL: "postgresql://postgres:postgres_secret_pass@postgres-db:5432/seats_reservation?schema=public"
+        REDIS_URL: "redis://redis-cache:6379"
+        JWT_SECRET: "linkz-assessment-senior-lead-secret-key-2026"
+        TOTAL_SEATS: "15"
+        SHOULD_SEED: "true"
+
+    - name: 🎭 Install Playwright Browser Binaries
+      run: npx playwright install --with-deps
+
+    - name: 🚀 Run End-to-End Automation Test Matrix
+      run: npx playwright test
+      env:
+        DATABASE_PROVIDER: "postgres"
+        DATABASE_URL: "postgresql://postgres:password123@localhost:5432/seat_reservation?schema=public"
+        DIRECT_DATABASE_URL: "postgresql://postgres:password123@localhost:5432/seat_reservation?schema=public"
+        JWT_SECRET: "github-actions-testing-secret-key-padding-2026"
+        TOTAL_SEATS: 12
+        SHOULD_SEED: "true"
+        NEXT_PUBLIC_AUTH_PROVIDER: "custom" # custom local test
+
+    - name: 📊 Upload Playwright HTML Test Report Artifacts
+      uses: actions/upload-artifact@v4
+      if: always()    # always push report for debug
+      with:
+        name: playwright-report
+        path: playwright-report/
+        retention-days: 7
+
   # ==============================================================================
   # 🏗️ COMPILE AND PACKAGE (MAVEN MULTI-MODULE STANDARDS)
   # ==============================================================================
@@ -95,6 +188,7 @@ jobs:
           push: true
           build-args: |
             SERVICE_NAME=${{ matrix.service }}
+            DATABASE_PROVIDER=postgres
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service }}:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service }}:${{ github.sha }}
