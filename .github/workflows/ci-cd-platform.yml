@@ -96,7 +96,7 @@ jobs:
     - name: 🚀 Run End-to-End Automation Test Matrix
       run: |
         cd sources
-        npx playwright test --config=playwright.config.ts
+        npx playwright test --config=postgres-playwright.config.ts
       env:
         DATABASE_PROVIDER: "postgres"
         DATABASE_URL: "postgresql://postgres:password123@localhost:5432/seat_reservation?schema=public"
@@ -120,6 +120,13 @@ jobs:
   sqlite-e2e-test:
     name: 🚀 [ SQLite ] Automated Playwright E2E Verification
     runs-on: ubuntu-latest
+
+    services:
+      # redis
+      redis-cache:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
 
     steps:
     - name: 📥 Check out repository code
@@ -174,7 +181,7 @@ jobs:
     - name: 🚀 Run End-to-End Automation Test Matrix
       run: |
         cd sources
-        npx playwright test --config=playwright.config.ts
+        npx playwright test --config=sqlite-playwright.config.ts
       env:
         DATABASE_PROVIDER: "sqlite"
         DATABASE_URL: "file:./sqlite-test.db"
