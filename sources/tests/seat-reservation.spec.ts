@@ -23,12 +23,12 @@ test.describe('Seats Reservation Management - End-to-End Business Flow', () => {
         // wait for UI loaded
         await page.waitForLoadState('networkidle');
 
-        const seatMapContainer = page.locator('.seat-map-container');
-        await seatMapContainer.waitFor({ state: 'attached', timeout: 5000 }).catch(() => { });
-        const seatMapHtml = await seatMapContainer.innerHTML();
-        console.log("============== [DEBUG] HTML BÊN TRONG SƠ ĐỒ GHẾ: ==============");
-        console.log(seatMapHtml);
-        console.log("===============================================================");
+        // const seatMapContainer = page.locator('.seat-map-container');
+        // await seatMapContainer.waitFor({ state: 'attached', timeout: 5000 }).catch(() => { });
+        // const seatMapHtml = await seatMapContainer.innerHTML();
+        // console.log("============== [DEBUG] HTML SEATS MAP: ==============");
+        // console.log(seatMapHtml);
+        // console.log("===============================================================");
 
         // check UI
         await expect(page.locator('text=Secured Operator:')).toBeVisible();
@@ -82,12 +82,12 @@ test.describe('Seats Reservation Management - End-to-End Business Flow', () => {
         // wait for UI loaded
         await page.waitForLoadState('networkidle');
 
-        const seatMapContainer = page.locator('.seat-map-container');
-        await seatMapContainer.waitFor({ state: 'attached', timeout: 5000 }).catch(() => { });
-        const seatMapHtml = await seatMapContainer.innerHTML();
-        console.log("============== [DEBUG] HTML BÊN TRONG SƠ ĐỒ GHẾ: ==============");
-        console.log(seatMapHtml);
-        console.log("===============================================================");
+        // const seatMapContainer = page.locator('.seat-map-container');
+        // await seatMapContainer.waitFor({ state: 'attached', timeout: 5000 }).catch(() => { });
+        // const seatMapHtml = await seatMapContainer.innerHTML();
+        // console.log("============== [DEBUG] HTML SEATS MAP: ==============");
+        // console.log(seatMapHtml);
+        // console.log("===============================================================");
 
         // locate seat A3
         const seatA3 = page.locator('button:has-text("A3")').first();

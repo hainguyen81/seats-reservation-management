@@ -71,12 +71,13 @@ jobs:
     #   Commands execute directly on the host runner (outside the container network) and communicate through mapped ports.
     #   Consequently, all backing services (postgres, redis, mongodb, etc.) must be accessed via localhost.
     # ==============================================================================
-    - name: 🔌 Generate Prisma Client & Sync Database Schema
+    - name: 🔌 Generate Prisma Client & Sync Database Schema & 🌱 Seed Sample Data
       run: |
         cd sources
         cp prisma/schema.postgres.prisma prisma/schema.prisma
         DATABASE_URL="postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public&pgbouncer=true" DIRECT_DATABASE_URL="postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public" npx prisma generate
         DATABASE_URL="postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public&pgbouncer=true" DIRECT_DATABASE_URL="postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public" npx prisma db push
+        DATABASE_URL="postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public&pgbouncer=true" DIRECT_DATABASE_URL="postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public" npx prisma seed
       env:
         DATABASE_PROVIDER: "postgres"
         AUTH_PROVIDER: "custom"
@@ -156,12 +157,13 @@ jobs:
     #   Commands execute directly on the host runner (outside the container network) and communicate through mapped ports.
     #   Consequently, all backing services (postgres, redis, mongodb, etc.) must be accessed via localhost.
     # ==============================================================================
-    - name: 🔌 Generate Prisma Client & Sync Database Schema
+    - name: 🔌 Generate Prisma Client & Sync Database Schema & 🌱 Seed Sample Data
       run: |
         cd sources
         cp prisma/schema.sqlite.prisma prisma/schema.prisma
         DATABASE_URL="file:./sqlite-test.db" npx prisma generate
         DATABASE_URL="file:./sqlite-test.db" npx prisma db push
+        DATABASE_URL="file:./sqlite-test.db" npx prisma seed
       env:
         DATABASE_PROVIDER: "sqlite"
         AUTH_PROVIDER: "custom"

@@ -7,6 +7,9 @@ const __dirname = path.dirname(__filename);
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
+  images: {
+    unoptimized: true,
+  },
 
   // 💡 alias webpack because docker build for production
   webpack: (config) => {
