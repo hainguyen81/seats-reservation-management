@@ -5,8 +5,10 @@ npm-debug.log
 .env
 .env.local
 .env.*.local
+.next
 dist
 build
+public
 coverage
 .DS_Store
 *.swp
