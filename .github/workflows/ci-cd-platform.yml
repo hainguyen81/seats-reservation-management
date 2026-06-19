@@ -243,7 +243,7 @@ jobs:
         env:
           DH_USER: ${{ secrets.DOCKERHUB_USERNAME }}
         run: |
-          REPO_NAME="${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service }}"
+          REPO_NAME="${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service.name }}"
           echo "🔍 Checking if repository $REPO_NAME exists on Docker Hub..."
           
           # 1. Request access token Base64 from GitHub configuration file
@@ -302,13 +302,13 @@ jobs:
           file: ./sources/Dockerfile    # call service Dockerfile
           push: true
           build-args: |
-            SERVICE_NAME=${{ matrix.service }}
+            SERVICE_NAME=${{ matrix.service.name }}
             DATABASE_PROVIDER=${{ matrix.service.DATABASE_PROVIDER }}
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service }}:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service }}:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service.name }}:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service.name }}:${{ github.sha }}
           labels: |
-            org.opencontainers.image.title="Seats Reservation Management - ${{ matrix.service }} image"
+            org.opencontainers.image.title="Seats Reservation Management - ${{ matrix.service.name }} image"
             org.opencontainers.image.description="Production-grade web application for seats reservation platform management."
             org.opencontainers.image.vendor="hainguyenjc@gmail.com"
             org.opencontainers.image.authors="${{ secrets.DOCKERHUB_USERNAME }}"
@@ -324,11 +324,11 @@ jobs:
           # ⚠️ NOTE: Use main docker-hub password (or Personal Access Token) to request write/modify rights
           password: ${{ secrets.DOCKERHUB_TOKEN }}
           # Docker Hub Repository
-          repository: ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service }}
+          repository: ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service.name }}
           # Short Description - show for external search
-          short-description: "Core distributed seats reservation web application [${{ matrix.service }}] built by GitHub Actions workflow execution automatically."
+          short-description: "Core distributed seats reservation web application [${{ matrix.service.name }}] built by GitHub Actions workflow execution automatically."
           # attach project README.md (Overview)
-          # or if service has README.md, use: ./${{ matrix.service }}/README.md
+          # or if service has README.md, use: ./${{ matrix.service.name }}/README.md
           readme-filepath: ./README.md
 
   # ==============================================================================
@@ -390,10 +390,10 @@ jobs:
     - name: 🚀 Deploy to Cloud Run
       uses: google-github-actions/deploy-cloudrun@v2
       with:
-        service: ${{ matrix.service }}
+        service: ${{ matrix.service.name }}
         region: ${{ env.GCP_REGION }}
         # Point to Public Docker Hub, no need to use Google Artifact Registry API due to be charged
-        image: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service }}:latest
+        image: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service.name }}:latest
         
         # ⚠️ Parameter to force system running in Free Tier Forever
         flags: |
