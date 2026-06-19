@@ -12,6 +12,13 @@ permissions:
   contents: read
   packages: write
 
+env:
+  GCP_REGION: us-central1   # Always Free
+  REDIS_URL: redis://redis-cache:6379
+  JWT_SECRET: seats-reservation-management-secret-key-2026
+  TOTAL_SEATS: 9
+  SHOULD_SEED: true
+
 jobs:
   # ===================================================
   # 📋 REGRESSION & AUTOMATION E2E TEST (CI) - POSTGRES
@@ -202,21 +209,29 @@ jobs:
         retention-days: 7
 
   # ==============================================================================
-  # 🏗️ COMPILE AND PACKAGE (MAVEN MULTI-MODULE STANDARDS)
+  # 🏗️ COMPILE DOCKER IMAGE
   # ==============================================================================
-  build-and-push-services:
-    name: 🐳 Build & Push Microservices
+  build-and-push-to-docker-hub:
+    name: 🐳 Build & Push Image to DockerHub
     runs-on: ubuntu-latest
+    needs: [ postgres-e2e-test, sqlite-e2e-test ]     # require test running successfully
+        
+    steps:
+      - name: ⬇️ Checkout Source Code
+        uses: actions/checkout@v4
     
     strategy:
       fail-fast: false
       matrix:
         # run parallel threads for services
-        service: [ seats-reservation-management ]
-        
-    steps:
-      - name: ⬇️ Checkout Source Code
-        uses: actions/checkout@v4
+        service:
+          # postgres
+          - name: seats-reservation-sqlite
+            DATABASE_PROVIDER: postgres
+          
+          # sqlite
+          - name: seats-reservation-postgres
+            DATABASE_PROVIDER: sqlite
 
       - name: 🔓 Log in to Docker Hub
         uses: docker/login-action@v3
@@ -288,7 +303,7 @@ jobs:
           push: true
           build-args: |
             SERVICE_NAME=${{ matrix.service }}
-            DATABASE_PROVIDER=postgres
+            DATABASE_PROVIDER=${{ matrix.service.DATABASE_PROVIDER }}
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service }}:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service }}:${{ github.sha }}
@@ -316,4 +331,80 @@ jobs:
           # or if service has README.md, use: ./${{ matrix.service }}/README.md
           readme-filepath: ./README.md
 
+  # ==============================================================================
+  # 🌐 GCP DEPLOYMENT
+  # ==============================================================================
+  deploy-to-gcp:
+    name: 🌐 Deploy to Google Cloud
+    runs-on: ubuntu-latest
+    needs: build-and-push-to-docker-hub      # require image has been built and pushed to DockerHub
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        # run parallel threads for services
+        service:
+          # postgres
+          - name: seats-reservation-sqlite
+            deploy_env_vars: |
+              DATABASE_PROVIDER=postgres
+              AUTH_PROVIDER=custom
+              NEXT_PUBLIC_AUTH_PROVIDER=custom
+              DATABASE_URL=postgresql://postgres:postgres_secret_pass@postgres-db:5432/seats_reservation?schema=public&pgbouncer=true
+              DIRECT_DATABASE_URL=postgresql://postgres:postgres_secret_pass@postgres-db:5432/seats_reservation?schema=public
+              REDIS_URL=${{ env.REDIS_URL }}
+              JWT_SECRET=${{ env.JWT_SECRET }}
+              TOTAL_SEATS=${{ env.TOTAL_SEATS }}
+              SHOULD_SEED=${{ env.SHOULD_SEED }}
+          
+          # sqlite
+          - name: seats-reservation-postgres
+            deploy_env_vars: |
+              DATABASE_PROVIDER=sqlite
+              AUTH_PROVIDER=custom
+              NEXT_PUBLIC_AUTH_PROVIDER=custom
+              DATABASE_URL=file:./seats_reservation.db
+              DIRECT_DATABASE_URL=file:./seats_reservation.db
+              REDIS_URL=${{ env.REDIS_URL }}
+              JWT_SECRET=${{ env.JWT_SECRET }}
+              TOTAL_SEATS=${{ env.TOTAL_SEATS }}
+              SHOULD_SEED=${{ env.SHOULD_SEED }}
+
+    steps:
+    # Step 1: Check out
+    - name: Checkout source code
+      uses: actions/checkout@v4
+
+    # Step 2: Login to Google Cloud by OIDC
+    - name: Authenticate to Google Cloud via OIDC
+      uses: google-github-actions/auth@v2
+      with:
+        workload_identity_provider: ${{ secrets.GCP_WORKLOAD_PROVIDER }}
+        service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+    
+    # Temporary Step: Convert deploy enviroment variables
+    - name: Format Environment Variables
+      id: convert-deploy-env-vars
+      run: |
+        # Convert new line to comma (,)
+        ENV_COMMA=$(echo "${{ matrix.service.deploy_env_vars }}" | tr '\n' ',' | sed 's/,$//' | sed 's/,*$//')
+        echo "converted_env_vars=$ENV_COMMA" >> $GITHUB_OUTPUT
+
+    # Step 3: Deploy to Google Cloud Run by pulling image from Docker Hub
+    - name: Deploy to Cloud Run
+      uses: google-github-actions/deploy-cloudrun@v2
+      with:
+        service: ${{ matrix.service }}
+        region: ${{ env.GCP_REGION }}
+        # Point to Public Docker Hub, no need to use Google Artifact Registry API due to be charged
+        image: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service }}:latest
+        
+        # ⚠️ Parameter to force system running in Free Tier Forever
+        flags: |
+          --allow-unauthenticated
+          --min-instances=0
+          --max-instances=1
+          --memory=512Mi
+          --cpu=1
+          --set-env-vars="${{ steps.convert-deploy-env-vars.outputs.converted_env_vars }}" # apply enviroment for docker image
 
