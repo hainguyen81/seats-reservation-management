@@ -2,6 +2,7 @@
 chcp 65001 > nul
 
 set "TAB=	"
+set NODE_ENV=production
 
 if /I "%~1"=="build" (
 	call build.bat /wait
@@ -9,13 +10,7 @@ if /I "%~1"=="build" (
 
 echo.
 echo -------------------------------------------------
-echo ► Seed sample data
-echo -------------------------------------------------
-npx prisma db seed
-
-echo.
-echo -------------------------------------------------
 echo ► Start server on Local (http://localhost:3000)
 echo -------------------------------------------------
-NODE_ENV="production" npm run start
+npm run prod_seed
 
