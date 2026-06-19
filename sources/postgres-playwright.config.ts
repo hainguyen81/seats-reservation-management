@@ -19,7 +19,7 @@ export default defineConfig({
 
     /* 💡 Package server: auto start/stop application */
     webServer: {
-        command: 'npm run dev',
+        command: 'npx prisma db push && npm run dev',
         url: 'http://127.0.0.1:3000',
         reuseExistingServer: !process.env.CI,
         timeout: 120 * 1000,
@@ -30,7 +30,7 @@ export default defineConfig({
             DATABASE_URL: "postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public&pgbouncer=true",
             DIRECT_DATABASE_URL: "postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public",
             REDIS_URL: "redis://localhost:6379",
-            JWT_SECRET: "linkz-assessment-senior-lead-secret-key-2026",
+            JWT_SECRET: "github-seats-reservation-secret-key-2026-v1.0",
             TOTAL_SEATS: "15",
             SHOULD_SEED: "true",
             NODE_ENV: 'test'
