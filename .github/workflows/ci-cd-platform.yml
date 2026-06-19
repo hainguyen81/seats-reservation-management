@@ -15,10 +15,6 @@ permissions:
 # enviroment
 env:
   GCP_REGION: us-central1   # Always Free
-  REDIS_URL: redis://redis-cache:6379
-  JWT_SECRET: seats-reservation-management-secret-key-2026
-  TOTAL_SEATS: 9
-  SHOULD_SEED: true
 
 jobs:
   # ===================================================
@@ -356,10 +352,10 @@ jobs:
               NEXT_PUBLIC_AUTH_PROVIDER=custom
               DATABASE_URL=postgresql://postgres:postgres_secret_pass@postgres-db:5432/seats_reservation?schema=public&pgbouncer=true
               DIRECT_DATABASE_URL=postgresql://postgres:postgres_secret_pass@postgres-db:5432/seats_reservation?schema=public
-              REDIS_URL=${{ env.REDIS_URL }}
-              JWT_SECRET=${{ env.JWT_SECRET }}
-              TOTAL_SEATS=${{ env.TOTAL_SEATS }}
-              SHOULD_SEED=${{ env.SHOULD_SEED }}
+              REDIS_URL=redis://redis-cache:6379
+              JWT_SECRET=seats-reservation-management-secret-key-2026
+              TOTAL_SEATS=9
+              SHOULD_SEED=true
           
           # sqlite
           - name: seats-reservation-postgres
@@ -369,10 +365,10 @@ jobs:
               NEXT_PUBLIC_AUTH_PROVIDER=custom
               DATABASE_URL=file:./seats_reservation.db
               DIRECT_DATABASE_URL=file:./seats_reservation.db
-              REDIS_URL=${{ env.REDIS_URL }}
-              JWT_SECRET=${{ env.JWT_SECRET }}
-              TOTAL_SEATS=${{ env.TOTAL_SEATS }}
-              SHOULD_SEED=${{ env.SHOULD_SEED }}
+              REDIS_URL=redis://redis-cache:6379
+              JWT_SECRET=seats-reservation-management-secret-key-2026
+              TOTAL_SEATS=9
+              SHOULD_SEED=true
 
     steps:
     # Login to Google Cloud by OIDC
