@@ -8,7 +8,6 @@ npm-debug.log
 .next
 dist
 build
-public
 coverage
 .DS_Store
 *.swp
