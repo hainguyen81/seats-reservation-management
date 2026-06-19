@@ -130,4 +130,7 @@ CMD if [ "$DATABASE_PROVIDER" = "postgres" ]; then \
   echo "🚀 Seeding sample data..."; \
   npx prisma db seed; \
   fi && \
+  echo "🧹 [DevOps] Clearing conflicting local node_modules..." && \
+  rm -rf node_modules && \
+  echo "🎯 Executing core standalone server..." && \
   node server.js

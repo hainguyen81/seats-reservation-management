@@ -47,7 +47,7 @@ jobs:
     - name: 📥 Check out repository code
       uses: actions/checkout@v4
 
-    - name: 🟢 Setup Node.js Environment
+    - name: ⚙️ Setup Node.js Environment
       uses: actions/setup-node@v4
       with:
         node-version: 22.14
@@ -64,14 +64,14 @@ jobs:
       run: |
         cd sources
         cp prisma/schema.postgres.prisma prisma/schema.prisma
-        DATABASE_URL="postgresql://postgres:postgres_secret_pass@postgres-db:5432/seats_reservation?schema=public&pgbouncer=true" DIRECT_DATABASE_URL="postgresql://postgres:postgres_secret_pass@postgres-db:5432/seats_reservation?schema=public" npx prisma generate
-        DATABASE_URL="postgresql://postgres:postgres_secret_pass@postgres-db:5432/seats_reservation?schema=public&pgbouncer=true" DIRECT_DATABASE_URL="postgresql://postgres:postgres_secret_pass@postgres-db:5432/seats_reservation?schema=public" npx prisma db push
+        DATABASE_URL="postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public&pgbouncer=true" DIRECT_DATABASE_URL="postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public" npx prisma generate
+        DATABASE_URL="postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public&pgbouncer=true" DIRECT_DATABASE_URL="postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public" npx prisma db push
       env:
         DATABASE_PROVIDER: "postgres"
         AUTH_PROVIDER: "custom"
         NEXT_PUBLIC_AUTH_PROVIDER: "custom"
-        DATABASE_URL: "postgresql://postgres:postgres_secret_pass@postgres-db:5432/seats_reservation?schema=public&pgbouncer=true"
-        DIRECT_DATABASE_URL: "postgresql://postgres:postgres_secret_pass@postgres-db:5432/seats_reservation?schema=public"
+        DATABASE_URL: "postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public&pgbouncer=true"
+        DIRECT_DATABASE_URL: "postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public"
         REDIS_URL: "redis://redis-cache:6379"
         JWT_SECRET: "linkz-assessment-senior-lead-secret-key-2026"
         TOTAL_SEATS: "15"
