@@ -120,7 +120,7 @@ jobs:
       run: |
         node -e '
           // 1. request JSON object
-          const jsonRaw = `${{ matrix.service.env_vars }}`; 
+          const jsonRaw = JSON.stringify(${{ matrix.service.env_vars }}); 
           const obj = JSON.parse(jsonRaw);
           
           // 2. convert to array key=value
