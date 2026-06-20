@@ -110,8 +110,9 @@ jobs:
         # authenticate via Google OAuth2 ADC JSON
         credentials_json: ${{ secrets.GCP_ADC_JSON }}
         create_credentials_file: false
-        token_format: 'access_token'    # debug token
-        access_token_lifetime: '3300s'  # extend time due to be differnt timezone
+        token_format: 'access_token'        # debug token
+        access_token_lifetime: '3300s'      # extend time due to be differnt timezone
+        export_default_credentials: true    # export credentials for next steps
     
     # Temporary Step: Convert deploy enviroment variables
     - name: 🔍 Convert JSON Enviroment Variables to Comma Separated Key-Value
