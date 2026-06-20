@@ -81,7 +81,7 @@ jobs:
   # ==============================================================================
   # 🌐 GCP DEPLOYMENT
   # ==============================================================================
-  phase-docker-image:
+  phase-gcp-deploy:
     permissions:
       id-token: write
     uses: ./.github/workflows/ci-cd-gcp-deploy.yml
