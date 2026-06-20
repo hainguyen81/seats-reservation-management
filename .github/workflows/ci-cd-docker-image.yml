@@ -29,6 +29,11 @@ on:
             }
           ]
 
+# permissions for GitHub Actions READ/WRITE
+permissions:
+  contents: read
+  packages: write
+
 # jobs
 jobs:
   # ==============================================================================

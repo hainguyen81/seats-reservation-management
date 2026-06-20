@@ -11,8 +11,8 @@ on:
   workflow_dispatch:
     inputs:
       env_data:
-        required: false   # not require, due to be triggered standalone
-        type: string      # receive enviroment from parent workflow under JSON string
+        required: false         # not require, due to be triggered standalone
+        type: string            # receive enviroment from parent workflow under JSON string
         default: |
           [
             {
@@ -44,6 +44,16 @@ on:
                 }
             }
           ]
+      region:
+        required: false         # not require, due to be triggered standalone
+        type: string            # receive enviroment from parent workflow under JSON string
+        default: us-central1    # Always Free
+
+# permissions for GitHub Actions READ/WRITE
+permissions:
+  contents: read
+  packages: write
+  id-token: write
 
 jobs:
   # ==============================================================================
