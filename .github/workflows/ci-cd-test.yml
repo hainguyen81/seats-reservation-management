@@ -46,14 +46,14 @@ jobs:
       uses: actions/checkout@v4
 
     - name: ⚙️ Setup Node.js Environment
-      if: success() && github.ref == 'refs/heads/main'    # if previous step is successful
+      if: success()                 # if previous step is successful
       uses: actions/setup-node@v4
       with:
         node-version: 22.14
         # cache: 'npm'
 
     - name: 📦 Install Package Dependencies
-      if: success() && github.ref == 'refs/heads/main'    # if previous step is successful
+      if: success()                 # if previous step is successful
       # run: npm ci
       run: |
         cd sources
@@ -72,7 +72,7 @@ jobs:
     #   Consequently, all backing services (postgres, redis, mongodb, etc.) must be accessed via localhost.
     # ==============================================================================
     - name: 🔌 Generate Prisma Client & Sync Database Schema & 🌱 Seed Sample Data
-      if: success() && github.ref == 'refs/heads/main'    # if previous step is successful
+      if: success()                 # if previous step is successful
       run: |
         cd sources
         cp prisma/schema.postgres.prisma prisma/schema.prisma
@@ -91,13 +91,13 @@ jobs:
         SHOULD_SEED: "true"
 
     - name: 🎭 Install Playwright Browser Binaries
-      if: success() && github.ref == 'refs/heads/main'    # if previous step is successful
+      if: success()                 # if previous step is successful
       run: |
         cd sources
         npx playwright install --with-deps
 
     - name: 🚀 Run End-to-End Automation Test Matrix
-      if: success() && github.ref == 'refs/heads/main'    # if previous step is successful
+      if: success()                 # if previous step is successful
       run: |
         cd sources
         npx playwright test --config=postgres-playwright.config.ts
@@ -137,14 +137,14 @@ jobs:
       uses: actions/checkout@v4
 
     - name: ⚙️ Setup Node.js Environment
-      if: success() && github.ref == 'refs/heads/main'    # if previous step is successful
+      if: success()                 # if previous step is successful
       uses: actions/setup-node@v4
       with:
         node-version: 22.14
         # cache: 'npm'
 
     - name: 📦 Install Package Dependencies
-      if: success() && github.ref == 'refs/heads/main'    # if previous step is successful
+      if: success()                 # if previous step is successful
       # run: npm ci
       run: |
         cd sources
@@ -163,7 +163,7 @@ jobs:
     #   Consequently, all backing services (postgres, redis, mongodb, etc.) must be accessed via localhost.
     # ==============================================================================
     - name: 🔌 Generate Prisma Client & Sync Database Schema & 🌱 Seed Sample Data
-      if: success() && github.ref == 'refs/heads/main'    # if previous step is successful
+      if: success()                 # if previous step is successful
       run: |
         cd sources
         cp prisma/schema.sqlite.prisma prisma/schema.prisma
@@ -182,13 +182,13 @@ jobs:
         SHOULD_SEED: "true"
 
     - name: 🎭 Install Playwright Browser Binaries
-      if: success() && github.ref == 'refs/heads/main'    # if previous step is successful
+      if: success()                 # if previous step is successful
       run: |
         cd sources
         npx playwright install --with-deps
 
     - name: 🚀 Run End-to-End Automation Test Matrix
-      if: success() && github.ref == 'refs/heads/main'    # if previous step is successful
+      if: success()                 # if previous step is successful
       run: |
         cd sources
         npx playwright test --config=sqlite-playwright.config.ts

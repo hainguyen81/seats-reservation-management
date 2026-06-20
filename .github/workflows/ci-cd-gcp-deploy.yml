@@ -115,7 +115,7 @@ jobs:
     
     # Temporary Step: Convert deploy enviroment variables
     - name: 🔍 Convert JSON Enviroment Variables to Comma Separated Key-Value
-      if: success() && github.ref == 'refs/heads/main'    # if previous step is successful
+      if: success()                 # if previous step is successful
       id: convert-deploy-env-vars
       run: |
         node -e '
@@ -136,7 +136,7 @@ jobs:
 
     # Deploy to Google Cloud Run by pulling image from Docker Hub
     - name: 🚀 Deploy to Cloud Run
-      if: success() && github.ref == 'refs/heads/main'    # if previous step is successful
+      if: success()                 # if previous step is successful
       uses: google-github-actions/deploy-cloudrun@v2
       with:
         service: ${{ matrix.service.name }}
