@@ -117,10 +117,12 @@ jobs:
     - name: 🔍 Convert JSON Enviroment Variables to Comma Separated Key-Value
       if: success()                 # if previous step is successful
       id: convert-deploy-env-vars
+      env:
+          SERVICE_ENV_VARS: ${{ toJson(matrix.service.env_vars) }}
       run: |
         node -e '
           // 1. request JSON object
-          const jsonRaw = JSON.stringify(${{ matrix.service.env_vars }}); 
+          const jsonRaw = process.env.SERVICE_ENV_VARS; 
           const obj = JSON.parse(jsonRaw);
           
           // 2. convert to array key=value
