@@ -70,19 +70,21 @@ jobs:
     name: ⚙️ Setup enviroments for child CI/CD workflow
     runs-on: ubuntu-latest
     outputs:
-      docker_json: ${{ steps: config.outputs.env_docker_image }}
-      gcp_json: ${{ steps: config.outputs.env_gcp_deploy }}
+      env_docker_image: ${{ steps.config.outputs.env_docker_image }}
+      env_gcp_deploy: ${{ steps.config.outputs.env_gcp_deploy }}
     steps:
       - id: config
         name: ⚙️ Export JSON Environment Variables
         run: |
-          # parse from main enviroment
-          DOCKER_IMAGE=${{ env.ENV_JSON_DOCKER_IMAGE }}
-          GCP_DEPLOY=${{ env.ENV_JSON_GCP_DEPLOY }}
+          # docker image enviroment variables
+          echo "env_docker_image<<EOF" >> $GITHUB_OUTPUT
+          echo '${{ env.ENV_JSON_DOCKER_IMAGE }}' >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
           
-          # output value to GitHub Output System
-          echo "env_docker_image=$DOCKER_IMAGE" >> $GITHUB_OUTPUT
-          echo "env_gcp_deploy=$GCP_DEPLOY" >> $GITHUB_OUTPUT
+          # gcp deploy enviroment variables
+          echo "env_gcp_deploy<<EOF" >> $GITHUB_OUTPUT
+          echo '${{ env.ENV_JSON_GCP_DEPLOY }}' >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
   # ===================================================
   # 📋 REGRESSION & AUTOMATION E2E TEST (CI) - POSTGRES
