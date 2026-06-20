@@ -114,12 +114,24 @@ jobs:
         access_token_lifetime: '3300s'  # extend time due to be differnt timezone
     
     # Temporary Step: Convert deploy enviroment variables
-    - name: 🔍 Format Environment Variables
+    - name: 🔍 Convert JSON Enviroment Variables to Comma Separated Key-Value
       id: convert-deploy-env-vars
       run: |
-        # Convert new line to comma (,)
-        ENV_COMMA=$(echo '${{ matrix.service.env_vars }}' | jq -r 'to_entries | map("\(.key)=\(.value)") | join(",")')
-        echo "converted_env_vars=$ENV_COMMA" >> $GITHUB_OUTPUT
+        node -e '
+          // 1. request JSON object
+          const jsonRaw = `${{ matrix.service.env_vars }}`; 
+          const obj = JSON.parse(jsonRaw);
+          
+          // 2. convert to array key=value
+          const kvArray = Object.entries(obj).map(([key, value]) => `${key}=${value}`);
+          
+          // 3. combine array by comma
+          const resultString = kvArray.join(",");
+          
+          // 4. output to GitHub Actions
+          const fs = require("fs");
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `converted_env_vars=${resultString}\n`);
+        '
 
     # Deploy to Google Cloud Run by pulling image from Docker Hub
     - name: 🚀 Deploy to Cloud Run
