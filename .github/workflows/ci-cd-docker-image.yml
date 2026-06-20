@@ -1,0 +1,150 @@
+name: 🐳 [ DOCKER IMAGE ] Seats Reservation Platform CI/CD Pipeline
+
+on:
+  # Manual trigger
+  # push:
+  #  branches: [ "master" ] # active when merge code into master
+  # pull_request:
+  #  branches: [ "master" ]
+  workflow_dispatch:
+    inputs:
+      env_data:
+        required: false   # not require, due to be triggered standalone
+        type: string      # receive enviroment from parent workflow under JSON string
+        default: |
+          [
+            {
+                "name":     "seats-reservation-sqlite",
+                "env_vars": {
+                    "DATABASE_PROVIDER":          "sqlite"
+                }
+            },
+            {
+                "name":     "seats-reservation-postgres",
+                "env_vars": {
+                    "DATABASE_PROVIDER":          "postgres"
+                }
+            }
+          ]
+
+# jobs
+jobs:
+  # ==============================================================================
+  # 🏗️ COMPILE DOCKER IMAGE
+  # ==============================================================================
+  build-and-push-to-docker-hub:
+    name: 🐳 Build & Push Image to DockerHub
+    runs-on: ubuntu-latest
+    # needs: [ postgres-e2e-test, sqlite-e2e-test ]     # not require test running, due to be triggered standalone
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        # run parallel threads for services
+        service: ${{ fromJson(inputs.env_data) }}
+        
+    steps:
+      # Check out source code
+      - name: ⬇️ Checkout Source Code
+        uses: actions/checkout@v4
+
+      # Login docker
+      - name: 🔓 Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
+      # Check DockerHub Repository: Auto creating repository if not existing on DockerHub
+      - name: 🏗️ Auto-Create Docker Hub Repository If Not Exist
+        env:
+          DH_USER: ${{ secrets.DOCKERHUB_USERNAME }}
+        run: |
+          REPO_NAME="${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service.name }}"
+          echo "🔍 Checking if repository $REPO_NAME exists on Docker Hub..."
+          
+          # 1. Request access token Base64 from GitHub configuration file
+          AUTH_TOKEN=$(jq -r '.auths | to_entries | .[0].value.auth // empty' ~/.docker/config.json)
+          
+          if [ -z "$AUTH_TOKEN" ] || [ "$AUTH_TOKEN" = "null" ]; then
+            echo "❌ Fallback: Native parsing failed. Trying explicit registry key..."
+            AUTH_TOKEN=$(jq -r '.auths["https://docker.io"].auth // .auths["docker.io"].auth // empty' ~/.docker/config.json)
+          fi
+          
+          if [ -z "$AUTH_TOKEN" ] || [ "$AUTH_TOKEN" = "null" ]; then
+            echo "❌ Critical Error: Unable to extract token from Docker config."
+            cat ~/.docker/config.json # export config.json to debug
+            exit 1
+          fi
+          
+          # 2. Call API to check the existing status of DockerHub Repository
+          STATUS_CODE=$(curl -s -L -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Basic $AUTH_TOKEN" \
+            https://docker.com)
+          
+          echo "📊 Docker Hub API responded with Status Code: $STATUS_CODE"
+          
+          if [ "$STATUS_CODE" = "404" ]; then
+            echo "⚠️ Repository $REPO_NAME not found (Status 404). Initiating automatic creation..."
+            
+            # 3. Use jq to pack JSON
+            CREATE_PAYLOAD=$(jq -n --arg n "$REPO_NAME" '{"name": $n, "description": ("Automated repository for " + $n), "is_private": false}')
+            
+            # 4. Call API to create new DockerHub Repository
+            CREATE_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+              -H "Content-Type: application/json" \
+              -H "Authorization: Basic $AUTH_TOKEN" \
+              -d "$CREATE_PAYLOAD" \
+              https://docker.com)
+              
+            if [ "$CREATE_STATUS" = "201" ] || [ "$CREATE_STATUS" = "200" ]; then
+              echo "✅ Successfully created repository: $REPO_NAME"
+            else
+              echo "❌ Failed to create repository. API returned status: $CREATE_STATUS"
+              exit 1
+            fi
+          else
+            echo "✅ Repository $REPO_NAME already exists (Status $STATUS_CODE). Skipping creation step."
+          fi
+
+      # Setup docker build kit
+      - name: 🛠️ Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Build and set Metadata labels to docker image
+      - name: 🏗️ Build and Push Service Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./sources            # build context from root folder
+          file: ./sources/Dockerfile    # call service Dockerfile
+          push: true
+          build-args: |
+            SERVICE_NAME=${{ matrix.service.name }}
+            DATABASE_PROVIDER=${{ matrix.service.env_vars.DATABASE_PROVIDER }}
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service.name }}:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service.name }}:${{ github.sha }}
+          labels: |
+            org.opencontainers.image.title="Seats Reservation Management - ${{ matrix.service.name }} image"
+            org.opencontainers.image.description="Production-grade web application for seats reservation platform management."
+            org.opencontainers.image.vendor="hainguyenjc@gmail.com"
+            org.opencontainers.image.authors="${{ secrets.DOCKERHUB_USERNAME }}"
+            org.opencontainers.image.source="https://github.com{{ github.repository }}"
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      # Push README to Docker Hub UI
+      - name: 📝 Update Docker Hub Short Description & Overview (README)
+        uses: peter-evans/dockerhub-description@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          # ⚠️ NOTE: Use main docker-hub password (or Personal Access Token) to request write/modify rights
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          # Docker Hub Repository
+          repository: ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service.name }}
+          # Short Description - show for external search
+          short-description: "Core distributed seats reservation web application [${{ matrix.service.name }}] built by GitHub Actions workflow execution automatically."
+          # attach project README.md (Overview)
+          # or if service has README.md, use: ./${{ matrix.service.name }}/README.md
+          readme-filepath: ./README.md
+

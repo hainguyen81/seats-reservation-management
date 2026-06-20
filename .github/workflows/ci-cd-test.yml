@@ -1,0 +1,200 @@
+name: 🚀 [ TEST ] Seats Reservation Platform CI/CD Pipeline
+
+on:
+  # Auto trigger
+  push:
+    branches: [ "master" ] # active when merge code into master
+  pull_request:
+    branches: [ "master" ]
+  workflow_dispatch:
+
+# jobs
+jobs:
+  # ===================================================
+  # 📋 REGRESSION & AUTOMATION E2E TEST (CI) - POSTGRES
+  # ===================================================
+  postgres-e2e-test:
+    name: 🚀 [ PostgreSQL ] Automated Playwright E2E Verification
+    runs-on: ubuntu-latest
+
+    services:
+      # redis
+      redis-cache:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+
+      # postgres
+      postgres-db:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres_secret_pass
+          POSTGRES_DB: seats_reservation
+        ports:
+          - 5432:5432
+        # health check
+        options: >-
+          --health-cmd "pg_isready -U postgres -d seat_reservation"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - name: 📥 Check out repository code
+      uses: actions/checkout@v4
+
+    - name: ⚙️ Setup Node.js Environment
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22.14
+        # cache: 'npm'
+
+    - name: 📦 Install Package Dependencies
+      # run: npm ci
+      run: |
+        cd sources
+        npm install
+        npm ci
+
+    # ==============================================================================
+    # !!!IMPORTANT!!! GitHub CI/CD could not found the `postgres-db:5432` by service name because CI/CD is external
+    # It could not found `postgres-db`, so using `localhost:5432` to access from external host
+    # 💡 Core Rule to Avoid Future Confusion:
+    # - When running with Docker Compose (Local Machine or Production Environment):
+    #   Containers share an isolated, internal Docker virtual network.
+    #   Therefore, you must use the service name as the hostname (e.g., redis://redis-cache:6379).
+    # - When running commands directly from a GitHub Actions Workflow:
+    #   Commands execute directly on the host runner (outside the container network) and communicate through mapped ports.
+    #   Consequently, all backing services (postgres, redis, mongodb, etc.) must be accessed via localhost.
+    # ==============================================================================
+    - name: 🔌 Generate Prisma Client & Sync Database Schema & 🌱 Seed Sample Data
+      run: |
+        cd sources
+        cp prisma/schema.postgres.prisma prisma/schema.prisma
+        DATABASE_URL="postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public&pgbouncer=true" DIRECT_DATABASE_URL="postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public" npx prisma generate
+        DATABASE_URL="postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public&pgbouncer=true" DIRECT_DATABASE_URL="postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public" npx prisma db push
+        DATABASE_URL="postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public&pgbouncer=true" DIRECT_DATABASE_URL="postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public" npx prisma db seed
+      env:
+        DATABASE_PROVIDER: "postgres"
+        AUTH_PROVIDER: "custom"
+        NEXT_PUBLIC_AUTH_PROVIDER: "custom"
+        DATABASE_URL: "postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public&pgbouncer=true"
+        DIRECT_DATABASE_URL: "postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public"
+        REDIS_URL: "redis://localhost:6379"
+        JWT_SECRET: "github-actions-testing-secret-key-padding-2026"
+        TOTAL_SEATS: "15"
+        SHOULD_SEED: "true"
+
+    - name: 🎭 Install Playwright Browser Binaries
+      run: |
+        cd sources
+        npx playwright install --with-deps
+
+    - name: 🚀 Run End-to-End Automation Test Matrix
+      run: |
+        cd sources
+        npx playwright test --config=postgres-playwright.config.ts
+      env:
+        DATABASE_PROVIDER: "postgres"
+        DATABASE_URL: "postgresql://postgres:password123@localhost:5432/seat_reservation?schema=public"
+        DIRECT_DATABASE_URL: "postgresql://postgres:password123@localhost:5432/seat_reservation?schema=public"
+        JWT_SECRET: "github-actions-testing-secret-key-padding-2026"
+        TOTAL_SEATS: 12
+        SHOULD_SEED: "true"
+        NEXT_PUBLIC_AUTH_PROVIDER: "custom" # custom local test
+
+    - name: 📊 Upload Playwright HTML Test Report Artifacts
+      uses: actions/upload-artifact@v4
+      if: always()    # always push report for debug
+      with:
+        name: playwright-report
+        path: playwright-report/
+        retention-days: 7
+ 
+  # ===================================================
+  # 📋 REGRESSION & AUTOMATION E2E TEST (CI) - SQLITE
+  # ===================================================
+  sqlite-e2e-test:
+    name: 🚀 [ SQLite ] Automated Playwright E2E Verification
+    runs-on: ubuntu-latest
+
+    services:
+      # redis
+      redis-cache:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+
+    steps:
+    - name: 📥 Check out repository code
+      uses: actions/checkout@v4
+
+    - name: ⚙️ Setup Node.js Environment
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22.14
+        # cache: 'npm'
+
+    - name: 📦 Install Package Dependencies
+      # run: npm ci
+      run: |
+        cd sources
+        npm install
+        npm ci
+
+    # ==============================================================================
+    # !!!IMPORTANT!!! GitHub CI/CD could not found the `postgres-db:5432` by service name because CI/CD is external
+    # It could not found `postgres-db`, so using `localhost:5432` to access from external host
+    # 💡 Core Rule to Avoid Future Confusion:
+    # - When running with Docker Compose (Local Machine or Production Environment):
+    #   Containers share an isolated, internal Docker virtual network.
+    #   Therefore, you must use the service name as the hostname (e.g., redis://redis-cache:6379).
+    # - When running commands directly from a GitHub Actions Workflow:
+    #   Commands execute directly on the host runner (outside the container network) and communicate through mapped ports.
+    #   Consequently, all backing services (postgres, redis, mongodb, etc.) must be accessed via localhost.
+    # ==============================================================================
+    - name: 🔌 Generate Prisma Client & Sync Database Schema & 🌱 Seed Sample Data
+      run: |
+        cd sources
+        cp prisma/schema.sqlite.prisma prisma/schema.prisma
+        DATABASE_URL="file:./sqlite-test.db" npx prisma generate
+        DATABASE_URL="file:./sqlite-test.db" npx prisma db push
+        DATABASE_URL="file:./sqlite-test.db" npx prisma db seed
+      env:
+        DATABASE_PROVIDER: "sqlite"
+        AUTH_PROVIDER: "custom"
+        NEXT_PUBLIC_AUTH_PROVIDER: "custom"
+        DATABASE_URL: "file:./sqlite-test.db"
+        DIRECT_DATABASE_URL: "file:./sqlite-test.db"
+        REDIS_URL: "redis://localhost:6379"
+        JWT_SECRET: "github-actions-testing-secret-key-padding-2026"
+        TOTAL_SEATS: "15"
+        SHOULD_SEED: "true"
+
+    - name: 🎭 Install Playwright Browser Binaries
+      run: |
+        cd sources
+        npx playwright install --with-deps
+
+    - name: 🚀 Run End-to-End Automation Test Matrix
+      run: |
+        cd sources
+        npx playwright test --config=sqlite-playwright.config.ts
+      env:
+        DATABASE_PROVIDER: "sqlite"
+        DATABASE_URL: "file:./sqlite-test.db"
+        DIRECT_DATABASE_URL: "file:./sqlite-test.db"
+        JWT_SECRET: "github-actions-testing-secret-key-padding-2026"
+        TOTAL_SEATS: 12
+        SHOULD_SEED: "true"
+        NEXT_PUBLIC_AUTH_PROVIDER: "custom" # custom local test
+
+    - name: 📊 Upload Playwright HTML Test Report Artifacts
+      uses: actions/upload-artifact@v4
+      if: always()    # always push report for debug
+      with:
+        name: playwright-report
+        path: playwright-report/
+        retention-days: 7
+
