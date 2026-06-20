@@ -163,11 +163,11 @@ jobs:
     
     # Clean up
     - name: 🧹 Force Kill Orphan Processes
-        if: always()    # Always run to clean up
-        run: |
-          echo "--- Cleaning background processes ---"
-          # Kill background node process
-          pkill -f node || true
-          # Kill remaining docker container
-          docker ps -aq | xargs -r docker rm -f || true
+      if: always()    # Always run to clean up
+      run: |
+        echo "--- Cleaning background processes ---"
+        # Kill background node process
+        pkill -f node || true
+        # Kill remaining docker container
+        docker ps -aq | xargs -r docker rm -f || true
 
