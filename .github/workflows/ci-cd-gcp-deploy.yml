@@ -140,6 +140,8 @@ jobs:
     - name: 🚀 Deploy to Cloud Run
       if: success()                 # if previous step is successful
       uses: google-github-actions/deploy-cloudrun@v2
+      env:
+        ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
       with:
         service: ${{ matrix.service.name }}
         region: ${{ env.GCP_REGION }}
