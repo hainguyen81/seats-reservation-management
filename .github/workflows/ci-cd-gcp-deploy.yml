@@ -142,7 +142,7 @@ jobs:
       if: success()                 # if previous step is successful
       uses: google-github-actions/deploy-cloudrun@v2
       env:
-        ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+        FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       with:
         service: ${{ matrix.service.name }}
         region: ${{ env.GCP_REGION }}
