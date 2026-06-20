@@ -1,6 +1,7 @@
 name: 🚢 Seats Reservation Platform CI/CD Pipeline
 
 on:
+  # manual trigger workflow
   workflow_dispatch:
 
 # permissions for GitHub Actions READ/WRITE

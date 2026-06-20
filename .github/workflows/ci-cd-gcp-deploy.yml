@@ -1,11 +1,13 @@
 name: ☁️ [ GCP Deployment ] Seats Reservation Platform CI/CD Pipeline
 
 on:
-  # Manual trigger
+  # auto trigger workflow
   # push:
   #   branches: [ "master" ] # active when merge code into master
   # pull_request:
   #   branches: [ "master" ]
+
+  # manual trigger workflow
   workflow_dispatch:
     inputs:
       env_data:

@@ -1,11 +1,12 @@
 name: 🚀 [ TEST ] Seats Reservation Platform CI/CD Pipeline
 
 on:
-  # Auto trigger
+  # auto trigger workflow
   push:
     branches: [ "master" ] # active when merge code into master
   pull_request:
     branches: [ "master" ]
+  # manual trigger workflow
   workflow_dispatch:
 
 # jobs
