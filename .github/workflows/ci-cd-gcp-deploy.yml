@@ -109,7 +109,7 @@ jobs:
         # service_account: "github-seats-reservation@gcp-seats-reservation.iam.gserviceaccount.com" # ${{ secrets.GCP_SERVICE_ACCOUNT }}
         # authenticate via Google OAuth2 ADC JSON
         credentials_json: ${{ secrets.GCP_ADC_JSON }}
-        create_credentials_file: false
+        # create_credentials_file: false
         token_format: 'access_token'        # debug token
         access_token_lifetime: '3300s'      # extend time due to be differnt timezone
         export_default_credentials: true    # export credentials for next steps
