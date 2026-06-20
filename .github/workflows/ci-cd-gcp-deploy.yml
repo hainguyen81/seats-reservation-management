@@ -147,6 +147,7 @@ jobs:
       with:
         service: ${{ matrix.service.name }}
         region: ${{ env.GCP_REGION }}
+        cleanup_credentials: false      # prevent clean up to do manually
         # Point to Public Docker Hub, no need to use Google Artifact Registry API due to be charged
         image: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service.name }}:latest
         
@@ -159,4 +160,14 @@ jobs:
           --memory=512Mi
           --cpu=1
           --set-env-vars="${{ steps.convert-deploy-env-vars.outputs.converted_env_vars }}"
+    
+    # Clean up
+    - name: 🧹 Force Kill Orphan Processes
+        if: always()    # Always run to clean up
+        run: |
+          echo "--- Cleaning background processes ---"
+          # Kill background node process
+          pkill -f node || true
+          # Kill remaining docker container
+          docker ps -aq | xargs -r docker rm -f || true
 
