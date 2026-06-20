@@ -57,6 +57,7 @@ jobs:
 
       # Login docker
       - name: 🔓 Log in to Docker Hub
+        if: success() && github.ref == 'refs/heads/main'    # if previous step is successful
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -64,6 +65,7 @@ jobs:
       
       # Check DockerHub Repository: Auto creating repository if not existing on DockerHub
       - name: 🏗️ Auto-Create Docker Hub Repository If Not Exist
+        if: success() && github.ref == 'refs/heads/main'    # if previous step is successful
         env:
           DH_USER: ${{ secrets.DOCKERHUB_USERNAME }}
         run: |
@@ -116,10 +118,12 @@ jobs:
 
       # Setup docker build kit
       - name: 🛠️ Set up Docker Buildx
+        if: success() && github.ref == 'refs/heads/main'    # if previous step is successful
         uses: docker/setup-buildx-action@v3
 
       # Build and set Metadata labels to docker image
       - name: 🏗️ Build and Push Service Image
+        if: success() && github.ref == 'refs/heads/main'    # if previous step is successful
         uses: docker/build-push-action@v5
         with:
           context: ./sources            # build context from root folder
@@ -142,6 +146,7 @@ jobs:
       
       # Push README to Docker Hub UI
       - name: 📝 Update Docker Hub Short Description & Overview (README)
+        if: success() && github.ref == 'refs/heads/main'    # if previous step is successful
         uses: peter-evans/dockerhub-description@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
