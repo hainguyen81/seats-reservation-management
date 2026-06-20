@@ -1,4 +1,4 @@
-name: 🚀 Seats Reservation Platform CI/CD Pipeline
+name: 🚢 Seats Reservation Platform CI/CD Pipeline
 
 on:
   workflow_dispatch:
@@ -63,6 +63,27 @@ env:
     ]
 
 jobs:
+  # ==============================================================================
+  # ⚙️ SETUP CONFIGURATION JOB (Giải pháp sửa lỗi truyền biến env)
+  # ==============================================================================
+  setup-env:
+    name: ⚙️ Setup enviroments for child CI/CD workflow
+    runs-on: ubuntu-latest
+    outputs:
+      docker_json: ${{ steps: config.outputs.env_docker_image }}
+      gcp_json: ${{ steps: config.outputs.env_gcp_deploy }}
+    steps:
+      - id: config
+        name: ⚙️ Export JSON Environment Variables
+        run: |
+          # parse from main enviroment
+          DOCKER_IMAGE=${{ env.ENV_JSON_DOCKER_IMAGE }}
+          GCP_DEPLOY=${{ env.ENV_JSON_GCP_DEPLOY }}
+          
+          # output value to GitHub Output System
+          echo "env_docker_image=$DOCKER_IMAGE" >> $GITHUB_OUTPUT
+          echo "env_gcp_deploy=$GCP_DEPLOY" >> $GITHUB_OUTPUT
+
   # ===================================================
   # 📋 REGRESSION & AUTOMATION E2E TEST (CI) - POSTGRES
   # ===================================================
@@ -74,18 +95,23 @@ jobs:
   # ==============================================================================
   phase-docker-image:
     uses: ./.github/workflows/ci-cd-docker-image.yml
+    needs: [ setup-env, phase-test ]                        # wait for enviroment and test running successfully
     secrets: inherit # bypass secrets to child workflow
     with:
-      env_data: ${{ env.ENV_JSON_DOCKER_IMAGE }}
+      env_data: ${{ needs.setup-env.outputs.env_docker_image }}
   
   # ==============================================================================
   # 🌐 GCP DEPLOYMENT
   # ==============================================================================
   phase-gcp-deploy:
-    permissions:
-      id-token: write
     uses: ./.github/workflows/ci-cd-gcp-deploy.yml
+    needs: [ setup-env, phase-test, phase-docker-image ]    # wait for enviroment, test, docker image running successfully
     secrets: inherit # bypass secrets to child workflow
+    # redefine permissions due to override more permission for job
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
     with:
-      env_data: ${{ env.ENV_JSON_GCP_DEPLOY }}
+      env_data: ${{ needs.setup-env.outputs.env_gcp_deploy }}
 
