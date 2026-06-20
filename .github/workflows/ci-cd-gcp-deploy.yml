@@ -104,8 +104,8 @@ jobs:
     - name: 🔑 Authenticate to Google Cloud via OIDC
       uses: google-github-actions/auth@v2
       with:
-        workload_identity_provider: ${{ secrets.GCP_WORKLOAD_PROVIDER }}
-        service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+        workload_identity_provider: "projects/130619617539/locations/global/workloadIdentityPools/github-seats-reservation-pool/providers/github-seats-reservation" # ${{ secrets.GCP_WORKLOAD_PROVIDER }}
+        service_account: "github-seats-reservation@gcp-seats-reservation.iam.gserviceaccount.com" # ${{ secrets.GCP_SERVICE_ACCOUNT }}
         create_credentials_file: false
         token_format: 'access_token'    # debug token
         access_token_lifetime: '3300s'  # extend time due to be differnt timezone

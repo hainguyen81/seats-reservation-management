@@ -70,6 +70,8 @@ jobs:
   setup-env:
     name: ⚙️ Setup enviroments for child CI/CD workflow
     runs-on: ubuntu-latest
+    # include more secrets
+    secrets: inherit
     outputs:
       env_docker_image: ${{ steps.config.outputs.env_docker_image }}
       env_gcp_deploy: ${{ steps.config.outputs.env_gcp_deploy }}
