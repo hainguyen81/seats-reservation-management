@@ -149,11 +149,12 @@ jobs:
         image: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service.name }}:latest
         
         # ⚠️ Parameter to force system running in Free Tier Forever
+        # `set-env-vars` apply enviroment variables for docker image
         flags: |
           --allow-unauthenticated
           --min-instances=0
           --max-instances=1
           --memory=512Mi
           --cpu=1
-          --set-env-vars="${{ steps.convert-deploy-env-vars.outputs.converted_env_vars }}" # apply enviroment for docker image
+          --set-env-vars="${{ steps.convert-deploy-env-vars.outputs.converted_env_vars }}"
 
