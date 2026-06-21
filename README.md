@@ -293,6 +293,89 @@ npx playwright show-report
 
 ---
 
+# 🚀 8. AUTOMATED CI/CD PIPELINE (GITHUB ACTIONS)
+
+This section documents the continuous integration and deployment pipeline configured via GitHub Actions. The workflow handles isolated unit/E2E testing, automated image compilation, safe registry pushes, and deployment rollback controls on Google Cloud Platform (GCP).
+
+---
+
+## 🛠️ 8.1. Pipeline Lifecycle Overview
+
+The complete automation pipeline runs inside a single-job host runner ecosystem to guarantee consistent, sequential data layers from local database seed generation to live cloud deployment.
+
+[ Git Push to Master ] ──> [ Setup Node.js & Services ]
+                                │
+                                ▼
+                 ┌──────────────────────────────────┐
+                 │    Step 1: E2E Test Suite   		│
+                 │    ├─ SQLite/PostgreSql & Redis	│
+                 │    ├─ Seed Sample Data      		│
+                 │    └─ Run Playwright E2E    		│
+                 └──────────────┬───────────────────┘
+                                │
+                        ( All Tests Pass )
+                                │
+                                ▼
+                 ┌──────────────────────────────────────────────────────────────────┐
+                 │ Step 2: Build & Push Image to DockerHub as Public   				│
+                 │    ├─ Manual Trigger (Required to avoid exceeding images qouta)	│
+                 │    ├─ Compose Up Docker Image					   				│
+                 │    ├─ Auth to Docker Hub    						   				│
+                 │    └─ Push Image to DockerHub   					   				│
+                 └──────────────┬───────────────────────────────────────────────────┘
+                                │
+                      ( Push Successful )
+                                │
+                                ▼
+                 ┌──────────────────────────────────────────────────────────────────┐
+                 │    Step 3: GCP Deployment   										│
+                 │    ├─ Manual Trigger (Required to avoid exceeding images qouta)	│
+                 │    ├─ Auth via Google ADC (Google OAuth2 ADC JSON Key Secret)	│
+                 │    ├─ Deploy image from DockerHub to GCP Cloud Run				│
+                 │    ├─ Check GCP Deployment Service Status						│
+                 │    └─ Rollout GKE / Cloud Run									│
+                 └──────────────────────────────────────────────────────────────────┘
+
+---
+
+## 📝 8.2. Detailed Action Executions
+
+### 🔹 8.2.1: Automated E2E Testing Pipeline
+* **Purpose:** Ensures the Next.js App Router and dynamic high-concurrency systems are verified stable before any cloud shipment occurs.
+* **Environment Provisioning:** Spawns decoupled sidecar services inside the host runner (localhost interface):
+  * **PostgreSQL Server:** Syncs structural data layers via npx prisma db push.
+  * **Prisma Data Seeding:** Executes npx tsx prisma/seed.ts (leveraging lightweight TypeScript execution) to eliminate flaky tests caused by missing runtime structures.
+  * **Redis Cache Infrastructure:** Spins up memory clusters to isolate active seat-holding sessions during parallel simulations.
+* **Automation Suite:** Executes npx playwright test targeting functional element locators (getByRole) and verifies the native Optimistic Locking (version) matrix.
+
+### 🔹 8.2.2: Container Compilation & Registry Upload
+* **Purpose:** Packages the fully tested Next.js runtime into an optimized, secure production artifact.
+* **Base Layer Isolation:** Utilizes node:22-alpine to maintain a lightweight core footprint and completely drops heavy build-time packages to streamline storage space.
+* **Invalidation Strategy:** Forces a clean compilation footprint using build --no-cache via Buildx.
+* **Security & Authentication:** Authenticates against Docker Hub using pre-configured repository secrets (secrets.DOCKERHUB_USERNAME and secure access secrets.DOCKERHUB_TOKEN tokens) to safely push the immutable image tagged as :latest.
+
+### 🔹 8.2.3: Google Cloud Platform (GCP) Continuous Deployment
+* **Purpose:** Pulls the certified registry image and handles progressive green-blue updates across the cloud compute tier.
+* **Identity Management:** Uses Google OAuth2 ADC JSON Keys securely passed via secrets.GCP_ADC_JSON alongside google-github-actions/auth.
+* **Deployment Workflow:**
+  * Configures the GCP project parameters and switches traffic routing to the updated Node 22 build version.
+  * Triggers container image rollouts onto Google Kubernetes Engine (GKE) deployments or Google Cloud Run services.
+  * Issues system telemetry signals to the AuditLog core tracking module indicating a successful DEPLOYMENT_COMPLETED operational lifecycle phase.
+
+---
+
+## 🔒 8.2.3. Required GitHub Secrets Configuration
+
+To operate this automation workflow smoothly, you must configure the following key-value properties inside your GitHub Repository under Settings -> Secrets and variables -> Actions:
+
+| Secret Key Name | Purpose / Required Contents |
+| :--- | :--- |
+| DOCKERHUB_USERNAME | Your official Docker Hub or registry account handle name. |
+| DOCKERHUB_TOKEN | Securely generated Personal Access Token (PAT) with Read & Write access. |
+| GCP_ADC_JSON | The complete, encrypted JSON key file generated for your Google Service Account. |
+
+---
+
 > [!TIP]
 > ### 💡 Core Rule to Avoid Future Confusion
 >
@@ -316,5 +399,19 @@ npx playwright show-report
 >
 > * **Firebase Serverless Operations:** 
 >   File uploads, assets hosting, and client-side notifications bypass the main server compute footprint entirely. They leverage direct, secure client-to-cloud tokens to guarantee low latency and optimize compute resource usage.
-
+>
+> ### 🚀 Automated CI/CD Pipeline & GCP Shipment Matrix
+>
+> The repository is fully configured with an automated GitOps deployment engine via GitHub Actions. The entire lifecycle is executed within a **single unified runner environment** to ensure data continuity and immutable cloud artifacts:
+>
+> * **Fail-Fast E2E Testing Gate:** On every code integration, the pipeline invokes temporary sidecar containers (`SQLite/PostgreSQL` & `Redis`) directly on the runner host. It automatically synchronizes schemas via `npx prisma db push` and injects deterministic data matrices using lightweight TypeScript execution (`node prisma/dist/seed.js`). This guarantees that the `Playwright` automated suite always evaluates a populated, stable environment via semantic locators.
+>
+> * **Zero-Cache Container Isolation:** Upon successful verification of the testing matrix, Docker Buildx compiles the production environment using an optimized `node:22-alpine` footprint. It enforces an automated cache-invalidation blueprint (`build --no-cache`) and leverages repository tokens (`secrets.DOCKERHUB_USERNAME`, `secrets.DOCKERHUB_TOKEN`) to safely push the certified image to the registry.
+>
+> * **GCP Progressive Cloud Rollout:** Automated deployment workers authenticate securely using Google Cloud OAuth2 ADC JSON parameters (`secrets.GCP_ADC_JSON`). The pipeline triggers a progressive rolling update across your cloud cluster (Google Kubernetes Engine or Google Cloud Run), shifting traffic dynamically to the latest Node 22 runtime without downtime and dispatching a final `DEPLOYMENT_COMPLETED` signal to the telemetry `AuditLog`.
+>
+> * **Required GitHub Actions Secrets Configuration:**
+>   To operate this pipeline, ensure the following keys are added to your repository's secrets engine:
+>   * `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN` (Registry authentication tokens)
+>   * `GCP_ADC_JSON` (Google Cloud infrastructure identity parameters)
 

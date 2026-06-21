@@ -105,8 +105,8 @@ jobs:
         service: ${{ fromJson(inputs.env_data) }}
 
     steps:
-    # Login to Google Cloud by OIDC
-    - name: 🔑 Authenticate to Google Cloud via OIDC
+    # Login to Google Cloud by Google OAuth2 ADC
+    - name: 🔑 Authenticate to Google Cloud via Google OAuth2 ADC
       uses: google-github-actions/auth@v2
       with:
         # authenticate via OIDC
