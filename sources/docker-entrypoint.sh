@@ -3,26 +3,26 @@ set -e
 
 cd /app
 
-echo "🔌 Database Provider: $DATABASE_PROVIDER"
+echo "⚙️ Database Provider: $DATABASE_PROVIDER"
 
 # Check if schema files exist, copy if missing
-if [ ! -f prisma/schema.prisma ]; then
-  if [ "$DATABASE_PROVIDER" = "postgres" ]; then
-    [ -f prisma/schema.postgres.prisma ] && cp prisma/schema.postgres.prisma prisma/schema.prisma || echo "⚠️  schema.postgres.prisma not found"
-  else
-    [ -f prisma/schema.sqlite.prisma ] && cp prisma/schema.sqlite.prisma prisma/schema.prisma || echo "⚠️  schema.sqlite.prisma not found"
-  fi
+if [ "$DATABASE_PROVIDER" = "postgres" ]; then
+	[ -f prisma/schema.postgres.prisma ] && cp prisma/schema.postgres.prisma prisma/dist/schema.prisma || echo "⚠️  schema.postgres.prisma not found"
+else
+	[ -f prisma/schema.sqlite.prisma ] && cp prisma/schema.sqlite.prisma prisma/dist/schema.prisma || echo "⚠️  schema.sqlite.prisma not found"
 fi
-
-# Use pre-installed prisma binary from node_modules
-# This prevents npx from auto-installing latest version
-/app/node_modules/.bin/prisma db push
 
 if [ "$SHOULD_SEED" = "true" ]; then
-  echo "🚀 Seeding sample data..."
-  /app/node_modules/.bin/prisma db seed
+  echo "🏃 Seeding sample data (npx seed)..."
+  npm run prisma_push_generate_seed
+else
+  echo "🔄 Generate & Push Prisma (without seed)..."
+  npm run prisma_push_generate
 fi
 
-echo "🎯 Executing core standalone server..."
-# exec node server.js
-npm run start
+echo "▶ Executing core standalone server..."
+if [ "$SHOULD_SEED" = "true" ]; then
+	npm run prod_seed_start
+else
+	npm run prod_prisma_start
+fi

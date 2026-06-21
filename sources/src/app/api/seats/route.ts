@@ -16,7 +16,7 @@ export async function GET() {
                 return NextResponse.json(JSON.parse(cachedSeats));
             }
         } catch (err) {
-            console.error('📊 [Cache Miss - Redis Down]: Fetching directly from Postgres', err);
+            console.error('📊 [Cache Miss - Redis Down]: Fetching directly from database', err);
         }
 
         const now = new Date();
