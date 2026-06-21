@@ -303,6 +303,7 @@ This section documents the continuous integration and deployment pipeline config
 
 The complete automation pipeline runs inside a single-job host runner ecosystem to guarantee consistent, sequential data layers from local database seed generation to live cloud deployment.
 
+```text
 [ Git Push to Master ] ──> [ Setup Node.js & Services ]
                                 │
                                 ▼
@@ -335,6 +336,7 @@ The complete automation pipeline runs inside a single-job host runner ecosystem 
                  │    ├─ Check GCP Deployment Service Status						│
                  │    └─ Rollout GKE / Cloud Run									│
                  └──────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
