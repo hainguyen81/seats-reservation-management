@@ -34,7 +34,7 @@ services:
       - DATABASE_PROVIDER=sqlite
       - AUTH_PROVIDER=custom
       - NEXT_PUBLIC_AUTH_PROVIDER=custom
-      - DATABASE_URL=file:./dev.db
+      - DATABASE_URL=file:/app/data/dev.db
       - REDIS_URL=redis://redis-cache:6379
       - JWT_SECRET=linkz-assessment-senior-lead-secret-key-2026
       - TOTAL_SEATS=15

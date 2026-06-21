@@ -7,19 +7,19 @@ set "TAB=	"
 set DOCKER_BUILDKIT=1
 set COMPOSE_DOCKER_CLI_BUILD=1
 
-echo ► Build docker images (%NO_CACHE%)
+echo ► Build docker images ^(%NO_CACHE%^)
 echo.
 
 REM go to root project folder to build image
 if /I "%NO_CACHE%"=="--no-cache" (
-	echo %TAB%- ^[ No Cache ^] Build image (%NO_CACHE%)
-	docker build --build-arg DATABASE_PROVIDER=postgres --no-cache -f Dockerfile -t seats-reservation-management:latest .
+	echo %TAB%- ^[ No Cache ^] Build image ^(%NO_CACHE%^)
+	docker build --progress=plain --build-arg DATABASE_PROVIDER=postgres --no-cache -f Dockerfile -t seats-reservation-management:latest .
 	goto :done
 
 )
 
 echo %TAB%- Build image
-docker build --build-arg DATABASE_PROVIDER=postgres -f Dockerfile -t seats-reservation-management:latest .
+docker build --progress=plain --build-arg DATABASE_PROVIDER=postgres -f Dockerfile -t seats-reservation-management:latest .
 
 :done
 exit /b 0

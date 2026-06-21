@@ -6,14 +6,19 @@ set "TAB=	"
 echo -------------------------------------------------
 echo ► 1. Redeploy services
 echo -------------------------------------------------
-echo %TAB%- Deploy seats reservation service
-kubectl apply -f k8s-deployment.yml
-echo.
+echo %TAB%- ReDeploy seats reservation service
+if /I "%~1"=="postgres" (
+	kubectl apply -f k8s-deployment-postgres.yml
+	goto :check
+)
+kubectl apply -f k8s-deployment-sqlite.yml
 
+:check
+echo.
 echo -------------------------------------------------
 echo ► 2. Wait for K8s Pods READY
 echo -------------------------------------------------
 echo %TAB%- Wait for services READY
-kubectl wait --for=condition=Ready pods -l app=seat-reservation --timeout=90s
+kubectl rollout status deployment/seats-reservation-deployment --timeout=90s
 
 pause

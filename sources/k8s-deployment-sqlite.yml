@@ -146,6 +146,27 @@ spec:
         ports:
         - containerPort: 3000
         
+        # enviroment variables
+        env:
+          - name: DATABASE_PROVIDER
+            value: "sqlite"
+          - name: AUTH_PROVIDER
+            value: "custom"
+          - name: NEXT_PUBLIC_AUTH_PROVIDER
+            value: "custom"
+          - name: DATABASE_URL
+            value: "file:/app/data/seats_reservation.db"
+          - name: DIRECT_DATABASE_URL
+            value: "file:/app/data/seats_reservation.db"
+          - name: REDIS_URL
+            value: "redis://redis-cache:6379"
+          - name: JWT_SECRET
+            value: "k8s-seats-reservation-sqlite-secret-key-2026"
+          - name: TOTAL_SEATS
+            value: "9"
+          - name: SHOULD_SEED
+            value: "true"
+        
         # reference to configuration for environment variables
         envFrom:
         - configMapRef:
@@ -189,16 +210,6 @@ spec:
           capabilities:
             drop:
             - ALL
-        
-        # persistent storage
-        volumeMounts:
-        - name: sqlite-storage
-          mountPath: /app
-          
-      volumes:
-      - name: sqlite-storage
-        persistentVolumeClaim:
-          claimName: sqlite-db-pvc
 ---
 
 # ===================================================

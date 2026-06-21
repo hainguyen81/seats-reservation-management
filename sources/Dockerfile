@@ -181,6 +181,8 @@ RUN chown -R nextjs:nodejs . && \
   chown -R nextjs:nodejs /home/nextjs && \
   chmod -R 755 . && \
   chmod -R u+rw . && \
+  chmod -R 755 /home/nextjs && \
+  chmod -R u+rw /home/nextjs && \
   chmod -R 777 ./prisma && \
   chmod 644 ./package*.json
 

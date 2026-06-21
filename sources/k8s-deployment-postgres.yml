@@ -246,6 +246,27 @@ spec:
         ports:
         - containerPort: 3000
         
+        # enviroment variables
+        env:
+          - name: DATABASE_PROVIDER
+            value: "postgres"
+          - name: AUTH_PROVIDER
+            value: "custom"
+          - name: NEXT_PUBLIC_AUTH_PROVIDER
+            value: "custom"
+          - name: DATABASE_URL
+            value: "postgresql://postgres:postgres_secret_pass@postgres-db:5432/seats_reservation?schema=public&pgbouncer=true"
+          - name: DIRECT_DATABASE_URL
+            value: "postgresql://postgres:postgres_secret_pass@postgres-db:5432/seats_reservation?schema=public"
+          - name: REDIS_URL
+            value: "redis://redis-cache:6379"
+          - name: JWT_SECRET
+            value: "k8s-seats-reservation-postgres-secret-key-2026"
+          - name: TOTAL_SEATS
+            value: "9"
+          - name: SHOULD_SEED
+            value: "true"
+        
         # reference to configuration for environment variables
         envFrom:
         - configMapRef:

@@ -176,9 +176,9 @@ jobs:
         cp prisma/schema.sqlite.prisma prisma/schema.prisma
         npm run prisma_esbuild
         cp prisma/schema.prisma prisma/dist/schema.prisma
-        DATABASE_URL="file:./sqlite-test.db" npx prisma generate
-        DATABASE_URL="file:./sqlite-test.db" npx prisma db push
-        DATABASE_URL="file:./sqlite-test.db" npx prisma db seed
+        DATABASE_URL="file:/app/data/sqlite-test.db" npx prisma generate
+        DATABASE_URL="file:/app/data/sqlite-test.db" npx prisma db push
+        DATABASE_URL="file:/app/data/sqlite-test.db" npx prisma db seed
       env:
         DATABASE_PROVIDER: "sqlite"
         AUTH_PROVIDER: "custom"
