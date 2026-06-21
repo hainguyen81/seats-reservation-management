@@ -1,0 +1,32 @@
+# Build & Dependencies
+node_modules/
+/node_modules/
+.next/
+/.next/
+out/
+build/
+next-env.d.ts
+
+# Local database SQLite
+prisma/*.db
+prisma/*.db-journal
+prisma/migrations/
+dev.db
+dev.db-journal
+
+# System and temporary files
+.DS_Store
+Thumbs.db
+.pnpm-debug.log*
+yarn-error.log*
+.eslintcache
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*.local

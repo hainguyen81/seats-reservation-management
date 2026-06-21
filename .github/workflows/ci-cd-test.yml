@@ -57,8 +57,8 @@ jobs:
       # run: npm ci
       run: |
         cd sources
-        npm install
         npm ci
+        npm install @esbuild/linux-x64 --save-optional
 
     # ==============================================================================
     # !!!IMPORTANT!!! GitHub CI/CD could not found the `postgres-db:5432` by service name because CI/CD is external
@@ -75,7 +75,8 @@ jobs:
       if: success()                 # if previous step is successful
       run: |
         cd sources
-        cp prisma/schema.postgres.prisma prisma/schema.prisma
+        node esbuild.config.js
+        cp prisma/schema.postgres.prisma prisma/dist/schema.prisma
         DATABASE_URL="postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public&pgbouncer=true" DIRECT_DATABASE_URL="postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public" npx prisma generate
         DATABASE_URL="postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public&pgbouncer=true" DIRECT_DATABASE_URL="postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public" npx prisma db push
         DATABASE_URL="postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public&pgbouncer=true" DIRECT_DATABASE_URL="postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public" npx prisma db seed
@@ -166,7 +167,8 @@ jobs:
       if: success()                 # if previous step is successful
       run: |
         cd sources
-        cp prisma/schema.sqlite.prisma prisma/schema.prisma
+        node esbuild.config.js
+        cp prisma/schema.sqlite.prisma prisma/dist/schema.prisma
         DATABASE_URL="file:./sqlite-test.db" npx prisma generate
         DATABASE_URL="file:./sqlite-test.db" npx prisma db push
         DATABASE_URL="file:./sqlite-test.db" npx prisma db seed
