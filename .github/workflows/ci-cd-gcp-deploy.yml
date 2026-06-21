@@ -148,7 +148,7 @@ jobs:
       if: success()                 # if previous step is successful
       env:
         GCP_SERVICE: ${{ matrix.service.name }}
-        GCP_SERVICE_REGION: ${{ inputs.env_data.region }}
+        GCP_SERVICE_REGION: ${{ inputs.region }}
       run: |
         # wait 5 seconds for Cloud Run start
         sleep 5
