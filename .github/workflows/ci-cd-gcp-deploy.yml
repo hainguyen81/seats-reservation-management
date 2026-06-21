@@ -168,6 +168,7 @@ jobs:
     
     # check deployment status
     - name: 🔍 Check GCP Service Status (Health Check)
+      if: success()                 # if previous step is successful
       env:
         GCP_SERVICE: ${{ matrix.service.name }}
         GCP_SERVICE_REGION: ${{ env.GCP_REGION }}
