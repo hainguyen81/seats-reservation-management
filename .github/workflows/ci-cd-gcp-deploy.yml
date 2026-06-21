@@ -170,12 +170,13 @@ jobs:
     - name: 🔍 Check GCP Service Status (Health Check)
       env:
         GCP_SERVICE: ${{ matrix.service.name }}
+        GCP_SERVICE_REGION: ${{ env.GCP_REGION }}
       run: |
         # wait 5 seconds for Cloud Run start
         sleep 5
         
         # Send request to deployed URL (URL from previous gcloud deploy step)
-        URL=$(gcloud run services describe ${{ env.GCP_SERVICE }} --platform managed --region ${{ env.GCP_REGION }} --format 'value(status.url)')
+        URL=$(gcloud run services describe $GCP_SERVICE_NAME --platform managed --region $GCP_SERVICE_REGION --format 'value(status.url)')
         
         echo "Đang kiểm tra URL: $URL"
         STATUS=$(curl -o /dev/null -s -w "%{http_code}" $URL)
