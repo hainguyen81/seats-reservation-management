@@ -8,7 +8,7 @@
     "prisma_generate": "prisma generate",
     "prisma_migrate": "prisma migrate deploy",
     "prisma_seed": "prisma db seed",
-    "prisma_push_generate": "npm run prisma_push && npm run prisma_generate && npm run prisma_migrate",
+    "prisma_push_generate": "npm run prisma_push && npm run prisma_generate",
     "prisma_push_generate_seed": "npm run prisma_push_generate && npm run prisma_seed",
     "dev": "next dev",
     "build": "next build",

@@ -244,7 +244,7 @@ spec:
         image: seats-reservation-management:latest # Docker Hub/Registry Image
         imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 3000
+        - containerPort: 4000
         
         # enviroment variables
         env:
@@ -287,7 +287,7 @@ spec:
         livenessProbe:
           httpGet:
             path: /api/health
-            port: 3000
+            port: 4000
           initialDelaySeconds: 60
           periodSeconds: 15
           timeoutSeconds: 5
@@ -295,7 +295,7 @@ spec:
         readinessProbe:
           httpGet:
             path: /api/health
-            port: 3000
+            port: 4000
           initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
@@ -323,8 +323,8 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-  - port: 80
-    targetPort: 3000
+  - port: 4000
+    targetPort: 4000
   selector:
     app: seats-reservation
 ---
@@ -342,8 +342,8 @@ spec:
   selector:
     app: seats-reservation
   ports:
-  - port: 80
-    targetPort: 3000
+  - port: 4000
+    targetPort: 4000
     protocol: TCP
 ---
 
@@ -431,24 +431,16 @@ metadata:
   namespace: default
   annotations:
     ingress.class: nginx
-    nginx.ingress.kubernetes.io/rewrite-target: /$2
-    nginx.ingress.kubernetes.io/use-regex: "true"
     nginx.ingress.kubernetes.io/proxy-body-size: "10m"
-    nginx.ingress.kubernetes.io/configuration-snippet: |
-      proxy_set_header X-Forwarded-Proto $scheme;
-      proxy_set_header X-Forwarded-Host $host;
-      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-      proxy_set_header X-Real-IP $remote_addr;
 spec:
   ingressClassName: nginx
   rules:
   - http:
       paths:
-        # Route prefix /seats-app to rewrite
-        - path: /seats-app(/|$)(.*)
-          pathType: ImplementationSpecific
+        - path: /
+          pathType: Prefix
           backend:
             service:
               name: seats-reservation-service
               port:
-                number: 80
+                number: 4000
