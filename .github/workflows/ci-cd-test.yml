@@ -9,6 +9,11 @@ on:
   # manual trigger workflow
   workflow_dispatch:
 
+# enviroment
+env:
+  LANG: 'C.UTF-8'
+  LC_ALL: 'C.UTF-8'
+
 # jobs
 jobs:
   # ===================================================

@@ -11,6 +11,10 @@ permissions:
 
 # enviroment
 env:
+  LANG: 'C.UTF-8'
+  LC_ALL: 'C.UTF-8'
+  
+  # GCP region
   GCP_REGION: us-central1   # Always Free
   
   # Docker image

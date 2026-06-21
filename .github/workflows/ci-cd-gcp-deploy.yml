@@ -84,6 +84,11 @@ permissions:
   packages: write
   id-token: write
 
+# enviroment
+env:
+  LANG: 'C.UTF-8'
+  LC_ALL: 'C.UTF-8'
+
 jobs:
   # ==============================================================================
   # 🌐 GCP DEPLOYMENT
@@ -160,6 +165,27 @@ jobs:
           --memory=512Mi
           --cpu=1
           --set-env-vars="${{ steps.convert-deploy-env-vars.outputs.converted_env_vars }}"
+    
+    # check deployment status
+    - name: 🔍 Check GCP Service Status (Health Check)
+      env:
+        GCP_SERVICE: ${{ matrix.service.name }}
+      run: |
+        # wait 5 seconds for Cloud Run start
+        sleep 5
+        
+        # Send request to deployed URL (URL from previous gcloud deploy step)
+        URL=$(gcloud run services describe ${{ env.GCP_SERVICE }} --platform managed --region ${{ env.GCP_REGION }} --format 'value(status.url)')
+        
+        echo "Đang kiểm tra URL: $URL"
+        STATUS=$(curl -o /dev/null -s -w "%{http_code}" $URL)
+        
+        if [ $STATUS -eq 200 ]; then
+          echo "✅ Service worked successful! Status: $STATUS"
+        else
+          echo "❌ Service Error on GCP! Status: $STATUS"
+          exit 1
+        fi
     
     # Clean up
     - name: 🧹 Force Kill Orphan Processes
