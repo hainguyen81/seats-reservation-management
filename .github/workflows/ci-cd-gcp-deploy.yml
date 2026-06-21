@@ -56,7 +56,8 @@ on:
                     "JWT_SECRET":                 "seats-reservation-management-secret-key-2026",
                     "TOTAL_SEATS":                9,
                     "SHOULD_SEED":                true
-                }
+                },
+                "gcp_container_port":             "3000"
             },
             {
                 "name":     "seats-reservation-postgres",
@@ -70,7 +71,8 @@ on:
                     "JWT_SECRET":                 "seats-reservation-management-secret-key-2026",
                     "TOTAL_SEATS":                9,
                     "SHOULD_SEED":                true
-                }
+                },
+                "gcp_container_port":             "4000"
             }
           ]
       region:
@@ -124,7 +126,8 @@ jobs:
       if: success()                 # if previous step is successful
       id: convert-deploy-env-vars
       env:
-          SERVICE_ENV_VARS: ${{ toJson(matrix.service.env_vars) }}
+        SERVICE_ENV_VARS: ${{ toJson(matrix.service.env_vars) }}
+        GCP_SERVICE_CONTAINER_PORT: ${{ matrix.service.gcp_container_port }}
       run: |
         node -e '
           // 1. request JSON object
@@ -140,6 +143,7 @@ jobs:
           // 4. output to GitHub Actions
           const fs = require("fs");
           fs.appendFileSync(process.env.GITHUB_OUTPUT, `converted_env_vars=${resultString}\n`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `gcp_container_port=process.env.GCP_SERVICE_CONTAINER_PORT\n`);
         '
     
     # Deploy to Google Cloud Run by pulling image from Docker Hub
@@ -165,6 +169,7 @@ jobs:
           --memory=512Mi
           --cpu=1
           --set-env-vars="${{ steps.convert-deploy-env-vars.outputs.converted_env_vars }}"
+          --port=${{ steps.convert-deploy-env-vars.outputs.gcp_container_port }}
     
     # check deployment status
     - name: 🔍 Check GCP Service Status (Health Check)
