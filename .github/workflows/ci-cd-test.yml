@@ -75,7 +75,7 @@ jobs:
       if: success()                 # if previous step is successful
       run: |
         cd sources
-        node esbuild.config.js
+        npm run prisma_esbuild
         cp prisma/schema.postgres.prisma prisma/dist/schema.prisma
         DATABASE_URL="postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public&pgbouncer=true" DIRECT_DATABASE_URL="postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public" npx prisma generate
         DATABASE_URL="postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public&pgbouncer=true" DIRECT_DATABASE_URL="postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public" npx prisma db push
@@ -167,7 +167,7 @@ jobs:
       if: success()                 # if previous step is successful
       run: |
         cd sources
-        node esbuild.config.js
+        npm run prisma_esbuild
         cp prisma/schema.sqlite.prisma prisma/dist/schema.prisma
         DATABASE_URL="file:./sqlite-test.db" npx prisma generate
         DATABASE_URL="file:./sqlite-test.db" npx prisma db push

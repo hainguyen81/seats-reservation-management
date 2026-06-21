@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "prisma_esbuild": "node esbuild.config.js",
     "prisma_push": "prisma db push",
     "prisma_generate": "prisma generate",
     "prisma_seed": "prisma db seed",

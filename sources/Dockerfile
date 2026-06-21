@@ -82,7 +82,7 @@ ENV NODE_ENV=production
 # - call prisma seed runtime: `node prisma/seed.js`
 # -------------------------------------------------
 RUN echo "⚠️ Build prisma..."; \
-  npx esbuild prisma/*.ts --bundle --platform=node --format=cjs --external:@prisma/client --outdir=prisma/dist; \
+  npm run prisma_esbuild; \
   cp prisma/schema.* prisma/dist/;
 
 # Initial default prisma db provider or using from build arguments
