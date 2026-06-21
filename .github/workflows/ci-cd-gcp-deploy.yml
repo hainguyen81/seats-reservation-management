@@ -132,6 +132,7 @@ jobs:
         node -e '
           // 1. request JSON object
           const jsonRaw = process.env.SERVICE_ENV_VARS; 
+          const gcp_container_port = process.env.GCP_SERVICE_CONTAINER_PORT;
           const obj = JSON.parse(jsonRaw);
           
           // 2. convert to array key=value
@@ -143,7 +144,7 @@ jobs:
           // 4. output to GitHub Actions
           const fs = require("fs");
           fs.appendFileSync(process.env.GITHUB_OUTPUT, `converted_env_vars=${resultString}\n`);
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, `gcp_container_port=process.env.GCP_SERVICE_CONTAINER_PORT\n`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `gcp_container_port=${gcp_container_port}\n`);
         '
     
     # Deploy to Google Cloud Run by pulling image from Docker Hub
