@@ -168,7 +168,7 @@ jobs:
       if: success()                 # if previous step is successful
       run: |
         cd sources
-        cp prisma/schema.postgres.prisma prisma/schema.prisma
+        cp prisma/schema.sqlite.prisma prisma/schema.prisma
         npm run prisma_esbuild
         cp prisma/schema.prisma prisma/dist/schema.prisma
         DATABASE_URL="file:./sqlite-test.db" npx prisma generate
