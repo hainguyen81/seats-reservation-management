@@ -141,7 +141,30 @@ jobs:
           const fs = require("fs");
           fs.appendFileSync(process.env.GITHUB_OUTPUT, `converted_env_vars=${resultString}\n`);
         '
-
+    
+    # Deploy to Google Cloud Run by pulling image from Docker Hub
+    - name: 🚀 Deploy to Cloud Run
+      if: success()                 # if previous step is successful
+      uses: google-github-actions/deploy-cloudrun@v2
+      env:
+        ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+        FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      with:
+        service: ${{ matrix.service.name }}
+        region: ${{ env.GCP_REGION }}
+        cleanup_credentials: false      # prevent clean up to do manually
+        # Point to Public Docker Hub, no need to use Google Artifact Registry API due to be charged
+        image: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service.name }}:latest
+        
+        # ⚠️ Parameter to force system running in Free Tier Forever
+        # `set-env-vars` apply enviroment variables for docker image
+        flags: |
+          --allow-unauthenticated
+          --min-instances=0
+          --max-instances=1
+          --memory=512Mi
+          --cpu=1
+          --set-env-vars="${{ steps.convert-deploy-env-vars.outputs.converted_env_vars }}"
     
     # check deployment status
     - name: 🔍 Check GCP Service Status (Health Check)
