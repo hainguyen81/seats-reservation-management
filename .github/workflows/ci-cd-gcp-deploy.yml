@@ -164,13 +164,13 @@ jobs:
         # ⚠️ Parameter to force system running in Free Tier Forever
         # `set-env-vars` apply enviroment variables for docker image
         flags: |
+          --port=${{ steps['convert-deploy-env-vars'].outputs.gcp_container_port }}
           --allow-unauthenticated
           --min-instances=0
           --max-instances=1
           --memory=512Mi
           --cpu=1
-          --set-env-vars="${{ steps.convert-deploy-env-vars.outputs.converted_env_vars }}"
-          --port=${{ steps.convert-deploy-env-vars.outputs.gcp_container_port }}
+          --set-env-vars="${{ steps['convert-deploy-env-vars'].outputs.converted_env_vars }}"
     
     # check deployment status
     - name: 🔍 Check GCP Service Status (Health Check)
