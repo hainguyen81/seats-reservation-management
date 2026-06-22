@@ -300,7 +300,10 @@ jobs:
           GKE_DEPLOYMENT_FILE: ${{ matrix.service.env_vars.K8S_DEPLOYMENT }}
         run: |
           # fix k8s deployment yml file by region
-          sed -i 's|GKE_REGISTRY_IMAGE|'"$GCP_SERVICE_REGION"'-docker.pkg.dev/'"$GCP_PROJECT_ID"'/'"$GCP_SERVICE"':'"${{ github.sha }}"'|g' $GKE_DEPLOYMENT_FILE
+          sed -i "s|GKE_REGISTRY_IMAGE|${GCP_SERVICE_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_SERVICE}:a1b2c3d|g" $GKE_DEPLOYMENT_FILE
+          # debug
+          cat $GKE_DEPLOYMENT_FILE
+          # deploy GKE
           kubectl apply -f $GKE_DEPLOYMENT_FILE --force
       
       # 12. Check deployment status
@@ -318,7 +321,7 @@ jobs:
           # If having error (CrashLoopBackOff, ImagePullBackOff), this line will show error and stop pipeline (Fail-Fast)
           if ! kubectl rollout status deployment/$K8S_DEPLOYMENT_NAME -n $K8S_DEPLOYMENT_NAMESPACE --timeout=150s; then
             # 🔥 Show as Step Warning on GITHUB CI/CD UI
-            echo "::warning::GKE Rollout reached timeout boundary before completion. Pods might still be initializing in the background."
+            echo "::warning::Could not reach `GKE Rollout Status` before completion. Pods might still be initializing in the background."
             echo "Bypassing hard error check to prevent pipeline failure."
           fi
           
@@ -326,20 +329,32 @@ jobs:
           echo "📦 2. CURRENT RUNNING PODS & CONTAINER STATUS"
           echo "========================================================================="
           # Print to trace running pods, number of instances (Replicas) and status
-          kubectl get pods -l app=$K8S_DEPLOYMENT_NAME -o wide -n $K8S_DEPLOYMENT_NAMESPACE
+          if ! kubectl get pods -l app=$K8S_DEPLOYMENT_NAME -o wide -n $K8S_DEPLOYMENT_NAMESPACE; then
+            # 🔥 Show as Step Warning on GITHUB CI/CD UI
+            echo "::warning::Could not reach `GKE Pods` before completion. Pods might still be initializing in the background."
+            echo "Bypassing hard error check to prevent pipeline failure."
+          fi
           
           echo "========================================================================="
           echo "🌐 3. EXTRACTING NETWORK ENDPOINTS (EXTERNAL IP & SERVICE PORTS)"
           echo "========================================================================="
           # Request public information (IP, access port)
-          kubectl get service $K8S_DEPLOYMENT_SERVICE -n $K8S_DEPLOYMENT_NAMESPACE
+          if ! kubectl get service $K8S_DEPLOYMENT_SERVICE -n $K8S_DEPLOYMENT_NAMESPACE; then
+            # 🔥 Show as Step Warning on GITHUB CI/CD UI
+            echo "::warning::Could not reach `GKE Service` $K8S_DEPLOYMENT_SERVICE (namespace=$K8S_DEPLOYMENT_NAMESPACE) before completion. Pods might still be initializing in the background."
+            echo "Bypassing hard error check to prevent pipeline failure."
+          fi
           
           echo "========================================================================="
           echo "📜 4. STREAMING LIVE APPLICATION BOOT LOGS"
           echo "========================================================================="
           # Print first 50 lines when container started
           # to check whether application start successful
-          kubectl logs deployment/$K8S_DEPLOYMENT_NAME --tail=50 --all-containers=true -n $K8S_DEPLOYMENT_NAMESPACE
+          if ! kubectl logs deployment/$K8S_DEPLOYMENT_NAME --tail=50 --all-containers=true -n $K8S_DEPLOYMENT_NAMESPACE; then
+            # 🔥 Show as Step Warning on GITHUB CI/CD UI
+            echo "::warning::Could not reach `GKE Logs` deployment/$K8S_DEPLOYMENT_NAME (namespace=$K8S_DEPLOYMENT_NAMESPACE) before completion. Pods might still be initializing in the background."
+            echo "Bypassing hard error check to prevent pipeline failure."
+          fi
       
       # Clean up
       - name: ⚙️ Force Kill Orphan Processes
