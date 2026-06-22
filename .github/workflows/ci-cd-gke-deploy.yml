@@ -89,11 +89,6 @@ jobs:
     runs-on: ubuntu-latest
     # needs: build-and-push-to-docker-hub      # not require test running, due to be triggered standalone
     
-    # check whether allow for running workflow
-    env:
-      ALLOW_GKE_DEPLOY: ${{ secrets.ALLOW_GKE_DEPLOY }}
-    if: ${{ env.ALLOW_GKE_DEPLOY == 'true' && github.event_name != 'workflow_call' }}
-    
     # load services configuraion
     strategy:
       fail-fast: false
@@ -102,8 +97,17 @@ jobs:
         service: ${{ fromJson(inputs.env_data) }}
 
     steps:
+    # Check whether allow for running workflow
+    - name: 🛡️ Gatekeeper - Validate Administrative Access
+      if: ${{ secrets.ALLOW_GKE_DEPLOY != 'true' }}
+      run: |
+        echo "❌ Deployment is administratively DISABLED via GitHub Secrets (secrets.ALLOW_GKE_DEPLOY is not true)."
+        echo "Terminating pipeline execution immediately to protect production infrastructure."
+        exit 1 # Require Admin Rights
+    
     # 1. Login to Google Cloud by Google OAuth2 ADC
     - name: 🔑 Authenticate to Google Cloud via Google OAuth2 ADC
+      if: success()                 # if previous step is successful
       uses: google-github-actions/auth@v2
       with:
         # authenticate via OIDC
@@ -142,7 +146,7 @@ jobs:
       if: success()                 # if previous step is successful
       uses: docker/setup-buildx-action@v3
     
-    # build immutable image and push to GCP Registry
+    # 2. Build immutable image and push to GCP Registry
     - name: 🏗️ Build and Push Production Image to GCP Registry
       if: success()                 # if previous step is successful
       uses: docker/build-push-action@v6
@@ -155,7 +159,7 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
     
-    # require GKE credentials to deploy
+    # 3. Require GKE credentials to deploy
     - name: 🚀 Require GKE Cluster Credentials
       if: success()                 # if previous step is successful
       uses: google-github-actions/get-gke-credentials@v2
@@ -164,7 +168,7 @@ jobs:
         location: ${{ env.GCP_REGION }}
         project_id: ${{ secrets.GCP_PROJECT_ID }}
     
-    # create secret to adapt into K8s deployment
+    # 4. Create secret to adapt into K8s deployment
     - name: 🔐 Securely Create and Override GKE Database Secrets
       if: success() && ${{ matrix.service.env_vars.K8S_DEPLOYMENT_SECRET != null && matrix.service.env_vars.K8S_DEPLOYMENT_SECRET != '' }}    # if previous step is successful
       env:
@@ -182,7 +186,7 @@ jobs:
           --from-literal=DIRECT_DATABASE_URL="${{ secrets.DIRECT_DATABASE_URL_NEON_POSTGRES }}" \
           --dry-run=client -o yaml | kubectl apply -f - -n $K8S_DEPLOYMENT_NAMESPACE
     
-    # Deploy to Google Cloud Run GKE by built image
+    # 5. Deploy to Google Cloud Run GKE by built image
     - name: ☸️ [ GKE ] Dynamically Update Kubernetes Context & Deploy
       if: success()                 # if previous step is successful
       env:
@@ -195,7 +199,7 @@ jobs:
         sed -i 's|GKE_REGISTRY_IMAGE|'"$GCP_SERVICE_REGION"'-docker.pkg.dev/'"$GCP_PROJECT_ID"'/$GCP_SERVICE:'"${{ github.sha }}"'|g' $GKE_DEPLOYMENT_FILE
         kubectl apply -f $GKE_DEPLOYMENT_FILE --force
     
-    # check deployment status
+    # 6. Check deployment status
     - name: 📊 Check Rollout Status & Extract Deployment Metadata
       if: success()                 # if previous step is successful
       env:
@@ -229,7 +233,7 @@ jobs:
         # to check whether application start successful
         kubectl logs deployment/$K8S_DEPLOYMENT_NAME --tail=50 --all-containers=true -n $K8S_DEPLOYMENT_NAMESPACE
     
-    # Clean up
+    # 7. Clean up
     - name: ⚙️ Force Kill Orphan Processes
       if: always()    # Always run to clean up
       run: |

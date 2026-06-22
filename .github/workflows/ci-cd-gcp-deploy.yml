@@ -98,11 +98,6 @@ jobs:
     runs-on: ubuntu-latest
     # needs: build-and-push-to-docker-hub      # not require test running, due to be triggered standalone
     
-    # check whether allow for running workflow
-    env:
-      ALLOW_GCP_DEPLOY: ${{ secrets.ALLOW_GCP_DEPLOY }}
-    if: ${{ env.ALLOW_GCP_DEPLOY == 'true' && github.event_name != 'workflow_call' }}
-    
     # load services configuraion
     strategy:
       fail-fast: false
@@ -111,8 +106,17 @@ jobs:
         service: ${{ fromJson(inputs.env_data) }}
 
     steps:
-    # Login to Google Cloud by Google OAuth2 ADC
+    # Check whether allow for running workflow
+    - name: 🛡️ Gatekeeper - Validate Administrative Access
+      if: ${{ secrets.ALLOW_GKE_DEPLOY != 'true' }}
+      run: |
+        echo "❌ Deployment is administratively DISABLED via GitHub Secrets (secrets.ALLOW_GKE_DEPLOY is not true)."
+        echo "Terminating pipeline execution immediately to protect production infrastructure."
+        exit 1 # Require Admin Rights
+
+    # 1. Login to Google Cloud by Google OAuth2 ADC
     - name: 🔑 Authenticate to Google Cloud via Google OAuth2 ADC
+      if: success()                 # if previous step is successful
       uses: google-github-actions/auth@v2
       with:
         # authenticate via OIDC
@@ -125,7 +129,7 @@ jobs:
         create_credentials_file: true       # export credentials for next steps
         export_environment_variables: true  # export enviroment variables for next steps
     
-    # Temporary Step: Convert deploy enviroment variables
+    # 2. Temporary Step: Convert deploy enviroment variables
     - name: 🔍 Convert JSON Enviroment Variables to Comma Separated Key-Value
       if: success()                 # if previous step is successful
       id: convert-deploy-env-vars
@@ -154,7 +158,7 @@ jobs:
           fs.appendFileSync(process.env.GITHUB_OUTPUT, `converted_env_vars=${resultString}\n`);
         '
     
-    # Deploy to Google Cloud Run by pulling image from Docker Hub
+    # 3. Deploy to Google Cloud Run by pulling image from Docker Hub
     - name: 🚀 Deploy to Cloud Run
       if: success()                 # if previous step is successful
       uses: google-github-actions/deploy-cloudrun@v2
@@ -178,7 +182,7 @@ jobs:
           --cpu=1
           --set-env-vars="${{ steps['convert-deploy-env-vars'].outputs.converted_env_vars }}"
     
-    # check deployment status
+    # 4. Check deployment status
     - name: 🔍 Check GCP Service Status (Health Check)
       if: success()                 # if previous step is successful
       id: gcp_cloud_run_deployment_check
@@ -214,7 +218,7 @@ jobs:
           🚀 Deployment successful!
           🔍 GCP Cloud Run Public URL: ${{ steps.gcp_cloud_run_deployment_check.outputs.gcp_cloud_run_url }}
     
-    # Clean up
+    # 5. Clean up
     - name: ⚙️ Force Kill Orphan Processes
       if: always()    # Always run to clean up
       run: |
