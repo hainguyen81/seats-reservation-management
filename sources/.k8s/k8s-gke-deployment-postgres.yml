@@ -96,11 +96,11 @@ metadata:
   name: postgres-service
   namespace: gke-seats-reservation-postgres
 spec:
-  type: NodePort        # Force K8s open port to external host
+  type: ClusterIP       # not using due to already use Neon Postgres
   ports:
     - port: 5432        # Internal communication port between container in K8s
       targetPort: 5432  # Listen Port that Spring Boot Service is using
-      nodePort: 32133   # Port for external host. Valid range: 30000-32767
+      # nodePort: 32133 # Port for external host. Valid range: 30000-32767
   selector:
     app: postgres-db
 ---
@@ -136,11 +136,11 @@ metadata:
   name: redis-service
   namespace: gke-seats-reservation-postgres
 spec:
-  type: NodePort        # Force K8s open port to external host
+  type: ClusterIP       # or NodePort but dont specify nodePort, because it will conflict with SQLite
   ports:
     - port: 6379        # Internal communication port between container in K8s
       targetPort: 6379  # Listen Port that Spring Boot Service is using
-      nodePort: 32379   # Port for external host. Valid range: 30000-32767
+      # nodePort: 32379 # Port for external host. Valid range: 30000-32767
   selector:
     app: redis-cache
 ---
