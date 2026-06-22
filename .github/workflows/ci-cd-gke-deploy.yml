@@ -101,7 +101,7 @@ jobs:
         service: ${{ fromJson(inputs.env_data) }}
 
     steps:
-      # Check whether allow for running workflow
+      # 1. Check whether allow for running workflow
       - name: 🛡️ Gatekeeper - Validate Administrative Access
         env:
           ALLOW_GKE_DEPLOY: ${{ secrets.ALLOW_GKE_DEPLOY }}
@@ -111,12 +111,12 @@ jobs:
           echo "Terminating pipeline execution immediately to protect production infrastructure."
           exit 1 # Require Admin Rights
       
-      # Check out source code
+      # 2. Check out source code
       - name: ⬇️ Checkout Source Code
         if: success()                 # if previous step is successful
         uses: actions/checkout@v4
       
-      # 1. Login to Google Cloud by Google OAuth2 ADC
+      # 3. Login to Google Cloud by Google OAuth2 ADC
       - name: 🔑 Authenticate to Google Cloud via Google OAuth2 ADC
         if: success()                 # if previous step is successful
         uses: google-github-actions/auth@v2
@@ -152,7 +152,7 @@ jobs:
       # - DockerHub: if 2 virtual K8s machine pull image at 2 different time, then they could run 2 different versions of code.
       # - GCP SHA: it's only one uniqued SHA version, so GCP K8s virtual machines will run same code version when scaling
       # ==============================================================================
-      # require docker build kit
+      # 4. Require docker build kit
       - name: 🛠️ Set up Docker Buildx
         if: success()                 # if previous step is successful
         uses: docker/setup-buildx-action@v3
@@ -160,7 +160,7 @@ jobs:
           # back to use default builder if new instance is error by stucking network
           fallback-to-driver: docker
       
-      # check and create GKE image repository if not existing
+      # 5. Check and create GKE image repository if not existing
       - name: 📦 Ensure Artifact Registry Repository Exists
         if: success()                 # if previous step is successful
         env:
@@ -182,24 +182,10 @@ jobs:
             echo "✅ Repository $GKE_REPOSITORY already exists. Skipping creation phase."
           fi
       
-      # 2. Build immutable image and push to GCP Registry
-      - name: 🏗️ Build and Push Production Image to GCP Registry
-        if: success()                 # if previous step is successful
-        uses: docker/build-push-action@v6
-        with:
-          context: ./sources
-          file: ./sources/Dockerfile
-          push: true
-          # tag image name must follow Google Artifact Registry Standards.
-          # Ex: <region>-docker.pkg.dev/<GCP_PROJECT_ID>/<GCP Repository Name>/<Immutable K8s Image Name>:<unique SHA>
-          tags: ${{ inputs.region }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ github.event.repository.name }}/${{ matrix.service.name }}:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-      
-      # 3. Check GKE cluster, if not found, then creating it.
+      # 6. Check GKE cluster, if not found, then creating it.
       # !!!IMPORTANT!! Use one cluster for both SQLite/Postgres, so use GitHub repository name to save the cost
       # Requires GCP Kubernetes Engine Admin Rights to create
-      - name: ☸️ Ensure GKE Cluster Exists (Auto-Provision Hardware)
+      - name: 📦 Ensure GKE Cluster Exists (Auto-Provision Hardware)
         if: success()                 # if previous step is successful
         env:
           GKE_CLUSTER: ${{ github.event.repository.name }}-cluster
@@ -250,10 +236,10 @@ jobs:
             echo "✅ Physical GKE Cluster already exists. Proceeding directly to software orchestration layer."
           fi
       
-      # 4. Check GKE Namespace, if not found, then creating it.
+      # 7. Check GKE Namespace, if not found, then creating it.
       # !!!IMPORTANT!! Use one cluster for both SQLite/Postgres, so use GitHub repository name to save the cost
       # Requires GCP Kubernetes Engine Admin Rights to create
-      - name: 📁 [GKE] Ensure Target Kubernetes Namespace Exists
+      - name: 📦 Ensure Target Kubernetes Namespace Exists
         if: success()                 # if previous step is successful
         env:
           K8S_DEPLOYMENT_NAMESPACE: ${{ matrix.service.env_vars.K8S_DEPLOYMENT_NAMESPACE }}
@@ -262,8 +248,22 @@ jobs:
           echo "Validating infrastructure partition status on GKE cluster..."
           kubectl create namespace $K8S_DEPLOYMENT_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
       
-      # 5. Require GKE credentials to deploy
-      - name: 🚀 Require GKE Cluster Credentials
+      # 8. Build immutable image and push to GCP Registry
+      - name: 🏗️ Build and Push Production Image to GCP Registry
+        if: success()                 # if previous step is successful
+        uses: docker/build-push-action@v6
+        with:
+          context: ./sources
+          file: ./sources/Dockerfile
+          push: true
+          # tag image name must follow Google Artifact Registry Standards.
+          # Ex: <region>-docker.pkg.dev/<GCP_PROJECT_ID>/<GCP Repository Name>/<Immutable K8s Image Name>:<unique SHA>
+          tags: ${{ inputs.region }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ github.event.repository.name }}/${{ matrix.service.name }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      # 9. Require GKE credentials to deploy
+      - name: 🔑 Require GKE Cluster Credentials
         if: success()                 # if previous step is successful
         uses: google-github-actions/get-gke-credentials@v2
         with:
@@ -272,7 +272,7 @@ jobs:
           location: ${{ inputs.region }}
           project_id: ${{ secrets.GCP_PROJECT_ID }}
       
-      # 6. Create secret to adapt into K8s deployment
+      # 10. Create secret to adapt into K8s deployment
       - name: 🔐 Securely Create and Override GKE Database Secrets
         env:
           K8S_DEPLOYMENT_NAMESPACE: ${{ matrix.service.env_vars.K8S_DEPLOYMENT_NAMESPACE }}
@@ -290,8 +290,8 @@ jobs:
             --from-literal=DIRECT_DATABASE_URL="${{ secrets.DIRECT_DATABASE_URL_NEON_POSTGRES }}" \
             --dry-run=client -o yaml | kubectl apply -f - -n $K8S_DEPLOYMENT_NAMESPACE
       
-      # 7. Deploy to Google Cloud Run GKE by built image
-      - name: ☸️ [ GKE ] Dynamically Update Kubernetes Context & Deploy
+      # 11. Deploy to Google Cloud Run GKE by built image
+      - name: ☸️ Dynamically Update Kubernetes Context & Deploy
         if: success()                 # if previous step is successful
         env:
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
@@ -303,7 +303,7 @@ jobs:
           sed -i 's|GKE_REGISTRY_IMAGE|'"$GCP_SERVICE_REGION"'-docker.pkg.dev/'"$GCP_PROJECT_ID"'/$GCP_SERVICE:'"${{ github.sha }}"'|g' $GKE_DEPLOYMENT_FILE
           kubectl apply -f $GKE_DEPLOYMENT_FILE --force
       
-      # 8. Check deployment status
+      # 12. Check deployment status
       - name: 📊 Check Rollout Status & Extract Deployment Metadata
         if: success()                 # if previous step is successful
         env:
@@ -337,7 +337,7 @@ jobs:
           # to check whether application start successful
           kubectl logs deployment/$K8S_DEPLOYMENT_NAME --tail=50 --all-containers=true -n $K8S_DEPLOYMENT_NAMESPACE
       
-      # 9. Clean up
+      # Clean up
       - name: ⚙️ Force Kill Orphan Processes
         if: always()    # Always run to clean up
         run: |
