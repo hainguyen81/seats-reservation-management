@@ -201,8 +201,7 @@ jobs:
         
     # Optional: Post the URL as a comment on your Pull Request (great for debugging)
     - name: Comment PR with URL
-      if: success()                 # if previous step is successful
-      if: github.event_name == 'pull_request'
+      if: success() && github.event_name == 'pull_request'    # if previous step is successful
       uses: thollander/actions-comment-pull-request@v2
       with:
         message: |
