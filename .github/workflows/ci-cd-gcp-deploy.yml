@@ -175,6 +175,7 @@ jobs:
     # check deployment status
     - name: 🔍 Check GCP Service Status (Health Check)
       if: success()                 # if previous step is successful
+      id: gcp_cloud_run_deployment_check
       env:
         GCP_SERVICE: ${{ matrix.service.name }}
         GCP_SERVICE_REGION: ${{ inputs.region }}
@@ -186,15 +187,27 @@ jobs:
         echo "- Service: $GCP_SERVICE | Region: $GCP_SERVICE_REGION"
         URL=$(gcloud run services describe $GCP_SERVICE --platform managed --region $GCP_SERVICE_REGION --format 'value(status.url)')
         
-        echo "Đang kiểm tra URL: $URL"
+        echo "Verify GCP cloud run URL: $URL"
         STATUS=$(curl -o /dev/null -s -w "%{http_code}" $URL)
         
         if [ $STATUS -eq 200 ]; then
           echo "✅ Service worked successful! Status: $STATUS"
+          echo "- Public URL: $URL"
+          echo "gcp_cloud_run_url=$URL" >> $GITHUB_OUTPUT
         else
           echo "❌ Service Error on GCP! Status: $STATUS"
           exit 1
         fi
+        
+    # Optional: Post the URL as a comment on your Pull Request (great for debugging)
+    - name: Comment PR with URL
+      if: success()                 # if previous step is successful
+      if: github.event_name == 'pull_request'
+      uses: thollander/actions-comment-pull-request@v2
+      with:
+        message: |
+          🚀 Deployment successful!
+          🔍 GCP Cloud Run Public URL: ${{ steps.gcp_cloud_run_deployment_check.outputs.gcp_cloud_run_url }}
     
     # Clean up
     - name: ⚙️ Force Kill Orphan Processes
