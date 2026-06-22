@@ -188,7 +188,7 @@ jobs:
           file: ./sources/Dockerfile
           push: true
           # Đặt tên image theo chuẩn Google Artifact Registry
-          tags: ${{ inputs.region }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ github.repository }}/${{ matrix.service.name }}:${{ github.sha }}
+          tags: ${{ inputs.region }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ github.event.repository.name }}/${{ matrix.service.name }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
       
