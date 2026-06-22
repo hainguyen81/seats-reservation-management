@@ -158,17 +158,6 @@ jobs:
         npm install
         npm ci
 
-    # ==============================================================================
-    # !!!IMPORTANT!!! GitHub CI/CD could not found the `postgres-db:5432` by service name because CI/CD is external
-    # It could not found `postgres-db`, so using `localhost:5432` to access from external host
-    # 💡 Core Rule to Avoid Future Confusion:
-    # - When running with Docker Compose (Local Machine or Production Environment):
-    #   Containers share an isolated, internal Docker virtual network.
-    #   Therefore, you must use the service name as the hostname (e.g., redis://redis-cache:6379).
-    # - When running commands directly from a GitHub Actions Workflow:
-    #   Commands execute directly on the host runner (outside the container network) and communicate through mapped ports.
-    #   Consequently, all backing services (postgres, redis, mongodb, etc.) must be accessed via localhost.
-    # ==============================================================================
     - name: 🔌 Generate Prisma Client & Sync Database Schema & 🌱 Seed Sample Data
       if: success()                 # if previous step is successful
       run: |
@@ -183,8 +172,8 @@ jobs:
         DATABASE_PROVIDER: "sqlite"
         AUTH_PROVIDER: "custom"
         NEXT_PUBLIC_AUTH_PROVIDER: "custom"
-        DATABASE_URL: "file:./sqlite-test.db"
-        DIRECT_DATABASE_URL: "file:./sqlite-test.db"
+        DATABASE_URL: "file:/app/prisma/data/sqlite-test.db"
+        DIRECT_DATABASE_URL: "file:/app/prisma/data/sqlite-test.db"
         REDIS_URL: "redis://localhost:6379"
         JWT_SECRET: "github-actions-testing-secret-key-padding-2026"
         TOTAL_SEATS: "15"
