@@ -1,0 +1,132 @@
+name: 📈 Independent Scalability & Concurrency Load Test
+
+on:
+  # Allows manual triggering of this workflow directly from the GitHub Actions UI
+  workflow_dispatch:
+    inputs:
+      gke_target_url:
+        description: "🌍 Target Environment URL for Scalability Load Testing (LoadBalancer IP or Domain)"
+        required: true
+        type: string
+        default: "http://localhost:3000"
+
+# permissions for GitHub Actions READ/WRITE
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+# enviroment
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  LANG: 'C.UTF-8'
+  LC_ALL: 'C.UTF-8'
+
+jobs:
+  # Run High-Concurrency k6 Injection
+  execute-scalability-test:
+    name: ⚡ Run High-Concurrency k6 Injection
+    runs-on: ubuntu-latest
+
+    steps:
+      # Check whether allow for running workflow
+      - name: 🛡️ Gatekeeper - Validate Administrative Access
+        env:
+          ALLOW_GKE_SCABILITY_TEST: ${{ secrets.ALLOW_GKE_SCABILITY_TEST }}
+        if: ${{ env.ALLOW_GKE_SCABILITY_TEST != 'true' }}
+        run: |
+          echo "❌ Deployment is administratively DISABLED via GitHub Secrets (secrets.ALLOW_GKE_SCABILITY_TEST is not true)."
+          echo "Terminating pipeline execution immediately to protect production infrastructure."
+          exit 1 # Require Admin Rights
+
+      # Check whether is valid for running workflow
+      - name: 🛡️ Gatekeeper - Validate Scalability Target Test URL
+        env:
+          GKE_TARGET_URL: ${{ inputs.gke_target_url }}
+        if: ${{ env.GKE_TARGET_URL == null && env.GKE_TARGET_URL == '' }}
+        run: |
+          echo "❌ Invalid GKE Target URL for scalability test (inputted value: '$GKE_TARGET_URL')."
+          echo "Terminating pipeline execution immediately to save pipeline/GKE resources."
+          exit 1 # Require GKE Target URL
+      
+      # 1. Check-out source code
+      - name: Checkout Codebase
+        if: success()                 # if previous step is successful
+        uses: actions/checkout@v4
+
+      # 2. Authenticate to GCP using the Service Account JSON Key stored in GitHub Secrets
+      - name: 🔐 Authenticate to Google Cloud
+        if: success()                 # if previous step is successful
+        uses: google-github-actions/auth@v2
+        with:
+          # authenticate via OIDC
+          # workload_identity_provider: "projects/130619617539/locations/global/workloadIdentityPools/github-seats-reservation-pool/providers/github-seats-reservation" # ${{ secrets.GCP_WORKLOAD_PROVIDER }}
+          # service_account: "github-seats-reservation@gcp-seats-reservation.iam.gserviceaccount.com" # ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          # authenticate via Google OAuth2 ADC JSON
+          credentials_json: ${{ secrets.GCP_ADC_JSON }}
+          token_format: 'access_token'        # debug token
+          access_token_lifetime: '3300s'      # extend time due to be differnt timezone
+          create_credentials_file: true       # export credentials for next steps
+          export_environment_variables: true  # export enviroment variables for next steps
+
+      # 3. Require cloud SDK
+      - name: 🛠️ Set up Cloud SDK
+        if: success()                 # if previous step is successful
+        uses: google-github-actions/setup-gcloud@v2
+      
+      # 3. Require GKE credentials to deploy
+      - name: 🚀 Require GKE Cluster Credentials
+        if: success()                 # if previous step is successful
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: ${{ matrix.service.name }}-cluster
+          location: ${{ inputs.region }}
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      # 4. Spawns a k6 container to stream simulated traffic into the production nodes
+      - name: 📈 Inject Traffic via k6 Docker Container
+        if: success()                 # if previous step is successful
+        env:
+          GKE_TARGET_URL: ${{ inputs.gke_target_url }}
+        run: |
+          echo "========================================================================="
+          echo "🎯 TARGET URL: $GKE_TARGET_URL"
+          echo "========================================================================="
+          
+          # Mounts the local tests directory into the official k6 image and triggers the execution
+          # Passes the dynamic target URL input parameter safely into the k6 execution runtime
+          docker run --rm \
+            -v $(pwd)/tests:/tests \
+            -e TARGET_URL="$GKE_TARGET_URL" \
+            grafana/k6 run /tests/scalability-test.js
+      
+      # 5. Clean up
+      - name: ⚙️ Force Kill Orphan Processes
+        if: always()    # Always run to clean up
+        run: |
+          # Kill background node process
+          echo "--- 1. Cleaning background host processes ---"
+          pkill -f node || true
+          
+          # Clean all container sidecar (Postgres, Redis) and Volume to avoid cache port
+          echo "--- 2. Flushing dynamic docker infrastructure ---"
+          docker ps -aq | xargs -r docker rm -f || true
+          docker volume prune -f || true
+          
+          # !!!IMPORTANT!!!
+          # Use Prisma CLI to clean all data in Database Neon/Postgres Production
+          # Help next build to have clean database, not conflicting data
+          # Only running if database local (virtual local test).
+          # If DATABASE_URL is PRODUCTION (Neon / GCP Cloud SQL), skip to protect Production
+          if [[ "$DATABASE_URL" == *"localhost"* || "$DATABASE_URL" == *"127.0.0.1"* ]]; then
+            echo "⚠️ - Detected local test database. Running safe purge..."
+            npx prisma db purge --force || npx prisma migrate reset --force || true
+          else
+            echo "🔒 - !!!ATTENTION!!! Detected PRODUCTION Database. Skipping purge to protect live data!"
+          fi
+          
+          # Clean context of K8s and Token GCP on Virtual Runner Machine for security and cache conflicting next build time
+          echo "--- 4. Clearing localized Kubernetes context ---"
+          rm -rf ~/.kube ~/.config/gcloud || true
+          rm -f k8s-deployment.yaml || true
