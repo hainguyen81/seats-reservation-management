@@ -284,8 +284,8 @@ jobs:
           echo "========================================================================="
           # Use Node.js to read file JSON and find "client_email"
           GCP_SA_EMAIL=$(node -e "const data = JSON.parse(process.env.GCP_ADC_JSON); console.log(data.client_email);")
-          # debug
-          echo "- Detected Identity Email: $GCP_SA_EMAIL | Namespace: $K8S_DEPLOYMENT_NAMESPACE"
+          # # debug
+          # echo "- Detected Identity Email: $GCP_SA_EMAIL | Namespace: $K8S_DEPLOYMENT_NAMESPACE"
           
           echo "========================================================================="
           echo "🛠️ CREATING KUBERNETES SERVICE ACCOUNT OBJECT"
@@ -294,22 +294,22 @@ jobs:
           apiVersion: v1
           kind: ServiceAccount
           metadata:
-            name: GCP_SERVICE_ACCOUNT_RUNNER
+            name: gcp-service-account-runner
             namespace: $K8S_DEPLOYMENT_NAMESPACE
             annotations:
               iam.gke.io/gcp-service-account: $GCP_SA_EMAIL
           EOF
-          # debug
-          echo "--- Content Verified ---"
-          cat <<EOF
-          apiVersion: v1
-          kind: ServiceAccount
-          metadata:
-            name: GCP_SERVICE_ACCOUNT_RUNNER
-            namespace: $K8S_DEPLOYMENT_NAMESPACE
-            annotations:
-              iam.gke.io/gcp-service-account: $GCP_SA_EMAIL
-          EOF
+          # # debug
+          # echo "--- Content Verified ---"
+          # cat <<EOF
+          # apiVersion: v1
+          # kind: ServiceAccount
+          # metadata:
+          #   name: gcp-service-account-runner
+          #   namespace: $K8S_DEPLOYMENT_NAMESPACE
+          #   annotations:
+          #     iam.gke.io/gcp-service-account: $GCP_SA_EMAIL
+          # EOF
           
           echo "========================================================================="
           echo "🔐 EXECUTING WORKLOAD IDENTITY BINDING VIA DYNAMIC ADC CREDENTIALS"
@@ -317,7 +317,7 @@ jobs:
           # Load $GCP_SA_EMAIL to gcloud
           gcloud iam service-accounts add-iam-policy-binding "$GCP_SA_EMAIL" \
               --role="roles/iam.workloadIdentityUser" \
-              --member="serviceAccount:${GCP_PROJECT_ID}.svc.id.goog[${K8S_DEPLOYMENT_NAMESPACE}/GCP_SERVICE_ACCOUNT_RUNNER]" \
+              --member="serviceAccount:${GCP_PROJECT_ID}.svc.id.goog[${K8S_DEPLOYMENT_NAMESPACE}/gcp-service-account-runner]" \
               --quiet
 
       # 10. Create secret to adapt into K8s deployment
@@ -351,7 +351,7 @@ jobs:
           # fix k8s deployment image yml file by region
           sed -i "s|PLACEHOLDER_GKE_REGISTRY_IMAGE|${GCP_SERVICE_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_SERVICE}:${IMAGE_SHA}|g" $GKE_DEPLOYMENT_FILE
           # fix k8s deployment service account runner yml file for pulling image when deploying
-          sed -i "s|PLACEHOLDER_GCP_SERVICE_ACCOUNT_RUNNER|GCP_SERVICE_ACCOUNT_RUNNER|g" $GKE_DEPLOYMENT_FILE
+          sed -i "s|PLACEHOLDER_GCP_SERVICE_ACCOUNT_RUNNER|gcp-service-account-runner|g" $GKE_DEPLOYMENT_FILE
           # # debug
           # cat $GKE_DEPLOYMENT_FILE
           # deploy GKE
