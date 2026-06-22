@@ -100,6 +100,7 @@ jobs:
       env_docker_image: ${{ steps.config.outputs.env_docker_image }}
       env_gcp_deploy: ${{ steps.config.outputs.env_gcp_deploy }}
       env_gke_deploy: ${{ steps.config.outputs.env_gke_deploy }}
+      env_gke_gcp_region: ${{ steps.config.outputs.env_gke_gcp_region }}
     steps:
       - id: config
         name: ⚙️ Export JSON Environment Variables
@@ -117,6 +118,11 @@ jobs:
           # gke deploy enviroment variables
           echo "env_gke_deploy<<EOF" >> $GITHUB_OUTPUT
           echo '${{ env.ENV_JSON_GKE_DEPLOY }}' >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          # gcp/gke region enviroment variables
+          echo "env_gke_gcp_region<<EOF" >> $GITHUB_OUTPUT
+          echo '${{ env.GCP_REGION }}' >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
   # ===================================================
@@ -149,7 +155,7 @@ jobs:
       id-token: write
     with:
       env_data: ${{ needs.setup-env.outputs.env_gcp_deploy }}
-      region: ${{ env.GCP_REGION }}
+      region: ${{ needs.setup-env.outputs.env_gke_gcp_region }}
   
   # ==============================================================================
   # 🌐 GKE DEPLOYMENT
@@ -165,5 +171,5 @@ jobs:
       id-token: write
     with:
       env_data: ${{ needs.setup-env.outputs.env_gke_deploy }}
-      region: ${{ env.GCP_REGION }}
+      region: ${{ needs.setup-env.outputs.env_gke_gcp_region }}
 
