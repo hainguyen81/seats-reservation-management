@@ -196,7 +196,8 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       
-      # 3. Check GKE cluster, if not found, then creating it
+      # 3. Check GKE cluster, if not found, then creating it.
+      # !!!IMPORTANT!! Use one cluster for both SQLite/Postgres, so use GitHub repository name to save the cost
       # Requires GCP Kubernetes Engine Admin Rights to create
       - name: ☸️ Ensure GKE Cluster Exists (Auto-Provision Hardware)
         env:
@@ -257,7 +258,7 @@ jobs:
           GCP_REGION: ${{ inputs.region }}
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
         with:
-          # use one cluster for both SQLite/Postgres, so use GitHub repository name to save the cost
+          # !!!IMPORTANT!! Use one cluster for both SQLite/Postgres, so use GitHub repository name to save the cost
           cluster_name: ${{ env.GKE_CLUSTER }}
           location: ${{ env.GCP_REGION }}
           project_id: ${{ env.GCP_PROJECT_ID }}
