@@ -106,142 +106,140 @@ jobs:
         service: ${{ fromJson(inputs.env_data) }}
 
     steps:
-    # Check whether allow for running workflow
-    - name: 🛡️ Gatekeeper - Validate Administrative Access
-      if: ${{ secrets.ALLOW_GKE_DEPLOY != 'true' }}
-      run: |
-        echo "❌ Deployment is administratively DISABLED via GitHub Secrets (secrets.ALLOW_GKE_DEPLOY is not true)."
-        echo "Terminating pipeline execution immediately to protect production infrastructure."
-        exit 1 # Require Admin Rights
+      # Check whether allow for running workflow
+      - name: 🛡️ Gatekeeper - Validate Administrative Access
+        if: ${{ secrets.ALLOW_GKE_DEPLOY != 'true' }}
+        run: |
+          echo "❌ Deployment is administratively DISABLED via GitHub Secrets (secrets.ALLOW_GKE_DEPLOY is not true)."
+          echo "Terminating pipeline execution immediately to protect production infrastructure."
+          exit 1 # Require Admin Rights
 
-    # 1. Login to Google Cloud by Google OAuth2 ADC
-    - name: 🔑 Authenticate to Google Cloud via Google OAuth2 ADC
-      if: success()                 # if previous step is successful
-      uses: google-github-actions/auth@v2
-      with:
-        # authenticate via OIDC
-        # workload_identity_provider: "projects/130619617539/locations/global/workloadIdentityPools/github-seats-reservation-pool/providers/github-seats-reservation" # ${{ secrets.GCP_WORKLOAD_PROVIDER }}
-        # service_account: "github-seats-reservation@gcp-seats-reservation.iam.gserviceaccount.com" # ${{ secrets.GCP_SERVICE_ACCOUNT }}
-        # authenticate via Google OAuth2 ADC JSON
-        credentials_json: ${{ secrets.GCP_ADC_JSON }}
-        token_format: 'access_token'        # debug token
-        access_token_lifetime: '3300s'      # extend time due to be differnt timezone
-        create_credentials_file: true       # export credentials for next steps
-        export_environment_variables: true  # export enviroment variables for next steps
-    
-    # 2. Temporary Step: Convert deploy enviroment variables
-    - name: 🔍 Convert JSON Enviroment Variables to Comma Separated Key-Value
-      if: success()                 # if previous step is successful
-      id: convert-deploy-env-vars
-      env:
-        SERVICE_ENV_VARS: ${{ toJson(matrix.service.env_vars) }}
-        NEON_DATABASE_URL: ${{ secrets.DATABASE_URL_NEON_POSTGRES }}
-        NEON_DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL_NEON_POSTGRES }}
-      run: |
-        node -e '
-          // 1. request JSON object
-          const jsonRaw = process.env.SERVICE_ENV_VARS; 
-          const obj = JSON.parse(jsonRaw);
-          if (!obj["DATABASE_URL"] || !obj["DIRECT_DATABASE_URL"]) {
-            obj["DATABASE_URL"] = process.env.NEON_DATABASE_URL;
-            obj["DIRECT_DATABASE_URL"] = process.env.NEON_DIRECT_DATABASE_URL;
-          }
+      # 1. Login to Google Cloud by Google OAuth2 ADC
+      - name: 🔑 Authenticate to Google Cloud via Google OAuth2 ADC
+        if: success()                 # if previous step is successful
+        uses: google-github-actions/auth@v2
+        with:
+          # authenticate via OIDC
+          # workload_identity_provider: "projects/130619617539/locations/global/workloadIdentityPools/github-seats-reservation-pool/providers/github-seats-reservation" # ${{ secrets.GCP_WORKLOAD_PROVIDER }}
+          # service_account: "github-seats-reservation@gcp-seats-reservation.iam.gserviceaccount.com" # ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          # authenticate via Google OAuth2 ADC JSON
+          credentials_json: ${{ secrets.GCP_ADC_JSON }}
+          token_format: 'access_token'        # debug token
+          access_token_lifetime: '3300s'      # extend time due to be differnt timezone
+          create_credentials_file: true       # export credentials for next steps
+          export_environment_variables: true  # export enviroment variables for next steps
+      
+      # 2. Temporary Step: Convert deploy enviroment variables
+      - name: 🔍 Convert JSON Enviroment Variables to Comma Separated Key-Value
+        if: success()                 # if previous step is successful
+        id: convert-deploy-env-vars
+        env:
+          SERVICE_ENV_VARS: ${{ toJson(matrix.service.env_vars) }}
+          NEON_DATABASE_URL: ${{ secrets.DATABASE_URL_NEON_POSTGRES }}
+          NEON_DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL_NEON_POSTGRES }}
+        run: |
+          node -e '
+            // 1. request JSON object
+            const jsonRaw = process.env.SERVICE_ENV_VARS; 
+            const obj = JSON.parse(jsonRaw);
+            if (!obj["DATABASE_URL"] || !obj["DIRECT_DATABASE_URL"]) {
+              obj["DATABASE_URL"] = process.env.NEON_DATABASE_URL;
+              obj["DIRECT_DATABASE_URL"] = process.env.NEON_DIRECT_DATABASE_URL;
+            }
+            
+            // 2. convert to array key=value
+            const kvArray = Object.entries(obj).map(([key, value]) => `${key}=${value}`);
+            
+            // 3. combine array by comma
+            const resultString = kvArray.join(",");
+            
+            // 4. output to GitHub Actions
+            const fs = require("fs");
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `converted_env_vars=${resultString}\n`);
+          '
+      
+      # 3. Deploy to Google Cloud Run by pulling image from Docker Hub
+      - name: 🚀 Deploy to Cloud Run
+        if: success()                 # if previous step is successful
+        uses: google-github-actions/deploy-cloudrun@v2
+        env:
+          ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+        with:
+          service: ${{ matrix.service.name }}
+          region: ${{ env.GCP_REGION }}
+          cleanup_credentials: false      # prevent clean up to do manually
+          # Point to Public Docker Hub, no need to use Google Artifact Registry API due to be charged
+          image: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service.name }}:latest
           
-          // 2. convert to array key=value
-          const kvArray = Object.entries(obj).map(([key, value]) => `${key}=${value}`);
+          # ⚠️ Parameter to force system running in Free Tier Forever
+          # `set-env-vars` apply enviroment variables for docker image
+          flags: |
+            --allow-unauthenticated
+            --min-instances=0
+            --max-instances=1
+            --memory=512Mi
+            --cpu=1
+            --set-env-vars="${{ steps['convert-deploy-env-vars'].outputs.converted_env_vars }}"
+      
+      # 4. Check deployment status
+      - name: 🔍 Check GCP Service Status (Health Check)
+        if: success()                 # if previous step is successful
+        id: gcp_cloud_run_deployment_check
+        env:
+          GCP_SERVICE: ${{ matrix.service.name }}
+          GCP_SERVICE_REGION: ${{ inputs.region }}
+        run: |
+          # wait 5 seconds for Cloud Run start
+          sleep 5
           
-          // 3. combine array by comma
-          const resultString = kvArray.join(",");
+          # Send request to deployed URL (URL from previous gcloud deploy step)
+          echo "- Service: $GCP_SERVICE | Region: $GCP_SERVICE_REGION"
+          URL=$(gcloud run services describe $GCP_SERVICE --platform managed --region $GCP_SERVICE_REGION --format 'value(status.url)')
           
-          // 4. output to GitHub Actions
-          const fs = require("fs");
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, `converted_env_vars=${resultString}\n`);
-        '
-    
-    # 3. Deploy to Google Cloud Run by pulling image from Docker Hub
-    - name: 🚀 Deploy to Cloud Run
-      if: success()                 # if previous step is successful
-      uses: google-github-actions/deploy-cloudrun@v2
-      env:
-        ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
-        FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-      with:
-        service: ${{ matrix.service.name }}
-        region: ${{ env.GCP_REGION }}
-        cleanup_credentials: false      # prevent clean up to do manually
-        # Point to Public Docker Hub, no need to use Google Artifact Registry API due to be charged
-        image: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service.name }}:latest
-        
-        # ⚠️ Parameter to force system running in Free Tier Forever
-        # `set-env-vars` apply enviroment variables for docker image
-        flags: |
-          --allow-unauthenticated
-          --min-instances=0
-          --max-instances=1
-          --memory=512Mi
-          --cpu=1
-          --set-env-vars="${{ steps['convert-deploy-env-vars'].outputs.converted_env_vars }}"
-    
-    # 4. Check deployment status
-    - name: 🔍 Check GCP Service Status (Health Check)
-      if: success()                 # if previous step is successful
-      id: gcp_cloud_run_deployment_check
-      env:
-        GCP_SERVICE: ${{ matrix.service.name }}
-        GCP_SERVICE_REGION: ${{ inputs.region }}
-      run: |
-        # wait 5 seconds for Cloud Run start
-        sleep 5
-        
-        # Send request to deployed URL (URL from previous gcloud deploy step)
-        echo "- Service: $GCP_SERVICE | Region: $GCP_SERVICE_REGION"
-        URL=$(gcloud run services describe $GCP_SERVICE --platform managed --region $GCP_SERVICE_REGION --format 'value(status.url)')
-        
-        echo "Verify GCP cloud run URL: $URL"
-        STATUS=$(curl -o /dev/null -s -w "%{http_code}" $URL)
-        
-        if [ $STATUS -eq 200 ]; then
-          echo "✅ Service worked successful! Status: $STATUS"
-          echo "- Public URL: $URL"
-          echo "gcp_cloud_run_url=$URL" >> $GITHUB_OUTPUT
-        else
-          echo "❌ Service Error on GCP! Status: $STATUS"
-          exit 1
-        fi
-        
-    # Optional: Post the URL as a comment on your Pull Request (great for debugging)
-    - name: Comment PR with URL
-      if: success() && github.event_name == 'pull_request'    # if previous step is successful
-      uses: thollander/actions-comment-pull-request@v2
-      with:
-        message: |
-          🚀 Deployment successful!
-          🔍 GCP Cloud Run Public URL: ${{ steps.gcp_cloud_run_deployment_check.outputs.gcp_cloud_run_url }}
-    
-    # 5. Clean up
-    - name: ⚙️ Force Kill Orphan Processes
-      if: always()    # Always run to clean up
-      run: |
-        # Kill background node process
-        echo "--- 1. Cleaning background host processes ---"
-        pkill -f node || true
-        
-        # Clean all container sidecar (Postgres, Redis) and Volume to avoid cache port
-        echo "--- 2. Flushing dynamic docker infrastructure ---"
-        docker ps -aq | xargs -r docker rm -f || true
-        docker volume prune -f || true
-        
-        # !!!IMPORTANT!!!
-        # Use Prisma CLI to clean all data in Database Neon/Postgres Production
-        # Help next build to have clean database, not conflicting data
-        # Only running if database local (virtual local test).
-        # If DATABASE_URL is PRODUCTION (Neon / GCP Cloud SQL), skip to protect Production
-        if [[ "$DATABASE_URL" == *"localhost"* || "$DATABASE_URL" == *"127.0.0.1"* ]]; then
-          echo "⚠️ - Detected local test database. Running safe purge..."
-          npx prisma db purge --force || npx prisma migrate reset --force || true
-        else
-          echo "🔒 - !!!ATTENTION!!! Detected PRODUCTION Database. Skipping purge to protect live data!"
-        fi
-
-
+          echo "Verify GCP cloud run URL: $URL"
+          STATUS=$(curl -o /dev/null -s -w "%{http_code}" $URL)
+          
+          if [ $STATUS -eq 200 ]; then
+            echo "✅ Service worked successful! Status: $STATUS"
+            echo "- Public URL: $URL"
+            echo "gcp_cloud_run_url=$URL" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Service Error on GCP! Status: $STATUS"
+            exit 1
+          fi
+          
+      # Optional: Post the URL as a comment on your Pull Request (great for debugging)
+      - name: Comment PR with URL
+        if: success() && github.event_name == 'pull_request'    # if previous step is successful
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          message: |
+            🚀 Deployment successful!
+            🔍 GCP Cloud Run Public URL: ${{ steps.gcp_cloud_run_deployment_check.outputs.gcp_cloud_run_url }}
+      
+      # 5. Clean up
+      - name: ⚙️ Force Kill Orphan Processes
+        if: always()    # Always run to clean up
+        run: |
+          # Kill background node process
+          echo "--- 1. Cleaning background host processes ---"
+          pkill -f node || true
+          
+          # Clean all container sidecar (Postgres, Redis) and Volume to avoid cache port
+          echo "--- 2. Flushing dynamic docker infrastructure ---"
+          docker ps -aq | xargs -r docker rm -f || true
+          docker volume prune -f || true
+          
+          # !!!IMPORTANT!!!
+          # Use Prisma CLI to clean all data in Database Neon/Postgres Production
+          # Help next build to have clean database, not conflicting data
+          # Only running if database local (virtual local test).
+          # If DATABASE_URL is PRODUCTION (Neon / GCP Cloud SQL), skip to protect Production
+          if [[ "$DATABASE_URL" == *"localhost"* || "$DATABASE_URL" == *"127.0.0.1"* ]]; then
+            echo "⚠️ - Detected local test database. Running safe purge..."
+            npx prisma db purge --force || npx prisma migrate reset --force || true
+          else
+            echo "🔒 - !!!ATTENTION!!! Detected PRODUCTION Database. Skipping purge to protect live data!"
+          fi
 
