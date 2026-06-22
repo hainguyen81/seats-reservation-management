@@ -79,14 +79,11 @@ jobs:
       - name: 🚀 Require GKE Cluster Credentials
         if: success()                 # if previous step is successful
         uses: google-github-actions/get-gke-credentials@v2
-        env:
-          GKE_CLUSTER: ${{ github.event.repository.name }}-cluster
-          GCP_REGION: ${{ inputs.region }}
-          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
         with:
-          cluster_name: ${{ env.GKE_CLUSTER }}
-          location: ${{ env.GCP_REGION }}
-          project_id: ${{ env.GCP_PROJECT_ID }}
+          # !!!IMPORTANT!! Use one cluster for both SQLite/Postgres, so use GitHub repository name to save the cost
+          cluster_name: ${{ github.event.repository.name }}-cluster
+          location: ${{ inputs.region }}
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
 
       # 4. Spawns a k6 container to stream simulated traffic into the production nodes
       - name: 📈 Inject Traffic via k6 Docker Container

@@ -253,15 +253,11 @@ jobs:
       - name: 🚀 Require GKE Cluster Credentials
         if: success()                 # if previous step is successful
         uses: google-github-actions/get-gke-credentials@v2
-        env:
-          GKE_CLUSTER: ${{ github.event.repository.name }}-cluster
-          GCP_REGION: ${{ inputs.region }}
-          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
         with:
           # !!!IMPORTANT!! Use one cluster for both SQLite/Postgres, so use GitHub repository name to save the cost
-          cluster_name: ${{ env.GKE_CLUSTER }}
-          location: ${{ env.GCP_REGION }}
-          project_id: ${{ env.GCP_PROJECT_ID }}
+          cluster_name: ${{ github.event.repository.name }}-cluster
+          location: ${{ inputs.region }}
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
       
       # 4. Create secret to adapt into K8s deployment
       - name: 🔐 Securely Create and Override GKE Database Secrets
