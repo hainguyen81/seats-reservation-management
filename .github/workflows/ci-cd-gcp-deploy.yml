@@ -135,7 +135,7 @@ jobs:
           if (!obj["DATABASE_URL"]) {
             obj["DATABASE_URL"] = process.env.NEON_DATABASE_URL;
           }
-          if (!obj["DATABASE_URL"]) {
+          if (!obj["DIRECT_DATABASE_URL"]) {
             obj["DIRECT_DATABASE_URL"] = process.env.NEON_DIRECT_DATABASE_URL;
           }
           
