@@ -132,6 +132,9 @@ spec:
       labels:
         app: seats-reservation
     spec:
+      # Specify GCP Service Account for pulling image on GCP Repository
+      serviceAccountName: PLACEHOLDER_GCP_SERVICE_ACCOUNT_RUNNER
+      
       # depend on other services
       initContainers:
       - name: wait-for-redis
@@ -141,7 +144,7 @@ spec:
       # container template
       containers:
       - name: seats-reservation-app
-        image: GKE_REGISTRY_IMAGE       # Docker Hub/Registry Image
+        image: PLACEHOLDER_GKE_REGISTRY_IMAGE     # Docker Hub/Registry Image
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 3000

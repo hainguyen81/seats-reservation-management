@@ -272,6 +272,49 @@ jobs:
           echo "Validating infrastructure partition status on GKE cluster..."
           kubectl create namespace $K8S_DEPLOYMENT_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
       
+      # 10. Bind GKE Service Account for pulling image on GCP Repository
+      - name: 🔗 Bind GKE Service Account to Google IAM Role (Workload Identity)
+        env:
+          K8S_DEPLOYMENT_NAMESPACE: ${{ matrix.service.env_vars.K8S_DEPLOYMENT_NAMESPACE }}
+          GCP_ADC_JSON: ${{ secrets.GCP_ADC_JSON }}
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+        run: |
+          echo "========================================================================="
+          echo "🕵️‍♂️ AUTOMATICALLY EXTRACTING SERVICE ACCOUNT EMAIL FROM ADC JSON KEY"
+          echo "========================================================================="
+          # Use Node.js to read file JSON and find "client_email"
+          GCP_SA_EMAIL=$(node -e "console.parse ? null : console.log(JSON.parse($GCP_ADC_JSON).client_email)")
+          # debug
+          echo "- Detected Identity Email: $GCP_SA_EMAIL | Namespace: $K8S_DEPLOYMENT_NAMESPACE"
+          
+          echo "========================================================================="
+          echo "🛠️ CREATING KUBERNETES SERVICE ACCOUNT OBJECT"
+          echo "========================================================================="
+          kubectl apply -f - <<EOF
+          apiVersion: v1
+          kind: ServiceAccount
+          metadata:
+            name: GCP_SERVICE_ACCOUNT_RUNNER
+            namespace: $K8S_DEPLOYMENT_NAMESPACE
+          EOF
+          # debug
+          echo <<EOF
+          apiVersion: v1
+          kind: ServiceAccount
+          metadata:
+            name: GCP_SERVICE_ACCOUNT_RUNNER
+            namespace: $K8S_DEPLOYMENT_NAMESPACE
+          EOF
+          
+          echo "========================================================================="
+          echo "🔐 EXECUTING WORKLOAD IDENTITY BINDING VIA DYNAMIC ADC CREDENTIALS"
+          echo "========================================================================="
+          # Load $GCP_SA_EMAIL to gcloud
+          gcloud iam service-accounts add-iam-policy-binding "$GCP_SA_EMAIL" \
+              --role="roles/iam.workloadIdentityUser" \
+              --member="serviceAccount:$GCP_PROJECT_ID.svc.id.goog[$K8S_DEPLOYMENT_NAMESPACE/GCP_SERVICE_ACCOUNT_RUNNER]" \
+              --quiet
+
       # 10. Create secret to adapt into K8s deployment
       - name: 🔐 Securely Create and Override GKE Database Secrets
         env:
@@ -298,9 +341,12 @@ jobs:
           GCP_SERVICE: ${{ matrix.service.name }}
           GCP_SERVICE_REGION: ${{ inputs.region }}
           GKE_DEPLOYMENT_FILE: ${{ matrix.service.env_vars.K8S_DEPLOYMENT }}
+          IMAGE_SHA: ${{ github.sha }}
         run: |
-          # fix k8s deployment yml file by region
-          sed -i "s|GKE_REGISTRY_IMAGE|${GCP_SERVICE_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_SERVICE}:a1b2c3d|g" $GKE_DEPLOYMENT_FILE
+          # fix k8s deployment image yml file by region
+          sed -i "s|PLACEHOLDER_GKE_REGISTRY_IMAGE|${GCP_SERVICE_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_SERVICE}:${IMAGE_SHA}|g" $GKE_DEPLOYMENT_FILE
+          # fix k8s deployment service account runner yml file for pulling image when deploying
+          sed -i "s|PLACEHOLDER_GCP_SERVICE_ACCOUNT_RUNNER|GCP_SERVICE_ACCOUNT_RUNNER|g" $GKE_DEPLOYMENT_FILE
           # # debug
           # cat $GKE_DEPLOYMENT_FILE
           # deploy GKE
