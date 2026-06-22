@@ -62,6 +62,6 @@ echo -------------------------------------------------
 echo ► 3. Wait for K8s Pods READY
 echo -------------------------------------------------
 echo %TAB%- Wait for services READY
-kubectl rollout status deployment/seats-reservation-deployment --timeout=90s
+kubectl rollout status deployment/seats-reservation-deployment --timeout=120s
 
 pause
