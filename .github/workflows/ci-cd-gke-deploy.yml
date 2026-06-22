@@ -190,19 +190,77 @@ jobs:
           context: ./sources
           file: ./sources/Dockerfile
           push: true
-          # Đặt tên image theo chuẩn Google Artifact Registry
+          # tag image name must follow Google Artifact Registry Standards.
+          # Ex: <region>-docker.pkg.dev/<GCP_PROJECT_ID>/<GCP Repository Name>/<Immutable K8s Image Name>:<unique SHA>
           tags: ${{ inputs.region }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ github.event.repository.name }}/${{ matrix.service.name }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      
+      # 3. Check GKE cluster, if not found, then creating it
+      # Requires GCP Kubernetes Engine Admin Rights to create
+      - name: ☸️ Ensure GKE Cluster Exists (Auto-Provision Hardware)
+        env:
+          GKE_CLUSTER: ${{ github.event.repository.name }}-cluster
+          GCP_REGION: ${{ inputs.region }}
+        run: |
+          CLUSTER_NAME="$GKE_CLUSTER"
+          REGION_NAME="$GCP_REGION"
+          
+          echo "Checking if physical GKE Cluster '$CLUSTER_NAME' exists in region '$REGION_NAME'..."
+          
+          # 1. Check Cluster whether existed on GCP
+          if ! gcloud container clusters describe "$CLUSTER_NAME" --region="$REGION_NAME" --quiet >/dev/null 2>&1; then
+            echo "⚠️ GKE Cluster '$CLUSTER_NAME' not found! Initiating automated hardware provisioning under Free Tier parameters..."
+            
+            # 2. Create new Cluster auto by gcloud command
+            # - Use flag `--async` to continue CI/CD workflow
+            # - Config `e2-micro/e2-small` and `--num-nodes=1` to keep Free Tier, avoid GCP Payment
+            gcloud container clusters create "$CLUSTER_NAME" \
+              --region="$REGION_NAME" \
+              --num-nodes=1 \
+              --machine-type="e2-small" \
+              --disk-size="20GB" \
+              --enable-autoscaling --min-nodes=1 --max-nodes=2 \
+              --async \
+              --quiet
+              
+            echo "🛸 Hardware creation dispatched. Initiating smart monitoring loop..."
+          
+            # 2. Smart Wait Loop
+            # Loop every 30 seconds to ask GCP whether cluster is 'RUNNING'.
+            # to avoid pipeline timeout and other push code requests not stuck by this.
+            while true; do
+              STATUS=$(gcloud container clusters describe "$CLUSTER_NAME" --region="$REGION_NAME" --format="value(status)" 2>/dev/null || echo "PROVISIONING")
+              echo "Current GKE Infrastructure Status: [ $STATUS ]"
+              
+              if [ "$STATUS" = "RUNNING" ]; then
+                echo "✅ GKE Cluster hardware is fully assembled and live! Proceeding to software layer."
+                break
+              elif [ "$STATUS" = "STOPPING" ] || [ "$STATUS" = "ERROR" ] || [ "$STATUS" = "DEGRADED" ]; then
+                echo "❌ GKE Hardware initialization failed with status: $STATUS"
+                exit 1
+              fi
+              
+              echo "Waiting 30 seconds for Google Cloud infrastructure layer to complete..."
+              sleep 30
+            done
+          else
+            echo "✅ Physical GKE Cluster already exists. Proceeding directly to software orchestration layer."
+          fi
       
       # 3. Require GKE credentials to deploy
       - name: 🚀 Require GKE Cluster Credentials
         if: success()                 # if previous step is successful
         uses: google-github-actions/get-gke-credentials@v2
+        env:
+          GKE_CLUSTER: ${{ github.event.repository.name }}-cluster
+          GCP_REGION: ${{ inputs.region }}
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
         with:
-          cluster_name: ${{ matrix.service.name }}-cluster
-          location: ${{ inputs.region }}
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          # use one cluster for both SQLite/Postgres, so use GitHub repository name to save the cost
+          cluster_name: ${{ env.GKE_CLUSTER }}
+          location: ${{ env.GCP_REGION }}
+          project_id: ${{ env.GCP_PROJECT_ID }}
       
       # 4. Create secret to adapt into K8s deployment
       - name: 🔐 Securely Create and Override GKE Database Secrets
