@@ -156,6 +156,9 @@ jobs:
       - name: 🛠️ Set up Docker Buildx
         if: success()                 # if previous step is successful
         uses: docker/setup-buildx-action@v3
+        with:
+          # back to use default builder if new instance is error by stucking network
+          fallback-to-driver: docker
       
       # check and create GKE image repository if not existing
       - name: 📦 Ensure Artifact Registry Repository Exists
