@@ -1,0 +1,14 @@
+apiVersion: ://google.com
+kind: BackendConfig
+metadata:
+  name: seats-backend-config
+  namespace: default
+spec:
+  healthCheck:
+      type: HTTP
+      port: 4000        # 👈 point to port 4000 of Service K8s
+      requestPath: /api/health    # 👈 if Next.js doesn't have api health check, point to home page (Ex: `/`) to receiving 200
+      checkIntervalSec: 15
+      timeoutSec: 5
+      healthyThreshold: 1
+      unhealthyThreshold: 3

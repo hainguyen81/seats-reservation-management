@@ -244,7 +244,7 @@ spec:
         image: seats-reservation-management:latest # Docker Hub/Registry Image
         imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 4000
+        - containerPort: 3000     # Next.js port that is running
         
         # enviroment variables
         env:
@@ -287,7 +287,7 @@ spec:
         livenessProbe:
           httpGet:
             path: /api/health
-            port: 4000
+            port: 3000          # Next.js port that is running
           initialDelaySeconds: 60
           periodSeconds: 15
           timeoutSeconds: 5
@@ -295,7 +295,7 @@ spec:
         readinessProbe:
           httpGet:
             path: /api/health
-            port: 4000
+            port: 3000          # Next.js port that is running
           initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
@@ -323,8 +323,8 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-  - port: 4000
-    targetPort: 4000
+  - port: 4000          # port open for K8s Ingress calling to
+    targetPort: 3000    # real port that Next.js listening in container
   selector:
     app: seats-reservation
 ---
@@ -342,8 +342,8 @@ spec:
   selector:
     app: seats-reservation
   ports:
-  - port: 4000
-    targetPort: 4000
+  - port: 4000        # public port on browser (Ex: http://localhost:4000)
+    targetPort: 3000  # real port that Next.js listening in container
     protocol: TCP
 ---
 
@@ -432,6 +432,11 @@ metadata:
   annotations:
     ingress.class: nginx
     nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    # Ingress call health check web-app
+    nginx.ingress.kubernetes.io/healthcheck-path: "/api/health"
+    # # for GCP/GKE
+    # ://google.com: '{"default": "seats-backend-config"}'
+    # ://google.com: '{"default": "seats-backend-config"}'
 spec:
   ingressClassName: nginx
   rules:
@@ -443,4 +448,4 @@ spec:
             service:
               name: seats-reservation-service
               port:
-                number: 4000
+                number: 4000    # new port (from 3000 to 4000) for Ingress calling to
