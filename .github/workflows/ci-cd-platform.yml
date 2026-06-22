@@ -83,6 +83,7 @@ env:
               "K8S_DEPLOYMENT_NAMESPACE":   "gke-seats-reservation-postgres",
               "K8S_DEPLOYMENT_NAME":        "seats-reservation-deployment",
               "K8S_DEPLOYMENT_SERVICE":     "seats-reservation-service-lb",
+              "K8S_DEPLOYMENT_SECRET":      "seats-reservation-secret",
               "K8S_DEPLOYMENT":             "./sources/.k8s/k8s-gke-deployment-postgres.yml"
           }
       }
