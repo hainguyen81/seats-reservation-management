@@ -399,7 +399,7 @@ To authenticate the pipeline against Google Cloud Platform (GCP) and safely prov
 
 ---
 
-## 🛠️ 2. Detailed Technical Execution Steps
+## 🛠️ 9.2. Detailed Technical Execution Steps
 
 ### Phase A: Dynamic Workspace Isolation & Region Configuration
 1. **Dynamic Regionalization:** The workflow consolidates multi-vulnerability targets by routing environment contexts via a centralized dynamic token (`${{ env.GCP_REGION }}`).
@@ -465,4 +465,7 @@ To authenticate the pipeline against Google Cloud Platform (GCP) and safely prov
 >   To operate this pipeline, ensure the following keys are added to your repository's secrets engine:
 >   * `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN` (Registry authentication tokens)
 >   * `GCP_ADC_JSON` (Google Cloud infrastructure identity parameters)
+>   * `DATABASE_URL_NEON_POSTGRES` (Neon Postgres Database Cloud parameters)
+>   * `DIRECT_DATABASE_URL_NEON_POSTGRES` (Neon Postgres Database Cloud parameters)
+>
 
