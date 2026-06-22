@@ -24,12 +24,10 @@
 # - Info:
 #   Workfload Identity Pool IAM Principal Pattern:
 #     principal://iam.googleapis.com/projects/<GCP Project Number>/locations/global/workloadIdentityPools/<GCP Workload Idenity Pool ID/Name>/subject/SUBJECT_ATTRIBUTE_VALUE
-# - For PostgreSQL: Require using Cloud Run SQL, creating it on GCP first and collection information to connect:
-#   Ex: postgresql://user:password@localhost/seats_reservation?host=/cloudsql/<Cloud SQL Connection Name. Ex: project-id:region:instance-id, like this: gcp-seats-reservation:us-central1:seats-postgres-db>
 # - Back to GitHub and input the secret GCP_WORKLOAD_PROVIDER value that received from previous steps
 # -------------------------------------------------
 
-name: ☁️ [ GCP Deployment ] Seats Reservation Platform CI/CD Pipeline
+name: ☁️ [ GKE Deployment ] Seats Reservation Platform CI/CD Pipeline
 
 on:
   # auto trigger workflow
@@ -49,27 +47,19 @@ on:
             {
                 "name":     "seats-reservation-sqlite",
                 "env_vars": {
-                    "DATABASE_PROVIDER":          "sqlite",
-                    "AUTH_PROVIDER":              "custom",
-                    "NEXT_PUBLIC_AUTH_PROVIDER":  "custom",
-                    "DATABASE_URL":               "file:/app/prisma/data/seats_reservation.db",
-                    "DIRECT_DATABASE_URL":        "file:/app/prisma/data/seats_reservation.db",
-                    "REDIS_URL":                  "redis://redis-cache:6379",
-                    "JWT_SECRET":                 "seats-reservation-management-secret-key-2026",
-                    "TOTAL_SEATS":                9,
-                    "SHOULD_SEED":                true
+                    "K8S_DEPLOYMENT_NAMESPACE":   "gke-seats-reservation-sqlite",
+                    "K8S_DEPLOYMENT_NAME":        "seats-reservation-deployment",
+                    "K8S_DEPLOYMENT_SERVICE":     "seats-reservation-service-lb",
+                    "K8S_DEPLOYMENT":             "./sources/.k8s/k8s-gke-deployment-sqlite.yml"
                 }
             },
             {
                 "name":     "seats-reservation-postgres",
                 "env_vars": {
-                    "DATABASE_PROVIDER":          "postgres",
-                    "AUTH_PROVIDER":              "custom",
-                    "NEXT_PUBLIC_AUTH_PROVIDER":  "custom",
-                    "REDIS_URL":                  "redis://redis-cache:6379",
-                    "JWT_SECRET":                 "seats-reservation-management-secret-key-2026",
-                    "TOTAL_SEATS":                9,
-                    "SHOULD_SEED":                true
+                    "K8S_DEPLOYMENT_NAMESPACE":   "gke-seats-reservation-postgres",
+                    "K8S_DEPLOYMENT_NAME":        "seats-reservation-deployment",
+                    "K8S_DEPLOYMENT_SERVICE":     "seats-reservation-service-lb",
+                    "K8S_DEPLOYMENT":             "./sources/.k8s/k8s-gke-deployment-postgres.yml"
                 }
             }
           ]
@@ -94,7 +84,7 @@ jobs:
   # 🌐 GCP DEPLOYMENT
   # ==============================================================================
   deploy-to-gcp:
-    name: 🌐 Deploy to Google Cloud
+    name: 🌐 [ GKE ] Deploy to Google Cloud
     runs-on: ubuntu-latest
     # needs: build-and-push-to-docker-hub      # not require test running, due to be triggered standalone
     
@@ -105,7 +95,7 @@ jobs:
         service: ${{ fromJson(inputs.env_data) }}
 
     steps:
-    # Login to Google Cloud by Google OAuth2 ADC
+    # 1. Login to Google Cloud by Google OAuth2 ADC
     - name: 🔑 Authenticate to Google Cloud via Google OAuth2 ADC
       uses: google-github-actions/auth@v2
       with:
@@ -119,94 +109,100 @@ jobs:
         create_credentials_file: true       # export credentials for next steps
         export_environment_variables: true  # export enviroment variables for next steps
     
-    # Temporary Step: Convert deploy enviroment variables
-    - name: 🔍 Convert JSON Enviroment Variables to Comma Separated Key-Value
+    # require cloud SDK
+    - name: 🛠️ Set up Cloud SDK
       if: success()                 # if previous step is successful
-      id: convert-deploy-env-vars
-      env:
-        SERVICE_ENV_VARS: ${{ toJson(matrix.service.env_vars) }}
-        NEON_DATABASE_URL: ${{ secrets.DATABASE_URL_NEON_POSTGRES }}
-        NEON_DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL_NEON_POSTGRES }}
-      run: |
-        node -e '
-          // 1. request JSON object
-          const jsonRaw = process.env.SERVICE_ENV_VARS; 
-          const obj = JSON.parse(jsonRaw);
-          if (!obj["DATABASE_URL"] || !obj["DIRECT_DATABASE_URL"]) {
-            obj["DATABASE_URL"] = process.env.NEON_DATABASE_URL;
-            obj["DIRECT_DATABASE_URL"] = process.env.NEON_DIRECT_DATABASE_URL;
-          }
-          
-          // 2. convert to array key=value
-          const kvArray = Object.entries(obj).map(([key, value]) => `${key}=${value}`);
-          
-          // 3. combine array by comma
-          const resultString = kvArray.join(",");
-          
-          // 4. output to GitHub Actions
-          const fs = require("fs");
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, `converted_env_vars=${resultString}\n`);
-        '
+      uses: google-github-actions/setup-gcloud@v2
     
-    # Deploy to Google Cloud Run by pulling image from Docker Hub
-    - name: 🚀 Deploy to Cloud Run
+    # require docker client to config GCP registry
+    - name: 🛠️ Configure Docker Client for GCP Registry
       if: success()                 # if previous step is successful
-      uses: google-github-actions/deploy-cloudrun@v2
-      env:
-        ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
-        FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      run: gcloud auth configure-docker ${{ inputs.region }}-docker.pkg.dev
+    
+    # ==============================================================================
+    # 🌐 !!!IMPORTANT!!! Require to re-build immutable image and push it to GCP Registry, not using the built image from DockerHub because:
+    # 1. Pulling Time, Bandwidth and Scaling Cost:
+    # - DockerHub: when GKE need to scale up, it must download image from DockerHub to re-scale. This will make cost increasing (egress fees)
+    # and make scaling process longer than immutable image
+    # - GCP Registry: in same network with GCP Deployment Virtual Server/Network, so it's in same internal network (bandwidth is free, and fastest)
+    # 2. Private Network Execution (Strongest Security)
+    # 3. The image is immutable via SHA code (github.sha):
+    # - DockerHub: if 2 virtual K8s machine pull image at 2 different time, then they could run 2 different versions of code.
+    # - GCP SHA: it's only one uniqued SHA version, so GCP K8s virtual machines will run same code version when scaling
+    # ==============================================================================
+    # require docker build kit
+    - name: 🛠️ Set up Docker Buildx
+      if: success()                 # if previous step is successful
+      uses: docker/setup-buildx-action@v3
+    
+    # build immutable image and push to GCP Registry
+    - name: 🏗️ Build and Push Production Image to GCP Registry
+      if: success()                 # if previous step is successful
+      uses: docker/build-push-action@v6
       with:
-        service: ${{ matrix.service.name }}
-        region: ${{ env.GCP_REGION }}
-        cleanup_credentials: false      # prevent clean up to do manually
-        # Point to Public Docker Hub, no need to use Google Artifact Registry API due to be charged
-        image: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service.name }}:latest
-        
-        # ⚠️ Parameter to force system running in Free Tier Forever
-        # `set-env-vars` apply enviroment variables for docker image
-        flags: |
-          --allow-unauthenticated
-          --min-instances=0
-          --max-instances=1
-          --memory=512Mi
-          --cpu=1
-          --set-env-vars="${{ steps['convert-deploy-env-vars'].outputs.converted_env_vars }}"
+        context: ./sources
+        file: ./sources/Dockerfile
+        push: true
+        # Đặt tên image theo chuẩn Google Artifact Registry
+        tags: ${{ env.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ matrix.service.name }}:${{ github.sha }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
     
-    # check deployment status
-    - name: 🔍 Check GCP Service Status (Health Check)
+    # require GKE credentials to deploy
+    - name: 🚀 Require GKE Cluster Credentials
       if: success()                 # if previous step is successful
-      id: gcp_cloud_run_deployment_check
+      uses: google-github-actions/get-gke-credentials@v2
+      with:
+        cluster_name: ${{ matrix.service.name }}-cluster
+        location: ${{ env.GCP_REGION }}
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+    
+    # Deploy to Google Cloud Run GKE by built image
+    - name: 🚀 [ GKE ] Dynamically Update Kubernetes Context & Deploy
+      if: success()                 # if previous step is successful
       env:
+        GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
         GCP_SERVICE: ${{ matrix.service.name }}
         GCP_SERVICE_REGION: ${{ inputs.region }}
+        GKE_DEPLOYMENT_FILE: ${{ matrix.service.env_vars.K8S_DEPLOYMENT }}
       run: |
-        # wait 5 seconds for Cloud Run start
-        sleep 5
+        # fix k8s deployment yml file by region
+        sed -i 's|GKE_REGISTRY_IMAGE|'"$GCP_SERVICE_REGION"'-docker.pkg.dev/'"$GCP_PROJECT_ID"'/$GCP_SERVICE:'"${{ github.sha }}"'|g' $GKE_DEPLOYMENT_FILE
+        kubectl apply -f $GKE_DEPLOYMENT_FILE --force
+    
+    # check deployment status
+    - name: 📊 Check Rollout Status & Extract Deployment Metadata
+      if: success()                 # if previous step is successful
+      env:
+        K8S_DEPLOYMENT_NAMESPACE: ${{ matrix.service.env_vars.K8S_DEPLOYMENT_NAMESPACE }}
+        K8S_DEPLOYMENT_NAME: ${{ matrix.service.env_vars.K8S_DEPLOYMENT_NAME }}
+        K8S_DEPLOYMENT_SERVICE: ${{ matrix.service.env_vars.K8S_DEPLOYMENT_SERVICE }}
+      run: |
+        echo "========================================================================="
+        echo "🚀 1. MONITORING KUBERNETES ROLLING UPDATE STATUS"
+        echo "========================================================================="
+        # Force CI/CD wait until GKE Pods running successful
+        # If having error (CrashLoopBackOff, ImagePullBackOff), this line will show error and stop pipeline (Fail-Fast)
+        kubectl rollout status deployment/$K8S_DEPLOYMENT_NAME -n $K8S_DEPLOYMENT_NAMESPACE --timeout=150s
         
-        # Send request to deployed URL (URL from previous gcloud deploy step)
-        echo "- Service: $GCP_SERVICE | Region: $GCP_SERVICE_REGION"
-        URL=$(gcloud run services describe $GCP_SERVICE --platform managed --region $GCP_SERVICE_REGION --format 'value(status.url)')
+        echo "========================================================================="
+        echo "📦 2. CURRENT RUNNING PODS & CONTAINER STATUS"
+        echo "========================================================================="
+        # Print to trace running pods, number of instances (Replicas) and status
+        kubectl get pods -l app=$K8S_DEPLOYMENT_NAME -o wide -n $K8S_DEPLOYMENT_NAMESPACE
         
-        echo "Verify GCP cloud run URL: $URL"
-        STATUS=$(curl -o /dev/null -s -w "%{http_code}" $URL)
+        echo "========================================================================="
+        echo "🌐 3. EXTRACTING NETWORK ENDPOINTS (EXTERNAL IP & SERVICE PORTS)"
+        echo "========================================================================="
+        # Request public information (IP, access port)
+        kubectl get service $K8S_DEPLOYMENT_SERVICE -n $K8S_DEPLOYMENT_NAMESPACE
         
-        if [ $STATUS -eq 200 ]; then
-          echo "✅ Service worked successful! Status: $STATUS"
-          echo "- Public URL: $URL"
-          echo "gcp_cloud_run_url=$URL" >> $GITHUB_OUTPUT
-        else
-          echo "❌ Service Error on GCP! Status: $STATUS"
-          exit 1
-        fi
-        
-    # Optional: Post the URL as a comment on your Pull Request (great for debugging)
-    - name: Comment PR with URL
-      if: success() && github.event_name == 'pull_request'    # if previous step is successful
-      uses: thollander/actions-comment-pull-request@v2
-      with:
-        message: |
-          🚀 Deployment successful!
-          🔍 GCP Cloud Run Public URL: ${{ steps.gcp_cloud_run_deployment_check.outputs.gcp_cloud_run_url }}
+        echo "========================================================================="
+        echo "📜 4. STREAMING LIVE APPLICATION BOOT LOGS"
+        echo "========================================================================="
+        # Print first 50 lines when container started
+        # to check whether application start successful
+        kubectl logs deployment/$K8S_DEPLOYMENT_NAME --tail=50 --all-containers=true -n $K8S_DEPLOYMENT_NAMESPACE
     
     # Clean up
     - name: ⚙️ Force Kill Orphan Processes
@@ -232,6 +228,9 @@ jobs:
         else
           echo "🔒 - !!!ATTENTION!!! Detected PRODUCTION Database. Skipping purge to protect live data!"
         fi
-
-
+        
+        # Clean context of K8s and Token GCP on Virtual Runner Machine for security and cache conflicting next build time
+        echo "--- 4. Clearing localized Kubernetes context ---"
+        rm -rf ~/.kube ~/.config/gcloud || true
+        rm -f k8s-deployment.yaml || true
 

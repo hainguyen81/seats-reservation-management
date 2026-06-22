@@ -64,6 +64,29 @@ env:
           }
       }
     ]
+  
+  # GKE deploy
+  ENV_JSON_GKE_DEPLOY: |
+    [
+      {
+          "name":     "seats-reservation-sqlite",
+          "env_vars": {
+              "K8S_DEPLOYMENT_NAMESPACE":   "gke-seats-reservation-sqlite",
+              "K8S_DEPLOYMENT_NAME":        "seats-reservation-deployment",
+              "K8S_DEPLOYMENT_SERVICE":     "seats-reservation-service-lb",
+              "K8S_DEPLOYMENT":             "./sources/.k8s/k8s-gke-deployment-sqlite.yml"
+          }
+      },
+      {
+          "name":     "seats-reservation-postgres",
+          "env_vars": {
+              "K8S_DEPLOYMENT_NAMESPACE":   "gke-seats-reservation-postgres",
+              "K8S_DEPLOYMENT_NAME":        "seats-reservation-deployment",
+              "K8S_DEPLOYMENT_SERVICE":     "seats-reservation-service-lb",
+              "K8S_DEPLOYMENT":             "./sources/.k8s/k8s-gke-deployment-postgres.yml"
+          }
+      }
+    ]
 
 jobs:
   # ==============================================================================
@@ -75,6 +98,7 @@ jobs:
     outputs:
       env_docker_image: ${{ steps.config.outputs.env_docker_image }}
       env_gcp_deploy: ${{ steps.config.outputs.env_gcp_deploy }}
+      env_gke_deploy: ${{ steps.config.outputs.env_gke_deploy }}
     steps:
       - id: config
         name: ⚙️ Export JSON Environment Variables
@@ -87,6 +111,11 @@ jobs:
           # gcp deploy enviroment variables
           echo "env_gcp_deploy<<EOF" >> $GITHUB_OUTPUT
           echo '${{ env.ENV_JSON_GCP_DEPLOY }}' >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          # gke deploy enviroment variables
+          echo "env_gke_deploy<<EOF" >> $GITHUB_OUTPUT
+          echo '${{ env.ENV_JSON_GKE_DEPLOY }}' >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
   # ===================================================
@@ -119,4 +148,19 @@ jobs:
       id-token: write
     with:
       env_data: ${{ needs.setup-env.outputs.env_gcp_deploy }}
+  
+  # ==============================================================================
+  # 🌐 GKE DEPLOYMENT
+  # ==============================================================================
+  phase-gke-deploy:
+    uses: ./.github/workflows/ci-cd-gke-deploy.yml
+    needs: [ setup-env, phase-test ]    # wait for enviroment, test running successfully
+    secrets: inherit # bypass secrets to child workflow
+    # redefine permissions due to override more permission for job
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    with:
+      env_data: ${{ needs.setup-env.outputs.env_gke_deploy }}
 

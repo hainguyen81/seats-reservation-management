@@ -1,0 +1,453 @@
+# ===================================================
+# KUBERNETES DEPLOYMENT: Seats Reservation System
+# Database: PostgreSQL with PgBouncer
+# ===================================================
+
+---
+
+# ===================================================
+# 1. POSTGRESQL
+# ===================================================
+# Secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-secret
+  namespace: gke-seats-reservation-postgres
+type: Opaque
+data:
+  # 💡 original: postgres_secret_pass
+  POSTGRES_PASSWORD: cG9zdGdyZXNfc2VjcmV0X3Bhc3M=
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-db
+  namespace: gke-seats-reservation-postgres
+spec:
+  serviceName: postgres-service
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-db
+  template:
+    metadata:
+      labels:
+        app: postgres-db
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:16-alpine
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5432
+          name: postgres
+        env:
+        - name: POSTGRES_DB
+          value: seats_reservation
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: POSTGRES_PASSWORD
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "1000m"
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - pg_isready -U postgres
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - pg_isready -U postgres
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+  - metadata:
+      name: postgres-storage
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: gke-seats-reservation-postgres
+spec:
+  type: NodePort        # Force K8s open port to external host
+  ports:
+    - port: 5432        # Internal communication port between container in K8s
+      targetPort: 5432  # Listen Port that Spring Boot Service is using
+      nodePort: 32133   # Port for external host. Valid range: 30000-32767
+  selector:
+    app: postgres-db
+---
+
+# ===================================================
+# 2. REDIS CACHE
+# ===================================================
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis-cache
+  namespace: gke-seats-reservation-postgres
+spec:
+  serviceName: redis-service
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis-cache
+  template:
+    metadata:
+      labels:
+        app: redis-cache
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  namespace: gke-seats-reservation-postgres
+spec:
+  type: NodePort        # Force K8s open port to external host
+  ports:
+    - port: 6379        # Internal communication port between container in K8s
+      targetPort: 6379  # Listen Port that Spring Boot Service is using
+      nodePort: 32379   # Port for external host. Valid range: 30000-32767
+  selector:
+    app: redis-cache
+---
+
+# ===================================================
+# 3. RESOURCE CONFIGMAP
+# ===================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: seats-reservation-config
+  namespace: gke-seats-reservation-postgres
+data:
+  NODE_ENV: "production"
+  NEXT_TELEMETRY_DISABLED: "1"
+  PORT: "3000"
+  HOSTNAME: "0.0.0.0"
+  
+  DATABASE_PROVIDER: "postgres"           # postgres/sqlite
+  REDIS_URL: "redis://redis-service:6379" # to K8s Service Redis
+  AUTH_PROVIDER: "custom"                 # firebase/custom
+  RESERVE_EXPIRY: "15"
+  ACCESS_TOKEN_EXPIRY: "15"
+  REFRESH_TOKEN_EXPIRY: "1"
+  REDIS_TTL: "3"
+  TOTAL_SEATS: "15"
+  SHOULD_SEED: "true"                     # change to "false" after the first deployment for safe
+  
+  NEXT_PUBLIC_AUTH_PROVIDER: "custom"
+  NEXT_PUBLIC_FIREBASE_API_KEY: "YOUR_FIREBASE_API_KEY"
+  NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: "your-project.firebaseapp.com"
+  NEXT_PUBLIC_FIREBASE_PROJECT_ID: "your-firebase-project-id"
+  NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: "your-project.appspot.com"
+  NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "000000000000"
+  NEXT_PUBLIC_FIREBASE_APP_ID: "1:000000000000:web:0000000000000000000000"
+  NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: "G-0000000000"
+  NEXT_PUBLIC_FIREBASE_DB_URL: "https://your-project.firebaseio.com"
+---
+
+# ===================================================
+# 4. RESOURCE SECRET: encrypt Base64
+# ===================================================
+apiVersion: v1
+kind: Secret
+metadata:
+  name: seats-reservation-secret
+  namespace: gke-seats-reservation-postgres
+type: Opaque
+data:
+  # 💡 original: postgresql://postgres:postgres_secret_pass@postgres-service:5432/seats_reservation?schema=public&pgbouncer=true
+  DATABASE_URL: cG9zdGdyZXNxbDovL3Bvc3RncmVzOnBvc3RncmVzX3NlY3JldF9wYXNzQHBvc3RncmVzLXNlcnZpY2U6NTQzMi9zZWF0c19yZXNlcnZhdGlvbj9zY2hlbWE9cHVibGljJnBnYm91bmNlcj10cnVl
+  # 💡 original: postgresql://postgres:postgres_secret_pass@postgres-service:5432/seats_reservation?schema=public
+  DIRECT_DATABASE_URL: cG9zdGdyZXNxbDovL3Bvc3RncmVzOnBvc3RncmVzX3NlY3JldF9wYXNzQHBvc3RncmVzLXNlcnZpY2U6NTQzMi9zZWF0c19yZXNlcnZhdGlvbj9zY2hlbWE9cHVibGlj
+  # original: k8s-seats-reservation-management-secret-key-2026-v1.0
+  JWT_SECRET: azhzLXNlYXRzLXJlc2VydmF0aW9uLW1hbmFnZW1lbnQtc2VjcmV0LWtleS0yMDI2LXYxLjA= # encryped to base64
+---
+
+# ===================================================
+# 5. RESOURCE DEPLOYMENT: Manage Pod is running Next.js
+# ===================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: seats-reservation-deployment
+  namespace: gke-seats-reservation-postgres
+spec:
+  replicas: 2             # SQLite, only 1 replica to avoid data mismatch.
+  selector:
+    matchLabels:
+      app: seats-reservation
+  template:
+    metadata:
+      labels:
+        app: seats-reservation
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - seats-reservation
+              topologyKey: kubernetes.io/hostname
+      
+      # depend on other services
+      initContainers:
+      - name: wait-for-postgres
+        image: busybox:1.28
+        command: ['sh', '-c', 'until nc -z postgres-service 5432; do echo waiting for postgres; sleep 2; done']
+      
+      - name: wait-for-redis
+        image: busybox:1.28
+        command: ['sh', '-c', 'until nc -z redis-service 6379; do echo waiting for redis; sleep 2; done']
+      
+      # container template
+      containers:
+      - name: seats-reservation-app
+        image: GKE_REGISTRY_IMAGE       # Docker Hub/Registry Image
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3000     # Next.js port that is running
+        
+        # enviroment variables
+        env:
+          - name: DATABASE_PROVIDER
+            value: "postgres"
+          - name: AUTH_PROVIDER
+            value: "custom"
+          - name: NEXT_PUBLIC_AUTH_PROVIDER
+            value: "custom"
+          - name: DATABASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: seats-reservation-secret      # Secret Variable
+                key: DATABASE_URL                   # Secret Variable Value
+          - name: DIRECT_DATABASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: seats-reservation-secret      # Secret Variable
+                key: DIRECT_DATABASE_URL            # Secret Variable Value
+          - name: JWT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: seats-reservation-secret      # Secret Variable
+                key: JWT_SECRET                     # Secret Variable Value
+          - name: REDIS_URL
+            value: "redis://redis-cache:6379"
+          - name: TOTAL_SEATS
+            value: "9"
+          - name: SHOULD_SEED
+            value: "true"
+        
+        # reference to configuration for environment variables
+        envFrom:
+        - configMapRef:
+            name: seats-reservation-config
+        - secretRef:
+            name: seats-reservation-secret
+        
+        # CPU/Memory resources
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        
+        # health check
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000          # Next.js port that is running
+          initialDelaySeconds: 60
+          periodSeconds: 15
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000          # Next.js port that is running
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        # security
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1001     # run by ID of user nextjs that had been created in Dockerfile
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop:
+            - ALL
+---
+
+# ===================================================
+# 6. RESOURCE SERVICE: Internal Network (ClusterIP)
+# ===================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: seats-reservation-service
+  namespace: gke-seats-reservation-postgres
+spec:
+  type: ClusterIP
+  ports:
+  - port: 4000          # port open for K8s Ingress calling to
+    targetPort: 3000    # real port that Next.js listening in container
+  selector:
+    app: seats-reservation
+---
+
+# ===================================================
+# 7. APPLICATION SERVICE LOADBALANCER
+# ===================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: seats-reservation-service-lb
+  namespace: gke-seats-reservation-postgres
+spec:
+  type: LoadBalancer
+  selector:
+    app: seats-reservation
+  ports:
+  - port: 4000        # public port on browser (Ex: http://localhost:4000)
+    targetPort: 3000  # real port that Next.js listening in container
+    protocol: TCP
+---
+
+# ===================================================
+# 8. HORIZONTAL POD AUTOSCALER
+# ===================================================
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: seats-reservation-hpa
+  namespace: gke-seats-reservation-postgres
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: seats-reservation-deployment
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+
+# ===================================================
+# 9. NETWORK POLICY - Security
+# ===================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: seats-reservation-netpol
+  namespace: gke-seats-reservation-postgres
+spec:
+  podSelector:
+    matchLabels:
+      app: seats-reservation
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector: {}     # 🔓 Allow all internal Ingress Controller (including Docker Desktop) calling into
+  egress:
+  - to:
+    - podSelector: {}     # 🔓 Allow all Pod Postgres and Redis in namespace
+    ports:
+    - protocol: TCP
+      port: 5432          # Port Postgres
+    - protocol: TCP
+      port: 6379          # Port Redis
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 53
+    - protocol: UDP
+      port: 53
+---
+
+# ===================================================
+# 10. RESOURCE INGRESS: Traffic Router from external
+# ===================================================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: seats-reservation-ingress
+  namespace: gke-seats-reservation-postgres
+  annotations:
+    ingress.class: nginx
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    # Ingress call health check web-app
+    nginx.ingress.kubernetes.io/healthcheck-path: "/api/health"
+    # # for GCP/GKE
+    # ://google.com: '{"default": "seats-backend-config"}'
+    # ://google.com: '{"default": "seats-backend-config"}'
+spec:
+  ingressClassName: nginx
+  rules:
+  - http:
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              # 🌟 point Service LoadBalancer to Docker Desktop map out to localhost
+              name: seats-reservation-service-lb
+              port:
+                number: 4000    # new port (from 3000 to 4000) for Ingress calling to
