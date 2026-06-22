@@ -300,7 +300,7 @@ jobs:
           GKE_DEPLOYMENT_FILE: ${{ matrix.service.env_vars.K8S_DEPLOYMENT }}
         run: |
           # fix k8s deployment yml file by region
-          sed -i 's|GKE_REGISTRY_IMAGE|'"$GCP_SERVICE_REGION"'-docker.pkg.dev/'"$GCP_PROJECT_ID"'/$GCP_SERVICE:'"${{ github.sha }}"'|g' $GKE_DEPLOYMENT_FILE
+          sed -i 's|GKE_REGISTRY_IMAGE|'"$GCP_SERVICE_REGION"'-docker.pkg.dev/'"$GCP_PROJECT_ID"'/'"$GCP_SERVICE"':'"${{ github.sha }}"'|g' $GKE_DEPLOYMENT_FILE
           kubectl apply -f $GKE_DEPLOYMENT_FILE --force
       
       # 12. Check deployment status
