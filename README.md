@@ -372,9 +372,48 @@ To operate this automation workflow smoothly, you must configure the following k
 
 | Secret Key Name | Purpose / Required Contents |
 | :--- | :--- |
-| DOCKERHUB_USERNAME | Your official Docker Hub or registry account handle name. |
-| DOCKERHUB_TOKEN | Securely generated Personal Access Token (PAT) with Read & Write access. |
-| GCP_ADC_JSON | The complete, encrypted JSON key file generated for your Google Service Account. |
+| `DOCKERHUB_USERNAME` | Your official Docker Hub or registry account handle name. |
+| `DOCKERHUB_TOKEN` | Securely generated Personal Access Token (PAT) with Read & Write access. |
+| `GCP_ADC_JSON` | The complete, encrypted JSON key file generated for your Google Service Account. |
+| `ALLOW_GCP_DEPLOY` | Administrative feature flag toggled via system settings (`true` / `false`) acting as the ultimate automated security gatekeeper. | Execution Gate |
+
+---
+
+# ☸️ 9. GOOGLE KUBERNETES ENGINE (GKE) DEPLOYMENT PIPELINE
+
+This section outlines the automated multi-environment cloud orchestration matrix designed to deploy, scale, and monitor the Next.js/Node 22 standalone application on a managed Google Kubernetes Engine (GKE) cluster.
+
+---
+
+## 🔒 9.1. Required GitHub Actions Secrets for GKE
+
+To authenticate the pipeline against Google Cloud Platform (GCP) and safely provision state configurations inside the Kubernetes cluster, you must configure the following keys under `Settings -> Secrets and variables -> Actions`:
+
+| Secret Key Name | Required Contents & Description | Security Scope |
+| :--- | :--- | :--- |
+| `GCP_PROJECT_ID` | The explicit global project identifier string from your Google Cloud Console. | Global GCP Scope |
+| `GCP_ADC_JSON` | The complete, encrypted JSON key file generated for the Google Service Account. Requires `Kubernetes Engine Developer` and `Artifact Registry Writer` IAM roles. | IAM Auth Gateway |
+| `DATABASE_URL_NEON_POSTGRES` | Serverless Connection-Pooled database string containing the `-pooler` hostname string routing through Neon's transaction mode proxy. | Production App Core |
+| `DIRECT_DATABASE_URL_NEON_POSTGRES` | Direct connection string bypassing connection poolers, bound to port 5432, utilized strictly for Schema Migrations and Data Seeding. | CI/CD Seed Pipeline |
+| `ALLOW_GKE_DEPLOY` | Administrative feature flag toggled via system settings (`true` / `false`) acting as the ultimate automated security gatekeeper. | Execution Gate |
+
+---
+
+## 🛠️ 2. Detailed Technical Execution Steps
+
+### Phase A: Dynamic Workspace Isolation & Region Configuration
+1. **Dynamic Regionalization:** The workflow consolidates multi-vulnerability targets by routing environment contexts via a centralized dynamic token (`${{ env.GCP_REGION }}`).
+2. **Docker Client Hydration:** Authenticates the localized GitHub Actions host container directly against Google Cloud's secure container networks using `gcloud auth configure-docker --quiet`.
+3. **Immutable Image Compilation:** Packs the application into a secure footprint (`node:22-alpine`) tagged uniquely with the immutable Git Commit SHA (`node-app:${{ github.sha }}`) to guarantee absolute data consistency across all multi-zone scaling layers.
+
+### Phase B: Cluster Authentication & Atomic Injectors
+1. **Context Elevation:** The pipeline loads programmatic execution tokens dynamically via `google-github-actions/get-gke-credentials@v2` targeting the remote cluster endpoint.
+2. **Secret Ingestion Overrides:** Before initiating mutations, the cluster spins up system-wide variables (`kubectl create secret generic app-secrets`) on-the-fly, mapping serverless Neon connection arrays strictly to temporary Pod runtime memory.
+3. **Targeted Manifest Updates:** Drops old-school string editing (`sed -i`) in favor of atomic resource controls. The deployment utilizes `kubectl set image` to target the exact container namespace footprint, bypassing the risk of corrupting auxiliary sidecar stacks (such as Redis or SQLite persistent engines).
+
+### Phase C: Telemetry, Invalidation & Validation Sweeps
+1. **Fail-Fast Monitoring Gate:** Issues execution blocks via `kubectl rollout status` enforcing a 150-second health check timeout boundary. If connection pools error out or nodes crash, the pipeline halts instantly, automatically preserving the legacy active version.
+2. **Orphan Process Isolation:** Implements a strict self-healing matrix triggered via `if: always()` hooks. The machine safely flushes proxy cached metrics, deletes system credentials (`rm -rf ~/.kube`), and isolates runtime caches to prevent cross-contamination on successive builds.
 
 ---
 
@@ -401,6 +440,16 @@ To operate this automation workflow smoothly, you must configure the following k
 >
 > * **Firebase Serverless Operations:** 
 >   File uploads, assets hosting, and client-side notifications bypass the main server compute footprint entirely. They leverage direct, secure client-to-cloud tokens to guarantee low latency and optimize compute resource usage.
+>
+> ### 🚀 Advanced GKE Orchestration & Horizontal Scalability
+>
+> The continuous deployment matrix ships with integrated production parameters built to guarantee high availability and cost optimization under high-frequency seat-selection spikes:
+>
+> * **Zero-Downtime Rolling Updates:** By utilizing the immutable Git Commit SHA (`${{ github.sha }}`) as the tag token paired with `kubectl set image`, GKE triggers a progressive rolling update blueprint. Old Pod replicas continue serving active web sessions while new Node 22 Alpine containers spin up and pass internal readiness probes, ensuring a 0% drop in user traffic.
+> 
+> * **Multi-Environment Namespace Isolation:** The pipeline supports environment partitioning out-of-the-box. You can route specific multi-database builds (e.g., SQLite testing stacks vs. Production Neon clusters) safely within the same physical GKE hardware by declaring isolated Kubernetes Rooms via the `--namespace` (`-n`) flag (e.g., `env-sqlite` vs. `env-postgres`), preventing cross-resource data pollution.
+> 
+> * **Source-Level Access Controls:** Administrative safety is handled gracefully through dual-layered evaluations. The pipeline implements a **Gatekeeper Pattern** evaluating `secrets.ALLOW_RUN_WORKFLOW == 'true'` short-circuiting the system inside the child module before invoking heavy runner resources, saving corporate cloud compute budgets instantly.
 >
 > ### 🚀 Automated CI/CD Pipeline & GCP Shipment Matrix
 >
