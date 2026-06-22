@@ -159,6 +159,9 @@ jobs:
       - name: 🏗️ Build and Push Production Image to GCP Registry
         if: success()                 # if previous step is successful
         uses: docker/build-push-action@v6
+        env:
+          ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
         with:
           context: ./sources
           file: ./sources/Dockerfile
