@@ -189,10 +189,10 @@ metadata:
   namespace: default
 type: Opaque
 data:
-  # 💡 original: postgresql://postgres:password123@postgres-db:5432/seats_reservation?schema=public&pgbouncer=true
-  DATABASE_URL: cG9zdGdyZXNxbDovL3Bvc3RncmVzOnBhc3N3b3JkMTIzQHBvc3RncmVzLWRiOjU0MzIvc2VhdHNfcmVzZXJ2YXRpb24/c2NoZW1hPXB1YmxpYyZwZ2JvdW5jZXI9dHJ1ZQ==
-  # 💡 original: postgresql://postgres:password123@postgres-db:5432/seats_reservation?schema=public
-  DIRECT_DATABASE_URL: cG9zdGdyZXNxbDovL3Bvc3RncmVzOnBhc3N3b3JkMTIzQHBvc3RncmVzLWRiOjU0MzIvc2VhdHNfcmVzZXJ2YXRpb24/c2NoZW1hPXB1YmxpYw==
+  # 💡 original: postgresql://postgres:password123@postgres-service:5432/seats_reservation?schema=public&pgbouncer=true
+  DATABASE_URL: cG9zdGdyZXNxbDovL3Bvc3RncmVzOnBhc3N3b3JkMTIzQHBvc3RncmVzLXNlcnZpY2U6NTQzMi9zZWF0c19yZXNlcnZhdGlvbj9zY2hlbWE9cHVibGljJnBnYm91bmNlcj10cnVl
+  # 💡 original: postgresql://postgres:password123@postgres-service:5432/seats_reservation?schema=public
+  DIRECT_DATABASE_URL: cG9zdGdyZXNxbDovL3Bvc3RncmVzOnBhc3N3b3JkMTIzQHBvc3RncmVzLXNlcnZpY2U6NTQzMi9zZWF0c19yZXNlcnZhdGlvbj9zY2hlbWE9cHVibGlj
   # original: k8s-seats-reservation-management-secret-key-2026-v1.0
   JWT_SECRET: azhzLXNlYXRzLXJlc2VydmF0aW9uLW1hbmFnZW1lbnQtc2VjcmV0LWtleS0yMDI2LXYxLjA= # encryped to base64
 ---
@@ -255,13 +255,22 @@ spec:
           - name: NEXT_PUBLIC_AUTH_PROVIDER
             value: "custom"
           - name: DATABASE_URL
-            value: "postgresql://postgres:postgres_secret_pass@postgres-db:5432/seats_reservation?schema=public&pgbouncer=true"
+            valueFrom:
+              secretKeyRef:
+                name: seats-reservation-secret      # Secret Variable
+                key: DATABASE_URL                   # Secret Variable Value
           - name: DIRECT_DATABASE_URL
-            value: "postgresql://postgres:postgres_secret_pass@postgres-db:5432/seats_reservation?schema=public"
+            valueFrom:
+              secretKeyRef:
+                name: seats-reservation-secret      # Secret Variable
+                key: DIRECT_DATABASE_URL            # Secret Variable Value
+          - name: JWT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: seats-reservation-secret      # Secret Variable
+                key: JWT_SECRET                     # Secret Variable Value
           - name: REDIS_URL
             value: "redis://redis-cache:6379"
-          - name: JWT_SECRET
-            value: "k8s-seats-reservation-postgres-secret-key-2026"
           - name: TOTAL_SEATS
             value: "9"
           - name: SHOULD_SEED
