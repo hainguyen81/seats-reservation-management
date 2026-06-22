@@ -157,7 +157,7 @@ jobs:
           file: ./sources/Dockerfile
           push: true
           # Đặt tên image theo chuẩn Google Artifact Registry
-          tags: ${{ inputs.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ matrix.service.name }}:${{ github.sha }}
+          tags: ${{ inputs.region }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ matrix.service.name }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
       
@@ -167,7 +167,7 @@ jobs:
         uses: google-github-actions/get-gke-credentials@v2
         with:
           cluster_name: ${{ matrix.service.name }}-cluster
-          location: ${{ inputs.GCP_REGION }}
+          location: ${{ inputs.region }}
           project_id: ${{ secrets.GCP_PROJECT_ID }}
       
       # 4. Create secret to adapt into K8s deployment
