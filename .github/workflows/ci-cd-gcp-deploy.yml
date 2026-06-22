@@ -56,8 +56,7 @@ on:
                     "JWT_SECRET":                 "seats-reservation-management-secret-key-2026",
                     "TOTAL_SEATS":                9,
                     "SHOULD_SEED":                true
-                },
-                "gcp_container_port":             3000
+                }
             },
             {
                 "name":     "seats-reservation-postgres",
@@ -71,8 +70,7 @@ on:
                     "JWT_SECRET":                 "seats-reservation-management-secret-key-2026",
                     "TOTAL_SEATS":                9,
                     "SHOULD_SEED":                true
-                },
-                "gcp_container_port":             4000
+                }
             }
           ]
       region:
@@ -127,14 +125,11 @@ jobs:
       id: convert-deploy-env-vars
       env:
         SERVICE_ENV_VARS: ${{ toJson(matrix.service.env_vars) }}
-        GCP_SERVICE_CONTAINER_PORT: ${{ matrix.service.gcp_container_port }}
       run: |
         node -e '
           // 1. request JSON object
           const jsonRaw = process.env.SERVICE_ENV_VARS; 
-          const gcp_container_port = process.env.GCP_SERVICE_CONTAINER_PORT;
           const obj = JSON.parse(jsonRaw);
-          obj["PORT"] = gcp_container_port; // include container port for GCP listen and Next.js start with this port
           
           // 2. convert to array key=value
           const kvArray = Object.entries(obj).map(([key, value]) => `${key}=${value}`);
@@ -145,7 +140,6 @@ jobs:
           // 4. output to GitHub Actions
           const fs = require("fs");
           fs.appendFileSync(process.env.GITHUB_OUTPUT, `converted_env_vars=${resultString}\n`);
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, `gcp_container_port=${gcp_container_port}\n`);
         '
     
     # Deploy to Google Cloud Run by pulling image from Docker Hub
@@ -170,7 +164,6 @@ jobs:
           --max-instances=1
           --memory=512Mi
           --cpu=1
-          --port="${{ steps['convert-deploy-env-vars'].outputs.gcp_container_port }}"
           --set-env-vars="${{ steps['convert-deploy-env-vars'].outputs.converted_env_vars }}"
     
     # check deployment status
