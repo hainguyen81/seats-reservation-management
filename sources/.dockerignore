@@ -6,6 +6,8 @@ npm-debug.log
 .env.local
 .env.*.local
 .next
+.docker
+.k8s
 dist
 build
 coverage

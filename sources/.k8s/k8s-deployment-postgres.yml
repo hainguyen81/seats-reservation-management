@@ -4,21 +4,105 @@
 # ===================================================
 
 ---
+
 # ===================================================
-# 1. PERSISTENT VOLUME CLAIM - SQLite Database Storage
+# 1. POSTGRESQL
 # ===================================================
+# Secret
 apiVersion: v1
-kind: PersistentVolumeClaim
+kind: Secret
 metadata:
-  name: sqlite-db-pvc
+  name: postgres-secret
+  namespace: default
+type: Opaque
+stringData:
+  # 💡 original: postgres_secret_pass
+  POSTGRES_PASSWORD: cG9zdGdyZXNfc2VjcmV0X3Bhc3M=
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-db
   namespace: default
 spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
-
+  serviceName: postgres-service
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-db
+  template:
+    metadata:
+      labels:
+        app: postgres-db
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:16-alpine
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5432
+          name: postgres
+        env:
+        - name: POSTGRES_DB
+          value: seats_reservation
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: POSTGRES_PASSWORD
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "1000m"
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - pg_isready -U postgres
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - pg_isready -U postgres
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+  - metadata:
+      name: postgres-storage
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: default
+spec:
+  type: NodePort        # Force K8s open port to external host
+  ports:
+    - port: 5432        # Internal communication port between container in K8s
+      targetPort: 5432  # Listen Port that Spring Boot Service is using
+      nodePort: 32133   # Port for external host. Valid range: 30000-32767
+  selector:
+    app: postgres-db
 ---
 
 # ===================================================
@@ -75,7 +159,7 @@ data:
   PORT: "3000"
   HOSTNAME: "0.0.0.0"
   
-  DATABASE_PROVIDER: "sqlite"             # postgres/sqlite
+  DATABASE_PROVIDER: "postgres"           # postgres/sqlite
   REDIS_URL: "redis://redis-service:6379" # to K8s Service Redis
   AUTH_PROVIDER: "custom"                 # firebase/custom
   RESERVE_EXPIRY: "15"
@@ -106,8 +190,10 @@ metadata:
   namespace: default
 type: Opaque
 data:
-  # 💡 original: file:./app/prisma/data/seats-reservation.db
-  DATABASE_URL: ZmlsZTouL2FwcC9wcmlzbWEvZGF0YS9zZWF0cy1yZXNlcnZhdGlvbi5kYg==
+  # 💡 original: postgresql://postgres:postgres_secret_pass@postgres-service:5432/seats_reservation?schema=public&pgbouncer=true
+  DATABASE_URL: cG9zdGdyZXNxbDovL3Bvc3RncmVzOnBvc3RncmVzX3NlY3JldF9wYXNzQHBvc3RncmVzLXNlcnZpY2U6NTQzMi9zZWF0c19yZXNlcnZhdGlvbj9zY2hlbWE9cHVibGljJnBnYm91bmNlcj10cnVl
+  # 💡 original: postgresql://postgres:password123@postgres-service:5432/seats_reservation?schema=public
+  DIRECT_DATABASE_URL: cG9zdGdyZXNxbDovL3Bvc3RncmVzOnBvc3RncmVzX3NlY3JldF9wYXNzQHBvc3RncmVzLXNlcnZpY2U6NTQzMi9zZWF0c19yZXNlcnZhdGlvbj9zY2hlbWE9cHVibGlj
   # original: k8s-seats-reservation-management-secret-key-2026-v1.0
   JWT_SECRET: azhzLXNlYXRzLXJlc2VydmF0aW9uLW1hbmFnZW1lbnQtc2VjcmV0LWtleS0yMDI2LXYxLjA= # encryped to base64
 ---
@@ -121,9 +207,7 @@ metadata:
   name: seats-reservation-deployment
   namespace: default
 spec:
-  replicas: 1             # SQLite, only 1 replica to avoid data mismatch.
-  strategy:
-    type: Recreate
+  replicas: 2             # SQLite, only 1 replica to avoid data mismatch.
   selector:
     matchLabels:
       app: seats-reservation
@@ -132,8 +216,25 @@ spec:
       labels:
         app: seats-reservation
     spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - seats-reservation
+              topologyKey: kubernetes.io/hostname
+      
       # depend on other services
       initContainers:
+      - name: wait-for-postgres
+        image: busybox:1.28
+        command: ['sh', '-c', 'until nc -z postgres-service 5432; do echo waiting for postgres; sleep 2; done']
+      
       - name: wait-for-redis
         image: busybox:1.28
         command: ['sh', '-c', 'until nc -z redis-service 6379; do echo waiting for redis; sleep 2; done']
@@ -144,12 +245,12 @@ spec:
         image: seats-reservation-management:latest # Docker Hub/Registry Image
         imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 3000
+        - containerPort: 3000     # Next.js port that is running
         
         # enviroment variables
         env:
           - name: DATABASE_PROVIDER
-            value: "sqlite"
+            value: "postgres"
           - name: AUTH_PROVIDER
             value: "custom"
           - name: NEXT_PUBLIC_AUTH_PROVIDER
@@ -163,7 +264,7 @@ spec:
             valueFrom:
               secretKeyRef:
                 name: seats-reservation-secret      # Secret Variable
-                key: DATABASE_URL                   # Secret Variable Value
+                key: DIRECT_DATABASE_URL            # Secret Variable Value
           - name: JWT_SECRET
             valueFrom:
               secretKeyRef:
@@ -196,7 +297,7 @@ spec:
         livenessProbe:
           httpGet:
             path: /api/health
-            port: 3000
+            port: 3000          # Next.js port that is running
           initialDelaySeconds: 60
           periodSeconds: 15
           timeoutSeconds: 5
@@ -204,7 +305,7 @@ spec:
         readinessProbe:
           httpGet:
             path: /api/health
-            port: 3000
+            port: 3000          # Next.js port that is running
           initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
@@ -219,17 +320,6 @@ spec:
           capabilities:
             drop:
             - ALL
-        
-        # mount data
-        volumeMounts:
-        - name: sqlite-storage
-          mountPath: /app/prisma/data
-      
-      # link volume PVC on Pod level
-      volumes:
-      - name: sqlite-storage
-        persistentVolumeClaim:
-          claimName: sqlite-db-pvc
 ---
 
 # ===================================================
@@ -243,8 +333,8 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-  - port: 3000
-    targetPort: 3000
+  - port: 4000          # port open for K8s Ingress calling to
+    targetPort: 3000    # real port that Next.js listening in container
   selector:
     app: seats-reservation
 ---
@@ -262,13 +352,43 @@ spec:
   selector:
     app: seats-reservation
   ports:
-  - port: 3000
-    targetPort: 3000
+  - port: 4000        # public port on browser (Ex: http://localhost:4000)
+    targetPort: 3000  # real port that Next.js listening in container
     protocol: TCP
 ---
 
 # ===================================================
-# 8. NETWORK POLICY - Security
+# 8. HORIZONTAL POD AUTOSCALER
+# ===================================================
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: seats-reservation-hpa
+  namespace: default
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: seats-reservation-deployment
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+
+# ===================================================
+# 9. NETWORK POLICY - Security
 # ===================================================
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -284,17 +404,15 @@ spec:
   - Egress
   ingress:
   - from:
-    - namespaceSelector:
-        matchLabels:
-          name: ingress-nginx
+    - podSelector: {}     # 🔓 Allow all internal Ingress Controller (including Docker Desktop) calling into
   egress:
   - to:
-    - podSelector:
-        matchLabels:
-          app: redis-cache
+    - podSelector: {}     # 🔓 Allow all Pod Postgres and Redis in namespace
     ports:
     - protocol: TCP
-      port: 6379
+      port: 5432          # Port Postgres
+    - protocol: TCP
+      port: 6379          # Port Redis
   - to:
     - namespaceSelector: {}
     ports:
@@ -305,7 +423,7 @@ spec:
 ---
 
 # ===================================================
-# 9. RESOURCE INGRESS: Traffic Router from external
+# 10. RESOURCE INGRESS: Traffic Router from external
 # ===================================================
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -315,6 +433,11 @@ metadata:
   annotations:
     ingress.class: nginx
     nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    # Ingress call health check web-app
+    nginx.ingress.kubernetes.io/healthcheck-path: "/api/health"
+    # # for GCP/GKE
+    # ://google.com: '{"default": "seats-backend-config"}'
+    # ://google.com: '{"default": "seats-backend-config"}'
 spec:
   ingressClassName: nginx
   rules:
@@ -324,6 +447,7 @@ spec:
           pathType: Prefix
           backend:
             service:
-              name: seats-reservation-service
+              # 🌟 point Service LoadBalancer to Docker Desktop map out to localhost
+              name: seats-reservation-service-lb
               port:
-                number: 3000
+                number: 4000    # new port (from 3000 to 4000) for Ingress calling to

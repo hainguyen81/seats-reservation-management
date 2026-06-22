@@ -93,6 +93,7 @@ ENV DATABASE_PROVIDER=$DATABASE_PROVIDER
 RUN if [ "$DATABASE_PROVIDER" = "postgres" ]; then \
   echo "🐘 Use POSTGRESQL..."; \
   cp prisma/schema.postgres.prisma prisma/dist/schema.prisma; \
+  cp prisma/schema.postgres.prisma prisma/schema.prisma; \
   DATABASE_URL="postgresql://user:password@localhost:5432/seats_reservation" \
   DIRECT_DATABASE_URL="postgresql://user:password@localhost:5432/seats_reservation" \
   npx prisma generate; \
@@ -102,6 +103,7 @@ RUN if [ "$DATABASE_PROVIDER" = "postgres" ]; then \
   else \
   echo "💾 Use SQLITE (Default)..."; \
   cp prisma/schema.sqlite.prisma prisma/dist/schema.prisma; \
+  cp prisma/schema.sqlite.prisma prisma/schema.prisma; \
   DATABASE_URL="file:./mock.db" \
   npx prisma generate; \
   DATABASE_URL="file:./mock.db" \

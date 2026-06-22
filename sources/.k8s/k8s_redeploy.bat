@@ -8,10 +8,12 @@ echo ► 1. Redeploy services
 echo -------------------------------------------------
 echo %TAB%- ReDeploy seats reservation service
 if /I "%~1"=="postgres" (
-	kubectl apply -f k8s-deployment-postgres.yml
+	kubectl delete service seats-reservation-service-lb
+	kubectl apply -f k8s-deployment-postgres.yml --force
 	goto :check
 )
-kubectl apply -f k8s-deployment-sqlite.yml
+kubectl delete service seats-reservation-service-lb
+kubectl apply -f k8s-deployment-sqlite.yml --force
 
 :check
 echo.
