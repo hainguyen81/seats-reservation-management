@@ -109,6 +109,11 @@ jobs:
           echo "Terminating pipeline execution immediately to protect production infrastructure."
           exit 1 # Require Admin Rights
       
+      # Check out source code
+      - name: ⬇️ Checkout Source Code
+        if: success()                 # if previous step is successful
+        uses: actions/checkout@v4
+      
       # 1. Login to Google Cloud by Google OAuth2 ADC
       - name: 🔑 Authenticate to Google Cloud via Google OAuth2 ADC
         if: success()                 # if previous step is successful
