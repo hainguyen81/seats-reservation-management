@@ -162,6 +162,7 @@ jobs:
     
     # create secret to adapt into K8s deployment
     - name: 🔐 Securely Create and Override GKE Database Secrets
+      if: success()                 # if previous step is successful
       env:
         K8S_DEPLOYMENT_NAMESPACE: ${{ matrix.service.env_vars.K8S_DEPLOYMENT_NAMESPACE }}
         K8S_DEPLOYMENT_SECRET: ${{ matrix.service.env_vars.K8S_DEPLOYMENT_SECRET }}
