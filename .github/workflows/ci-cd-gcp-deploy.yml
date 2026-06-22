@@ -42,6 +42,7 @@ on:
   workflow_dispatch:
     inputs:
       env_data:
+        description: "🌍 Environment Variables (JSON)"
         required: false         # not require, due to be triggered standalone
         type: string            # receive enviroment from parent workflow under JSON string
         default: |
@@ -74,6 +75,7 @@ on:
             }
           ]
       region:
+        description: "🌍 GCP Region"
         required: false         # not require, due to be triggered standalone
         type: string            # receive enviroment from parent workflow under JSON string
         default: us-central1    # Always Free
