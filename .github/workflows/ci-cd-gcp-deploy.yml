@@ -169,7 +169,7 @@ jobs:
           FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
         with:
           service: ${{ matrix.service.name }}
-          region: ${{ env.GCP_REGION }}
+          region: ${{ inputs.GCP_REGION }}
           cleanup_credentials: false      # prevent clean up to do manually
           # Point to Public Docker Hub, no need to use Google Artifact Registry API due to be charged
           image: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service.name }}:latest

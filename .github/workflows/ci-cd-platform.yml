@@ -149,6 +149,7 @@ jobs:
       id-token: write
     with:
       env_data: ${{ needs.setup-env.outputs.env_gcp_deploy }}
+      region: ${{ env.GCP_REGION }}
   
   # ==============================================================================
   # 🌐 GKE DEPLOYMENT
@@ -164,4 +165,5 @@ jobs:
       id-token: write
     with:
       env_data: ${{ needs.setup-env.outputs.env_gke_deploy }}
+      region: ${{ env.GCP_REGION }}
 
