@@ -15,7 +15,7 @@ metadata:
   name: postgres-secret
   namespace: default
 type: Opaque
-stringData:
+data:
   # 💡 original: postgres_secret_pass
   POSTGRES_PASSWORD: cG9zdGdyZXNfc2VjcmV0X3Bhc3M=
 
@@ -192,7 +192,7 @@ type: Opaque
 data:
   # 💡 original: postgresql://postgres:postgres_secret_pass@postgres-service:5432/seats_reservation?schema=public&pgbouncer=true
   DATABASE_URL: cG9zdGdyZXNxbDovL3Bvc3RncmVzOnBvc3RncmVzX3NlY3JldF9wYXNzQHBvc3RncmVzLXNlcnZpY2U6NTQzMi9zZWF0c19yZXNlcnZhdGlvbj9zY2hlbWE9cHVibGljJnBnYm91bmNlcj10cnVl
-  # 💡 original: postgresql://postgres:password123@postgres-service:5432/seats_reservation?schema=public
+  # 💡 original: postgresql://postgres:postgres_secret_pass@postgres-service:5432/seats_reservation?schema=public
   DIRECT_DATABASE_URL: cG9zdGdyZXNxbDovL3Bvc3RncmVzOnBvc3RncmVzX3NlY3JldF9wYXNzQHBvc3RncmVzLXNlcnZpY2U6NTQzMi9zZWF0c19yZXNlcnZhdGlvbj9zY2hlbWE9cHVibGlj
   # original: k8s-seats-reservation-management-secret-key-2026-v1.0
   JWT_SECRET: azhzLXNlYXRzLXJlc2VydmF0aW9uLW1hbmFnZW1lbnQtc2VjcmV0LWtleS0yMDI2LXYxLjA= # encryped to base64

@@ -2,7 +2,7 @@
 setlocal enabledelayedexpansion
 
 echo ====================================================
-echo      SCRIPT FORCE DELETE PVC BY KEYWORD / PATTERN
+echo      SCRIPT FORCE DELETE StatefulSet/PVC BY KEYWORD / PATTERN
 echo ====================================================
 echo.
 if "%~1"=="" (
@@ -13,6 +13,24 @@ if "%~1"=="" (
 echo.
 echo [1/3] Find PVC name by pattern: "%~1"...
 echo ----------------------------------------------------
+
+:: loop to scan StatefulSet by pattern
+set found=0
+for /f "tokens=*" %%i in ('kubectl get statefulset -o custom-columns^=:metadata.name ^| findstr "%pattern%"') do (
+    set found=1
+    echo [+] Found StatefulSet: %%i
+    echo     - Force delete %%i and related Pods...
+    
+    :: Thực hiện ép xóa StatefulSet lập tức không chờ đợi
+    kubectl delete statefulset %%i --grace-period=0 --force
+    echo ----------------------------------------------------
+)
+
+if "!found!"=="0" (
+    echo [ WARN ] Not found any StatefulSet by pattern: "%~1"
+) else (
+    echo [ DONE ] Scanned and deleted all StatefulSet by pattern "%~1"
+)
 
 :: loop to scan PVC by pattern
 set found=0
