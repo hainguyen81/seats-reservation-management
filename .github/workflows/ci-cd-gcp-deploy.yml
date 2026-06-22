@@ -96,6 +96,7 @@ jobs:
   deploy-to-gcp:
     name: 🌐 Deploy to Google Cloud
     runs-on: ubuntu-latest
+    if: ${{ secrets.ALLOW_GCP_DEPLOY == 'true' && github.event_name != 'workflow_call' }}
     # needs: build-and-push-to-docker-hub      # not require test running, due to be triggered standalone
     
     strategy:
