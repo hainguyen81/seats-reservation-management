@@ -155,9 +155,9 @@ spec:
           - name: NEXT_PUBLIC_AUTH_PROVIDER
             value: "custom"
           - name: DATABASE_URL
-            value: "file:/app/data/seats_reservation.db"
+            value: "file:/app/prisma/data/seats_reservation.db"
           - name: DIRECT_DATABASE_URL
-            value: "file:/app/data/seats_reservation.db"
+            value: "file:/app/prisma/data/seats_reservation.db"
           - name: REDIS_URL
             value: "redis://redis-cache:6379"
           - name: JWT_SECRET
@@ -214,7 +214,7 @@ spec:
         # mount data
         volumeMounts:
         - name: sqlite-storage
-          mountPath: /app/data
+          mountPath: /app/prisma/data
       
       # link volume PVC on Pod level
       volumes:

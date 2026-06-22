@@ -177,14 +177,10 @@ COPY --from=builder /app/prisma/dist ./prisma/dist
 # Fix permissions for prisma folder (needed for runtime schema swap)
 # on /app, /home/nextjs, /app/prisma, app/package*.json
 # -------------------------------------------------
-RUN chown -R nextjs:nodejs . && \
-  chown -R nextjs:nodejs /home/nextjs && \
-  chmod -R 755 . && \
-  chmod -R u+rw . && \
-  chmod -R 755 /home/nextjs && \
-  chmod -R u+rw /home/nextjs && \
-  chmod -R 777 ./prisma && \
-  chmod 644 ./package*.json
+RUN chown -R nextjs:nodejs /app && chmod -R 755 /app && \
+  chown -R nextjs:nodejs /app/prisma && chmod -R 755 /app/prisma && \
+  chown -R nextjs:nodejs /home/nextjs && chmod -R 755 /home/nextjs && \
+  chmod 644 /app/package*.json
 
 # Copy entrypoint script
 COPY --chown=nextjs:nodejs docker-entrypoint.sh /usr/local/bin/
