@@ -160,20 +160,23 @@ jobs:
       # check and create GKE image repository if not existing
       - name: 📦 Ensure Artifact Registry Repository Exists
         if: success()                 # if previous step is successful
+        env:
+          GITHUB_REPO_OWNER: ${{ github.repository_owner }}
+          GKE_REPOSITORY: ${{ github.repository }}
         run: |
           # request repository information from GCP
-          echo "📦 Checking if repository '${{ matrix.service.name }}' exists in region '${{ inputs.region }}'..."
-          if ! gcloud artifacts repositories describe "${{ matrix.service.name }}" --location="${{ inputs.region }}" --quiet >/dev/null 2>&1; then
+          echo "📦 Checking if repository '$GKE_REPOSITORY' exists in region '${{ inputs.region }}'..."
+          if ! gcloud artifacts repositories describe "$GKE_REPOSITORY" --location="${{ inputs.region }}" --quiet >/dev/null 2>&1; then
             # invoke creating repository if not found
             echo "⚠️ Repository not found! Initiating automated creation lifecycle..."
-            gcloud artifacts repositories create "${{ matrix.service.name }}" \
+            gcloud artifacts repositories create "$GKE_REPOSITORY" \
               --repository-format=docker \
               --location="${{ inputs.region }}" \
-              --description="Automated GKE Docker Repository created via GitHub Actions CI/CD Pipeline" \
+              --description="Automated GKE Docker Repository (GitHub Owner: $GITHUB_REPO_OWNER) created via GitHub Actions CI/CD Pipeline" \
               --quiet
-            echo "✅ Repository ${{ matrix.service.name }} created successfully."
+            echo "✅ Repository $GKE_REPOSITORY created successfully."
           else
-            echo "✅ Repository ${{ matrix.service.name }} already exists. Skipping creation phase."
+            echo "✅ Repository $GKE_REPOSITORY already exists. Skipping creation phase."
           fi
       
       # 2. Build immutable image and push to GCP Registry
@@ -185,7 +188,7 @@ jobs:
           file: ./sources/Dockerfile
           push: true
           # Đặt tên image theo chuẩn Google Artifact Registry
-          tags: ${{ inputs.region }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ matrix.service.name }}:${{ github.sha }}
+          tags: ${{ inputs.region }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ github.repository }}/${{ matrix.service.name }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
       
