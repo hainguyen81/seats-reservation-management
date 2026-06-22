@@ -134,6 +134,7 @@ jobs:
           const jsonRaw = process.env.SERVICE_ENV_VARS; 
           const gcp_container_port = process.env.GCP_SERVICE_CONTAINER_PORT;
           const obj = JSON.parse(jsonRaw);
+          obj["PORT"] = gcp_container_port; // include container port for GCP listen and Next.js start with this port
           
           // 2. convert to array key=value
           const kvArray = Object.entries(obj).map(([key, value]) => `${key}=${value}`);
