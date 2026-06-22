@@ -108,7 +108,7 @@ jobs:
     steps:
       # Check whether allow for running workflow
       - name: 🛡️ Gatekeeper - Validate Administrative Access
-        if: ${{ secrets.ALLOW_GKE_DEPLOY != 'true' }}
+        if: ${{ 'secrets.ALLOW_GKE_DEPLOY' != 'true' }}
         run: |
           echo "❌ Deployment is administratively DISABLED via GitHub Secrets (secrets.ALLOW_GKE_DEPLOY is not true)."
           echo "Terminating pipeline execution immediately to protect production infrastructure."
