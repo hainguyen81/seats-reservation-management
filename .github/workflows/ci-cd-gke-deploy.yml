@@ -301,8 +301,8 @@ jobs:
         run: |
           # fix k8s deployment yml file by region
           sed -i "s|GKE_REGISTRY_IMAGE|${GCP_SERVICE_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_SERVICE}:a1b2c3d|g" $GKE_DEPLOYMENT_FILE
-          # debug
-          cat $GKE_DEPLOYMENT_FILE
+          # # debug
+          # cat $GKE_DEPLOYMENT_FILE
           # deploy GKE
           kubectl apply -f $GKE_DEPLOYMENT_FILE --force
       
