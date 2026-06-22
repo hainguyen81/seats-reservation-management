@@ -132,11 +132,11 @@ jobs:
           // 1. request JSON object
           const jsonRaw = process.env.SERVICE_ENV_VARS; 
           const obj = JSON.parse(jsonRaw);
-          if (!obj['DATABASE_URL']) {
-            obj['DATABASE_URL'] = process.env.NEON_DATABASE_URL;
+          if (!obj["DATABASE_URL"]) {
+            obj["DATABASE_URL"] = process.env.NEON_DATABASE_URL;
           }
-          if (!obj['DATABASE_URL']) {
-            obj['DIRECT_DATABASE_URL'] = process.env.NEON_DIRECT_DATABASE_URL;
+          if (!obj["DATABASE_URL"]) {
+            obj["DIRECT_DATABASE_URL"] = process.env.NEON_DIRECT_DATABASE_URL;
           }
           
           // 2. convert to array key=value
