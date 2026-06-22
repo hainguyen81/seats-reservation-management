@@ -236,19 +236,7 @@ jobs:
             echo "✅ Physical GKE Cluster already exists. Proceeding directly to software orchestration layer."
           fi
       
-      # 7. Check GKE Namespace, if not found, then creating it.
-      # !!!IMPORTANT!! Use one cluster for both SQLite/Postgres, so use GitHub repository name to save the cost
-      # Requires GCP Kubernetes Engine Admin Rights to create
-      - name: 📦 Ensure Target Kubernetes Namespace Exists
-        if: success()                 # if previous step is successful
-        env:
-          K8S_DEPLOYMENT_NAMESPACE: ${{ matrix.service.env_vars.K8S_DEPLOYMENT_NAMESPACE }}
-        run: |
-          # Auto check: if not existing, then creating it. Else, skip safe
-          echo "Validating infrastructure partition status on GKE cluster..."
-          kubectl create namespace $K8S_DEPLOYMENT_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
-      
-      # 8. Build immutable image and push to GCP Registry
+      # 7. Build immutable image and push to GCP Registry
       - name: 🏗️ Build and Push Production Image to GCP Registry
         if: success()                 # if previous step is successful
         uses: docker/build-push-action@v6
@@ -262,7 +250,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       
-      # 9. Require GKE credentials to deploy
+      # 8. Require GKE credentials to deploy
       - name: 🔑 Require GKE Cluster Credentials
         if: success()                 # if previous step is successful
         uses: google-github-actions/get-gke-credentials@v2
@@ -271,6 +259,18 @@ jobs:
           cluster_name: ${{ github.event.repository.name }}-cluster
           location: ${{ inputs.region }}
           project_id: ${{ secrets.GCP_PROJECT_ID }}
+      
+      # 9. Check GKE Namespace, if not found, then creating it.
+      # !!!IMPORTANT!! Use one cluster for both SQLite/Postgres, so use GitHub repository name to save the cost
+      # Requires GCP Kubernetes Engine Admin Rights to create
+      - name: 📦 Ensure Target Kubernetes Namespace Exists
+        if: success()                 # if previous step is successful
+        env:
+          K8S_DEPLOYMENT_NAMESPACE: ${{ matrix.service.env_vars.K8S_DEPLOYMENT_NAMESPACE }}
+        run: |
+          # Auto check: if not existing, then creating it. Else, skip safe
+          echo "Validating infrastructure partition status on GKE cluster..."
+          kubectl create namespace $K8S_DEPLOYMENT_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
       
       # 10. Create secret to adapt into K8s deployment
       - name: 🔐 Securely Create and Override GKE Database Secrets
