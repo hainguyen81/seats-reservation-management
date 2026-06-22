@@ -165,15 +165,15 @@ jobs:
         cp prisma/schema.sqlite.prisma prisma/schema.prisma
         npm run prisma_esbuild
         cp prisma/schema.prisma prisma/dist/schema.prisma
-        DATABASE_URL="file:/app/prisma/data/sqlite-test.db" npx prisma generate
-        DATABASE_URL="file:/app/prisma/data/sqlite-test.db" npx prisma db push
-        DATABASE_URL="file:/app/prisma/data/sqlite-test.db" npx prisma db seed
+        DATABASE_URL="file:./sqlite-test.db" npx prisma generate
+        DATABASE_URL="file:./sqlite-test.db" npx prisma db push
+        DATABASE_URL="file:./sqlite-test.db" npx prisma db seed
       env:
         DATABASE_PROVIDER: "sqlite"
         AUTH_PROVIDER: "custom"
         NEXT_PUBLIC_AUTH_PROVIDER: "custom"
-        DATABASE_URL: "file:/app/prisma/data/sqlite-test.db"
-        DIRECT_DATABASE_URL: "file:/app/prisma/data/sqlite-test.db"
+        DATABASE_URL: "file:./sqlite-test.db"
+        DIRECT_DATABASE_URL: "file:./sqlite-test.db"
         REDIS_URL: "redis://localhost:6379"
         JWT_SECRET: "github-actions-testing-secret-key-padding-2026"
         TOTAL_SEATS: "15"
