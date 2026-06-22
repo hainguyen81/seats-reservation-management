@@ -127,10 +127,10 @@ Both authentication subsystems converge into a single defensive interface (`veri
 
 ## 💳 4. Payment Webhook Reliability & Fallback Architecture
 
-### Current Staging Implementation
+### 4.1. Current Staging Implementation
 The platform currently utilizes a client-triggered proxy (`mockPaymentSuccess`) within the `/api/reserve` endpoint to simulate payment outcomes. While highly efficient for local integration testing and instant state transition verification, this synchronous approach introduces a single point of failure and does not meet enterprise production standards for asynchronous financial reconciliation.
 
-### Production-Ready Target Architecture: Idempotent Event-Driven Webhook
+### 4.2. Production-Ready Target Architecture: Idempotent Event-Driven Webhook
 To ensure **100% financial reliability, network fault tolerance, and eventual consistency**, the production blueprint replaces the mock layer with an asynchronous, decoupled Webhook architecture integrated with payment gateways (e.g., Stripe, PayPal, or local banking APIs).
 
 ```text
@@ -147,26 +147,26 @@ To ensure **100% financial reliability, network fault tolerance, and eventual co
 
 ---
 
-### 🛡️ Core Reliability & Resiliency Patterns
+### 🛡️ 4.3. Core Reliability & Resiliency Patterns
 
-#### 4.1. Strict Idempotency Layer (Duplicate Event Protection)
+#### 4.3.1. Strict Idempotency Layer (Duplicate Event Protection)
 Payment gateways often guarantee **At-Least-Once delivery**, meaning the same webhook event (e.g., `payment_intent.succeeded`) can be fired multiple times due to network retries.
 * **Implementation**: The backend introduces an idempotency verification layer using a unique `PaymentIntentID` or `TransactionID` as a locking key.
 * **Mechanism**: Before processing mutations inside the database transaction, the server performs a check-and-set operation. If the transaction ID is already flagged as `COMPLETED` or `FAILED`, the server immediately skips execution and returns a `200 OK` handshake response to the gateway, preventing duplicate billing or multiple seat assignments.
 
-#### 4.2. Cryptographic Webhook Signature Verification
+#### 4.3.2. Cryptographic Webhook Signature Verification
 To thwart **Replay Attacks** and prevent malicious actors from spoofing successful payment payloads to unblock seats without paying:
 * The server extracts the `X-Webhook-Signature` header from the incoming request.
 * Using a secure, server-side environment secret (`WEBHOOK_SIGNING_SECRET`), the runtime recalculates the HMAC-SHA256 checksum of the raw request body.
 * The hook is strictly rejected with a `400 Bad Request` if the computed signature does not perfectly match the header payload.
 
-#### 4.3. Dead-Letter Queue (DLQ) & Retry Fallback Mechanics
+#### 4.3.3. Dead-Letter Queue (DLQ) & Retry Fallback Mechanics
 Network instability or transient database deadlocks can cause webhook ingestion to fail mid-flight.
 * **Exponential Backoff**: The system relies on the payment gateway's native exponential backoff retry mechanism (e.g., retrying 3 to 5 times over 24 hours).
 * **Decoupled Message Broker**: In ultra-high-concurrency scenarios, the webhook landing endpoint acts as a lightweight producer that shoots raw event payloads into a durable message queue (such as **RabbitMQ**, **AWS SQS**, or **Kafka**).
 * **DLQ Remediation**: If a message fails ingestion after maximum retry attempts, it is quarantined inside a **Dead-Letter Queue (DLQ)**. This triggers an automated alert to operators for manual audit or programmatic fallback correction without dropping customer data.
 
-#### 4.4. Asynchronous State Reconciliation (The Ultimate Fallback)
+#### 4.3.4. Asynchronous State Reconciliation (The Ultimate Fallback)
 If a payment gateway suffers a catastrophic outage and fails to fire webhooks entirely, the platform’s **Passive Sweeper Logic** (`/api/seats`) and **Active Background Worker** (`/api/release`) act as safety nets [^2, 3]:
 * **Reconciliation Cron**: A scheduled server cron job runs every 10 minutes to query the payment gateway's data logs for any bookings stuck in a permanent `PENDING` state.
 * **State Harmonization**: If the gateway logs report the payment was successful but no webhook arrived, the cron programmatically transitions the seat to `BOOKED` and completes the order [^2], maintaining absolute eventual consistency across all edge distributed node clusters.
@@ -175,25 +175,25 @@ If a payment gateway suffers a catastrophic outage and fails to fire webhooks en
 
 ## 🕵️ 5. Audit Logging for Financial & Critical Mutations
 
-### Architectural Mandate
+### 5.1. Architectural Mandate
 To comply with enterprise security auditing, financial reconciliation, and anomaly detection standards, the platform features an asynchronous, **Append-Only Audit Logging Infrastructure**. 
 
 This component acts as an immutable ledger designed to monitor and store data related to high-risk business state changes without introducing performance overhead to the primary seating pipeline.
 
 ---
 
-### 🛡️ Core Audit System Specifications
+### 🛡️ 5.2. Core Audit System Specifications
 
-#### 1. Tamper-Proof & Append-Only Topology
+#### 5.2.1. Tamper-Proof & Append-Only Topology
 * **Structural Isolation**: The `AuditLog` database entity behaves as a data-sink. The backend service architecture purposefully exposes no `Update` or `Delete` endpoints for this model.
 * **Fail-Safe Mechanism**: The logging layer is isolated with dedicated error-handling boundaries. If the storage persistence layer of the log fails, the core system gracefully intercepts the error, emits a system warning (`console.error`), and permits the user’s primary financial transaction to proceed uninterrupted.
 
-#### 2. Deep Network Forensics & IP Traversal
+#### 5.2.2. Deep Network Forensics & IP Traversal
 To enforce non-repudiation and defend against malicious automated scripts or distributed attacks, the logger extracts metadata passing through Kubernetes Ingress or reverse-proxies:
 * It reads headers like `X-Forwarded-For` and `X-Real-IP`.
 * In multi-proxy routing environments, it programmatically parses the composite string to isolate the origin client IP address.
 
-#### 3. Structured Behavioral Telemetry
+#### 5.2.3. Structured Behavioral Telemetry
 Each generated log captures a strict, standardized state dictionary:
 * `action`: High-level operational type classification (`HOLD_SEAT`, `PAYMENT_SUCCESS`, `PAYMENT_FAILED`).
 * `target`: Clear text representation of the mutated resources (e.g., `Seats: seat-1, seat-2`).
@@ -286,14 +286,14 @@ If a webhook payload contains malformed data or fails processing after maximum m
 
 The platform packages a production-ready **Playwright** automation suite to perform end-to-end regression testing on the core distributed business state machine.
 
-### Test Coverage Blueprint
+### 7.1. Test Coverage Blueprint
 The automated matrix simulates headless user actors to validate non-deterministic edge scenarios:
 1. **Defensive Authorization Barrier**: Verifies the dynamic locking layer blocks access to the database seating configuration for unauthenticated connections.
 2. **Concurrent Multi-Select Mechanics**: Automates multi-row selection, verifying asynchronous array parsing (`seatIds`) across runtime memory.
 3. **Reactive Telemetry & Timeouts**: Decodes regex timestamp primitives to ensure the countdown timer accurately hooks into the server-defined `expiresAt` window.
 4. **State Machine Transitions**: Simulates the payment reconciliation loop, executing cross-platform verification that successful gates transition seats to disabled `BOOKED` structures, while failures gracefully execute rollback workflows.
 
-### Execution Instructions
+### 7.2. Execution Instructions
 To execute the automated regression test matrix locally, instantiate the test runner via:
 ```bash
 # Install framework binaries
@@ -306,7 +306,7 @@ npx playwright test
 npx playwright show-report
 ```
 
-### Test Result
+### 7.3. Test Result
 1. Running 2 tests using 1 worker
   2 passed (4.2s)
 
@@ -314,6 +314,169 @@ npx playwright show-report
   ```bash
   npx playwright show-report
   ```
+
+---
+
+# 🚀 8. AUTOMATED CI/CD PIPELINE (GITHUB ACTIONS)
+
+This section documents the continuous integration and deployment pipeline configured via GitHub Actions. The workflow handles isolated unit/E2E testing, automated image compilation, safe registry pushes, and deployment rollback controls on Google Cloud Platform (GCP).
+
+---
+
+## 🛠️ 8.1. Pipeline Lifecycle Overview
+
+The complete automation pipeline runs inside a single-job host runner ecosystem to guarantee consistent, sequential data layers from local database seed generation to live cloud deployment.
+
+```text
+[ Git Push to Master ] ──> [ Setup Node.js & Services ]
+                                │
+                                ▼
+                 ┌──────────────────────────────────┐
+                 │    Step 1: E2E Test Suite   		│
+                 │    ├─ SQLite/PostgreSql & Redis	│
+                 │    ├─ Seed Sample Data      		│
+                 │    └─ Run Playwright E2E    		│
+                 └──────────────┬───────────────────┘
+                                │
+                        ( All Tests Pass )
+                                │
+                                ▼
+                 ┌──────────────────────────────────────────────────────────────────┐
+                 │ Step 2: Build & Push Image to DockerHub as Public   				│
+                 │    ├─ Manual Trigger (Required to avoid exceeding images qouta)	│
+                 │    ├─ Compose Up Docker Image					   				│
+                 │    ├─ Auth to Docker Hub    						   				│
+                 │    └─ Push Image to DockerHub   					   				│
+                 └──────────────┬───────────────────────────────────────────────────┘
+                                │
+                      ( Push Successful )
+                                │
+                                ▼
+                 ┌──────────────────────────────────────────────────────────────────┐
+                 │    Step 3: GCP Deployment   										│
+                 │    ├─ Manual Trigger (Required to avoid exceeding images qouta)	│
+                 │    ├─ Auth via Google ADC (Google OAuth2 ADC JSON Key Secret)	│
+                 │    ├─ Deploy image from DockerHub to GCP Cloud Run				│
+                 │    ├─ Check GCP Deployment Service Status						│
+                 │    └─ Rollout GKE / Cloud Run									│
+                 └──────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 📝 8.2. Detailed Action Executions
+
+### 🔹 8.2.1: Automated E2E Testing Pipeline
+* **Purpose:** Ensures the Next.js App Router and dynamic high-concurrency systems are verified stable before any cloud shipment occurs.
+* **Environment Provisioning:** Spawns decoupled sidecar services inside the host runner (localhost interface):
+  * **PostgreSQL Server:** Syncs structural data layers via npx prisma db push.
+  * **Prisma Data Seeding:** Executes npx tsx prisma/seed.ts (leveraging lightweight TypeScript execution) to eliminate flaky tests caused by missing runtime structures.
+  * **Redis Cache Infrastructure:** Spins up memory clusters to isolate active seat-holding sessions during parallel simulations.
+* **Automation Suite:** Executes npx playwright test targeting functional element locators (getByRole) and verifies the native Optimistic Locking (version) matrix.
+
+### 🔹 8.2.2: Container Compilation & Registry Upload
+* **Purpose:** Packages the fully tested Next.js runtime into an optimized, secure production artifact.
+* **Base Layer Isolation:** Utilizes node:22-alpine to maintain a lightweight core footprint and completely drops heavy build-time packages to streamline storage space.
+* **Invalidation Strategy:** Forces a clean compilation footprint using build --no-cache via Buildx.
+* **Security & Authentication:** Authenticates against Docker Hub using pre-configured repository secrets (secrets.DOCKERHUB_USERNAME and secure access secrets.DOCKERHUB_TOKEN tokens) to safely push the immutable image tagged as :latest.
+
+### 🔹 8.2.3: Google Cloud Platform (GCP) Continuous Deployment
+* **Purpose:** Pulls the certified registry image and handles progressive green-blue updates across the cloud compute tier.
+* **Identity Management:** Uses Google OAuth2 ADC JSON Keys securely passed via secrets.GCP_ADC_JSON alongside google-github-actions/auth.
+* **Deployment Workflow:**
+  * Configures the GCP project parameters and switches traffic routing to the updated Node 22 build version.
+  * Triggers container image rollouts onto Google Kubernetes Engine (GKE) deployments or Google Cloud Run services.
+  * Issues system telemetry signals to the AuditLog core tracking module indicating a successful DEPLOYMENT_COMPLETED operational lifecycle phase.
+
+---
+
+## 🔒 8.2.3. Required GitHub Secrets Configuration
+
+To operate this automation workflow smoothly, you must configure the following key-value properties inside your GitHub Repository under Settings -> Secrets and variables -> Actions:
+
+| Secret Key Name | Purpose / Required Contents |
+| :--- | :--- |
+| `DOCKERHUB_USERNAME` | Your official Docker Hub or registry account handle name. |
+| `DOCKERHUB_TOKEN` | Securely generated Personal Access Token (PAT) with Read & Write access. |
+| `GCP_ADC_JSON` | The complete, encrypted JSON key file generated for your Google Service Account. |
+| `ALLOW_GCP_DEPLOY` | Administrative feature flag toggled via system settings (`true` / `false`) acting as the ultimate automated security gatekeeper. | Execution Gate |
+
+---
+
+# ☸️ 9. GOOGLE KUBERNETES ENGINE (GKE) DEPLOYMENT PIPELINE
+
+This section outlines the automated multi-environment cloud orchestration matrix designed to deploy, scale, and monitor the Next.js/Node 22 standalone application on a managed Google Kubernetes Engine (GKE) cluster.
+
+---
+
+## 🔒 9.1. Required GitHub Actions Secrets for GKE
+
+To authenticate the pipeline against Google Cloud Platform (GCP) and safely provision state configurations inside the Kubernetes cluster, you must configure the following keys under `Settings -> Secrets and variables -> Actions`:
+
+| Secret Key Name | Required Contents & Description | Security Scope |
+| :--- | :--- | :--- |
+| `GCP_PROJECT_ID` | The explicit global project identifier string from your Google Cloud Console. | Global GCP Scope |
+| `GCP_ADC_JSON` | The complete, encrypted JSON key file generated for the Google Service Account. Requires `Kubernetes Engine Developer` and `Artifact Registry Writer` IAM roles. | IAM Auth Gateway |
+| `DATABASE_URL_NEON_POSTGRES` | Serverless Connection-Pooled database string containing the `-pooler` hostname string routing through Neon's transaction mode proxy. | Production App Core |
+| `DIRECT_DATABASE_URL_NEON_POSTGRES` | Direct connection string bypassing connection poolers, bound to port 5432, utilized strictly for Schema Migrations and Data Seeding. | CI/CD Seed Pipeline |
+| `ALLOW_GKE_DEPLOY` | Administrative feature flag toggled via system settings (`true` / `false`) acting as the ultimate automated security gatekeeper. | Execution Gate |
+
+---
+
+## 🛠️ 9.2. Detailed Technical Execution Steps
+
+### Phase A: Dynamic Workspace Isolation & Region Configuration
+1. **Dynamic Regionalization:** The workflow consolidates multi-vulnerability targets by routing environment contexts via a centralized dynamic token (`${{ env.GCP_REGION }}`).
+2. **Docker Client Hydration:** Authenticates the localized GitHub Actions host container directly against Google Cloud's secure container networks using `gcloud auth configure-docker --quiet`.
+3. **Immutable Image Compilation:** Packs the application into a secure footprint (`node:22-alpine`) tagged uniquely with the immutable Git Commit SHA (`node-app:${{ github.sha }}`) to guarantee absolute data consistency across all multi-zone scaling layers.
+
+### Phase B: Cluster Authentication & Atomic Injectors
+1. **Context Elevation:** The pipeline loads programmatic execution tokens dynamically via `google-github-actions/get-gke-credentials@v2` targeting the remote cluster endpoint.
+2. **Secret Ingestion Overrides:** Before initiating mutations, the cluster spins up system-wide variables (`kubectl create secret generic app-secrets`) on-the-fly, mapping serverless Neon connection arrays strictly to temporary Pod runtime memory.
+3. **Targeted Manifest Updates:** Drops old-school string editing (`sed -i`) in favor of atomic resource controls. The deployment utilizes `kubectl set image` to target the exact container namespace footprint, bypassing the risk of corrupting auxiliary sidecar stacks (such as Redis or SQLite persistent engines).
+
+### Phase C: Telemetry, Invalidation & Validation Sweeps
+1. **Fail-Fast Monitoring Gate:** Issues execution blocks via `kubectl rollout status` enforcing a 150-second health check timeout boundary. If connection pools error out or nodes crash, the pipeline halts instantly, automatically preserving the legacy active version.
+2. **Orphan Process Isolation:** Implements a strict self-healing matrix triggered via `if: always()` hooks. The machine safely flushes proxy cached metrics, deletes system credentials (`rm -rf ~/.kube`), and isolates runtime caches to prevent cross-contamination on successive builds.
+
+---
+
+# 📊 10. TECHNICAL ARCHITECTURE: SCALABILITY & RACE-CONDITION TESTING
+
+This framework isolates and stresses the high-concurrency capability of the Kubernetes-deployed Next.js application, validating that data mutations remain transactionally safe under parallel read/write spikes.
+
+---
+
+## ⚙️ 10.1. Core Testing Execution Metrics
+
+### 🔹 10.1.1 Architectural Stress Concept
+The validation suite drops traditional static endpoint pinging and focuses entirely on the high-contention gateway: `/api/reserve/hold`. By simulating hundreds of virtual agents hammering identical rows inside the `Seat` data tables within the exact same millisecond window, we force the infrastructure to execute dynamic conflict-resolution paths.
+
+### 🔹 10.1.2 Expected Response Matrix
+* **HTTP 200 (OK):** The thread secured the resource lock, incremented the row's `version` field, and successfully registered a temporal hold session.
+* **HTTP 409 (Conflict):** The thread arrived milliseconds later, detected a modified data version signature via Prisma's Optimistic Concurrency Control (OCC), and safe-rejected the payload. **Note: HTTP 409 responses confirm the lock engine is working flawlessly and prevent double-booking data bugs.**
+* **HTTP 500 (Internal Error):** Indicates connection pool depletion, unhandled database locks, or runtime memory crashes. **Any HTTP 500 response fails the Quality Gate instantly.**
+
+---
+
+## 🔒 10.2. Technical Quality Gates (Thresholds)
+To guarantee production stability within the GCP Free Tier boundary, the system automatically enforces strict evaluation thresholds:
+1. `http_req_duration`: **p(95) < 300ms** -> 95% of incoming transaction requests must conclude their database roundtrip and return headers under 300 milliseconds.
+2. `http_req_failed`: **rate < 1%** -> Total server runtime crash limits must not exceed 1% of entire aggregated stress data streams.
+
+---
+
+## 🔒 10.3. Required GitHub Actions Secrets for GKE Scalability Load Test
+
+To authenticate the pipeline against Google Cloud Platform (GCP) and safely provision state configurations inside the Kubernetes cluster, you must configure the following keys under `Settings -> Secrets and variables -> Actions`:
+
+| Secret Key Name | Required Contents & Description | Security Scope |
+| :--- | :--- | :--- |
+| `GCP_PROJECT_ID` | The explicit global project identifier string from your Google Cloud Console. | Global GCP Scope |
+| `GCP_ADC_JSON` | The complete, encrypted JSON key file generated for the Google Service Account. Requires `Kubernetes Engine Developer` and `Artifact Registry Writer` IAM roles. | IAM Auth Gateway |
+| `DATABASE_URL_NEON_POSTGRES` | Serverless Connection-Pooled database string containing the `-pooler` hostname string routing through Neon's transaction mode proxy. | Production App Core |
+| `DIRECT_DATABASE_URL_NEON_POSTGRES` | Direct connection string bypassing connection poolers, bound to port 5432, utilized strictly for Schema Migrations and Data Seeding. | CI/CD Seed Pipeline |
+| `ALLOW_GKE_SCABILITY_TEST` | Administrative feature flag toggled via system settings (`true` / `false`) acting as the ultimate automated security gatekeeper. | Execution Gate |
 
 ---
 
@@ -340,3 +503,40 @@ npx playwright show-report
 >
 > * **Firebase Serverless Operations:** 
 >   File uploads, assets hosting, and client-side notifications bypass the main server compute footprint entirely. They leverage direct, secure client-to-cloud tokens to guarantee low latency and optimize compute resource usage.
+>
+> ### 🚀 Advanced GKE Orchestration & Horizontal Scalability
+>
+> The continuous deployment matrix ships with integrated production parameters built to guarantee high availability and cost optimization under high-frequency seat-selection spikes:
+>
+> * **Zero-Downtime Rolling Updates:** By utilizing the immutable Git Commit SHA (`${{ github.sha }}`) as the tag token paired with `kubectl set image`, GKE triggers a progressive rolling update blueprint. Old Pod replicas continue serving active web sessions while new Node 22 Alpine containers spin up and pass internal readiness probes, ensuring a 0% drop in user traffic.
+> 
+> * **Multi-Environment Namespace Isolation:** The pipeline supports environment partitioning out-of-the-box. You can route specific multi-database builds (e.g., SQLite testing stacks vs. Production Neon clusters) safely within the same physical GKE hardware by declaring isolated Kubernetes Rooms via the `--namespace` (`-n`) flag (e.g., `env-sqlite` vs. `env-postgres`), preventing cross-resource data pollution.
+> 
+> * **Source-Level Access Controls:** Administrative safety is handled gracefully through dual-layered evaluations. The pipeline implements a **Gatekeeper Pattern** evaluating `secrets.ALLOW_RUN_WORKFLOW == 'true'` short-circuiting the system inside the child module before invoking heavy runner resources, saving corporate cloud compute budgets instantly.
+>
+> ### 🚀 Automated CI/CD Pipeline & GCP Shipment Matrix
+>
+> The repository is fully configured with an automated GitOps deployment engine via GitHub Actions. The entire lifecycle is executed within a **single unified runner environment** to ensure data continuity and immutable cloud artifacts:
+>
+> * **Fail-Fast E2E Testing Gate:** On every code integration, the pipeline invokes temporary sidecar containers (`SQLite/PostgreSQL` & `Redis`) directly on the runner host. It automatically synchronizes schemas via `npx prisma db push` and injects deterministic data matrices using lightweight TypeScript execution (`node prisma/dist/seed.js`). This guarantees that the `Playwright` automated suite always evaluates a populated, stable environment via semantic locators.
+>
+> * **Zero-Cache Container Isolation:** Upon successful verification of the testing matrix, Docker Buildx compiles the production environment using an optimized `node:22-alpine` footprint. It enforces an automated cache-invalidation blueprint (`build --no-cache`) and leverages repository tokens (`secrets.DOCKERHUB_USERNAME`, `secrets.DOCKERHUB_TOKEN`) to safely push the certified image to the registry.
+>
+> * **GCP/GKE Progressive Cloud Rollout:** Automated deployment workers authenticate securely using Google Cloud OAuth2 ADC JSON parameters (`secrets.GCP_ADC_JSON`). The pipeline triggers a progressive rolling update across your cloud cluster (Google Kubernetes Engine or Google Cloud Run), shifting traffic dynamically to the latest Node 22 runtime without downtime and dispatching a final `DEPLOYMENT_COMPLETED` signal to the telemetry `AuditLog`.
+>
+> * **Required GitHub Actions Secrets Configuration:**
+>   To operate this pipeline, ensure the following keys are added to your repository's secrets engine:
+>   * `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN` (Registry authentication tokens)
+>   * `GCP_ADC_JSON` (Google Cloud infrastructure identity parameters)
+>   * `DATABASE_URL_NEON_POSTGRES` (Neon Postgres Database Cloud parameters)
+>   * `DIRECT_DATABASE_URL_NEON_POSTGRES` (Neon Postgres Database Cloud parameters)
+>
+> ### 🚀 Senior Architecture Tips for Scalability Interviews
+>
+> When senior interviewers audit this architecture, leverage these precise operational design insights to demonstrate deep high-concurrency expertise:
+>
+> * **The Fallacy of HTTP 409 as a Failure:** In load testing, developers often mistake non-2xx status codes as errors. Explicitly highlight that **HTTP 409 is a success metric for transactional integrity**. It proves the database did not allow dual ownership of a single seat node under extreme race conditions.
+> 
+> * **Database Connection Pool Exhaustion Protection:** Explain that under a 200-user spike, the serverless Prisma client would typically crash SQLite/Postgres by opening too many concurrent connections. Point out that your system guards against this by decoupling hot session records via **Redis Distributed Caching** and implementing **Connection Pooling overrides**, keeping connection allocations static and lean.
+> 
+> * **Free-Tier Performance Optimization:** Emphasize that you kept testing metrics capped at 200 Virtual Users. This injects enough load to stress test the internal transaction layer and verify the code's locking logic without exceeding Google Cloud's compute thresholds or triggering expensive node scaling costs.
