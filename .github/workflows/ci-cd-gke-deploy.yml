@@ -157,6 +157,25 @@ jobs:
         if: success()                 # if previous step is successful
         uses: docker/setup-buildx-action@v3
       
+      # check and create GKE image repository if not existing
+      - name: 📦 Ensure Artifact Registry Repository Exists
+        if: success()                 # if previous step is successful
+        run: |
+          # request repository information from GCP
+          echo "📦 Checking if repository '${{ matrix.service.name }}' exists in region '${{ inputs.region }}'..."
+          if ! gcloud artifacts repositories describe "${{ matrix.service.name }}" --location="${{ inputs.region }}" --quiet >/dev/null 2>&1; then
+            # invoke creating repository if not found
+            echo "⚠️ Repository not found! Initiating automated creation lifecycle..."
+            gcloud artifacts repositories create "${{ matrix.service.name }}" \
+              --repository-format=docker \
+              --location="${{ inputs.region }}" \
+              --description="Automated GKE Docker Repository created via GitHub Actions CI/CD Pipeline" \
+              --quiet
+            echo "✅ Repository ${{ matrix.service.name }} created successfully."
+          else
+            echo "✅ Repository ${{ matrix.service.name }} already exists. Skipping creation phase."
+          fi
+      
       # 2. Build immutable image and push to GCP Registry
       - name: 🏗️ Build and Push Production Image to GCP Registry
         if: success()                 # if previous step is successful
