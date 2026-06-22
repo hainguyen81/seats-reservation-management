@@ -87,9 +87,14 @@ jobs:
   deploy-to-gcp:
     name: 🌐 [ GKE ] Deploy to Google Cloud
     runs-on: ubuntu-latest
-    if: ${{ secrets.ALLOW_GKE_DEPLOY == 'true' && github.event_name != 'workflow_call' }}
     # needs: build-and-push-to-docker-hub      # not require test running, due to be triggered standalone
     
+    # check whether allow for running workflow
+    env:
+      ALLOW_GKE_DEPLOY: ${{ secrets.ALLOW_GKE_DEPLOY }}
+    if: ${{ env.ALLOW_GKE_DEPLOY == 'true' && github.event_name != 'workflow_call' }}
+    
+    # load services configuraion
     strategy:
       fail-fast: false
       matrix:
