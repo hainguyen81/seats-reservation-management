@@ -24,6 +24,8 @@
 # - Info:
 #   Workfload Identity Pool IAM Principal Pattern:
 #     principal://iam.googleapis.com/projects/<GCP Project Number>/locations/global/workloadIdentityPools/<GCP Workload Idenity Pool ID/Name>/subject/SUBJECT_ATTRIBUTE_VALUE
+# - For PostgreSQL: Require using Cloud Run SQL, creating it on GCP first and collection information to connect:
+#   Ex: postgresql://user:password@localhost/seats_reservation?host=/cloudsql/<Cloud SQL Connection Name. Ex: project-id:region:instance-id, like this: gcp-seats-reservation:us-central1:seats-postgres-db>
 # - Back to GitHub and input the secret GCP_WORKLOAD_PROVIDER value that received from previous steps
 # -------------------------------------------------
 
@@ -64,8 +66,6 @@ on:
                     "DATABASE_PROVIDER":          "postgres",
                     "AUTH_PROVIDER":              "custom",
                     "NEXT_PUBLIC_AUTH_PROVIDER":  "custom",
-                    "DATABASE_URL":               "postgresql://postgres:postgres_secret_pass@postgres-db:5432/seats_reservation?schema=public&pgbouncer=true",
-                    "DIRECT_DATABASE_URL":        "postgresql://postgres:postgres_secret_pass@postgres-db:5432/seats_reservation?schema=public",
                     "REDIS_URL":                  "redis://redis-cache:6379",
                     "JWT_SECRET":                 "seats-reservation-management-secret-key-2026",
                     "TOTAL_SEATS":                9,
@@ -125,11 +125,19 @@ jobs:
       id: convert-deploy-env-vars
       env:
         SERVICE_ENV_VARS: ${{ toJson(matrix.service.env_vars) }}
+        NEON_DATABASE_URL: ${{ secrets.DATABASE_URL_NEON_POSTGRES }}
+        NEON_DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL_NEON_POSTGRES }}
       run: |
         node -e '
           // 1. request JSON object
           const jsonRaw = process.env.SERVICE_ENV_VARS; 
           const obj = JSON.parse(jsonRaw);
+          if (!obj['DATABASE_URL']) {
+            obj['DATABASE_URL'] = process.env.NEON_DATABASE_URL;
+          }
+          if (!obj['DATABASE_URL']) {
+            obj['DIRECT_DATABASE_URL'] = process.env.NEON_DIRECT_DATABASE_URL;
+          }
           
           // 2. convert to array key=value
           const kvArray = Object.entries(obj).map(([key, value]) => `${key}=${value}`);
