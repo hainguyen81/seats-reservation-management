@@ -459,7 +459,7 @@ To authenticate the pipeline against Google Cloud Platform (GCP) and safely prov
 >
 > * **Zero-Cache Container Isolation:** Upon successful verification of the testing matrix, Docker Buildx compiles the production environment using an optimized `node:22-alpine` footprint. It enforces an automated cache-invalidation blueprint (`build --no-cache`) and leverages repository tokens (`secrets.DOCKERHUB_USERNAME`, `secrets.DOCKERHUB_TOKEN`) to safely push the certified image to the registry.
 >
-> * **GCP Progressive Cloud Rollout:** Automated deployment workers authenticate securely using Google Cloud OAuth2 ADC JSON parameters (`secrets.GCP_ADC_JSON`). The pipeline triggers a progressive rolling update across your cloud cluster (Google Kubernetes Engine or Google Cloud Run), shifting traffic dynamically to the latest Node 22 runtime without downtime and dispatching a final `DEPLOYMENT_COMPLETED` signal to the telemetry `AuditLog`.
+> * **GCP/GKE Progressive Cloud Rollout:** Automated deployment workers authenticate securely using Google Cloud OAuth2 ADC JSON parameters (`secrets.GCP_ADC_JSON`). The pipeline triggers a progressive rolling update across your cloud cluster (Google Kubernetes Engine or Google Cloud Run), shifting traffic dynamically to the latest Node 22 runtime without downtime and dispatching a final `DEPLOYMENT_COMPLETED` signal to the telemetry `AuditLog`.
 >
 > * **Required GitHub Actions Secrets Configuration:**
 >   To operate this pipeline, ensure the following keys are added to your repository's secrets engine:
