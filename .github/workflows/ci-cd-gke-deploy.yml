@@ -362,8 +362,8 @@ jobs:
             echo "⚠️ Workload Identity is disabled on this GKE cluster! Initiating activation..."
             echo "========================================================================="
             
-            # 🔥 Smart Loop Watch: request GCP to check cluster whether is busy (STATUS must be RUNNING and have no any PENDING operation)
-            echo "- 🕵️‍♂️ 1. MONITORING CLUSTER OPERATION STATUS (PREVENTING CONCURRENCY LOCKS)"
+            # 🔥 1. Smart Loop Watch: request GCP to check cluster whether is busy (STATUS must be RUNNING and have no any PENDING operation)
+            echo "- ‍♂️ 1. MONITORING CLUSTER OPERATION STATUS (PREVENTING CONCURRENCY LOCKS)"
             while true; do
               CURRENT_STATUS=$(gcloud container clusters describe "$CLUSTER_NAME" --region="$REGION_NAME" --format="value(status)" 2>/dev/null || echo "RECONCILING")
               echo "-> Current GKE Control Plane State: [ $CURRENT_STATUS ]"
@@ -378,22 +378,33 @@ jobs:
               sleep 20
             done
             
-            # 1. Activate workload identity pool
+            # 2. Activate workload identity pool
             echo "- 🛠️ 2. Update Workload Metadata on the node pools..."
             gcloud container clusters update "$CLUSTER_NAME" \
                 --region="$REGION_NAME" \
                 --workload-pool="$PROJECT_ID.svc.id.goog" \
                 --quiet
             
-            # 2. Synchronize metadata configuration to virtual machines (Node Pool)
-            # Default is the first pool default-pool.
-            echo "- 🛠️ 3. Activating Workload Metadata on the node pools..."
-            gcloud container node-pools update default-pool \
+            # 3. Check workload meta
+            echo "- 🛠️ 3. Checking Workload Metadata status on the 'default-pool'..."
+            NODE_METADATA_STATUS=$(gcloud container node-pools describe default-pool \
+              --cluster="$CLUSTER_NAME" \
+              --region="$REGION_NAME" \
+              --format="value(config.workloadMetadataConfig.mode)" 2>/dev/null || echo "")
+            echo "-> Current Node Pool Metadata Mode: [ $NODE_METADATA_STATUS ]"
+            # if not correct meta
+            if [ "$NODE_METADATA_STATUS" != "GKE_METADATA" ]; then
+              # run this command once when initializing cluster
+              echo "---> ⚠️ Nodes do not have GKE_METADATA configured. Initiating hard update meta 'GKE_METADATA' for default-pool..."
+              gcloud container node-pools update default-pool \
                 --cluster="$CLUSTER_NAME" \
                 --region="$REGION_NAME" \
                 --workload-metadata=GKE_METADATA --quiet || true
-            
-            echo "✅ Workload Identity pool setup successfully completed."
+              echo "-----> ✅ Node pool metadata synchronized successfully."
+            else
+              # not run if workload already had meta
+              echo "-> ✅ Node pool 'default-pool' already has GKE_METADATA active. Skipping heavy update phase safely."
+            fi
           else
             echo "✅ Workload Identity pool is already active ($POOL_STATUS). Proceeding safely."
           fi
