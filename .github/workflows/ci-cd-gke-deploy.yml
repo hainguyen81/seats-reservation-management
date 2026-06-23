@@ -528,8 +528,6 @@ jobs:
             # Split Port from Column No. 5 (Ex: 80)
             SERVICE_PORT=$(echo "$SERVICE_TABLE" | awk 'NR==2 {print $5}' | cut -d':' -f1)
           fi
-          # debug
-          cat $SERVICE_TABLE
           
           echo "========================================================================="
           echo "📜 4. STREAMING LIVE APPLICATION BOOT LOGS"
