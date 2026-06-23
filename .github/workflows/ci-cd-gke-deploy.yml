@@ -393,7 +393,7 @@ jobs:
           gcloud iam service-accounts add-iam-policy-binding "$GCP_SA_EMAIL" \
               --role="roles/iam.workloadIdentityUser" \
               --member="serviceAccount:${GCP_PROJECT_ID}.svc.id.goog[${K8S_DEPLOYMENT_NAMESPACE}/gcp-service-account-runner]" \
-              --project="${GCP_PROJECT_ID}"
+              --project="${GCP_PROJECT_ID}" \
               --quiet
 
       # 11. Create secret to adapt into K8s deployment
