@@ -290,12 +290,21 @@ spec:
         
         # CPU/Memory resources
         resources:
+          # requests:
+          #   memory: "512Mi"
+          #   cpu: "500m"
+          # limits:
+          #   memory: "1Gi"
+          #   cpu: "1000m"
+          # -------------------------------------------------
+          # use this to reduce GKE resource in Free Tier when testing high requests, scalability test
+          # -------------------------------------------------
           requests:
-            memory: "512Mi"
-            cpu: "500m"
+            cpu: "100m"       # 10% CPU when Node start
+            memory: "128Mi"   # 128MB RAM
           limits:
-            memory: "1Gi"
-            cpu: "1000m"
+            cpu: "300m"      # allow maximum 30% CPU when k6 shoot requests
+            memory: "256Mi"  # limit hardware to 256MB RAM to avoid Out-Of-Memory (OOMKilled)
         
         # health check
         livenessProbe:
