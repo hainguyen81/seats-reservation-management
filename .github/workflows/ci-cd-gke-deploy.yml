@@ -273,7 +273,7 @@ jobs:
           kubectl create namespace $K8S_DEPLOYMENT_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
       
       # 10. Auto Turn WORKLOAD IDENTITY on GKE if neccessary
-      - name: 🌐 Ensure Workload Identity is Enabled on Cluster
+      - name: 📦 Ensure Workload Identity is Enabled on Cluster
         if: success()                 # if previous step is successful
         env:
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
@@ -289,10 +289,28 @@ jobs:
           # check workloadPool configuration on GCP
           POOL_STATUS=$(gcloud container clusters describe "$CLUSTER_NAME" --region="$REGION_NAME" --format="value(workloadPool)" 2>/dev/null || echo "")
           if [ -z "$POOL_STATUS" ] || [ "$POOL_STATUS" = "null" ]; then
+            echo "========================================================================="
             echo "⚠️ Workload Identity is disabled on this GKE cluster! Initiating activation..."
+            echo "========================================================================="
+            
+            # 🔥 Smart Loop Watch: request GCP to check cluster whether is busy (STATUS must be RUNNING and have no any PENDING operation)
+            echo "- 🕵️‍♂️ 1. MONITORING CLUSTER OPERATION STATUS (PREVENTING CONCURRENCY LOCKS)"
+            while true; do
+              CURRENT_STATUS=$(gcloud container clusters describe "$CLUSTER_NAME" --region="$REGION_NAME" --format="value(status)" 2>/dev/null || echo "RECONCILING")
+              echo "-> Current GKE Control Plane State: [ $CURRENT_STATUS ]"
+              
+              # Nếu trạng thái báo RUNNING (hoặc rảnh hoàn toàn), thoát khỏi vòng lặp để tiến hành update
+              if [ "$CURRENT_STATUS" = "RUNNING" ]; then
+                echo "---> ✅ Cluster infrastructure is completely IDLE. Ready for modification policy."
+                break
+              fi
+              
+              echo "---> ⏳ Cluster is currently busy running an external operation. Sleeping 20 seconds..."
+              sleep 20
+            done
             
             # 1. Activate workload identity pool
-            echo "- 🛠️ Update Workload Metadata on the node pools..."
+            echo "- 🛠️ 2. Update Workload Metadata on the node pools..."
             gcloud container clusters update "$CLUSTER_NAME" \
                 --region="$REGION_NAME" \
                 --workload-pool="$PROJECT_ID.svc.id.goog" \
@@ -300,7 +318,7 @@ jobs:
             
             # 2. Synchronize metadata configuration to virtual machines (Node Pool)
             # Default is the first pool default-pool.
-            echo "- 🛠️ Activating Workload Metadata on the node pools..."
+            echo "- 🛠️ 3. Activating Workload Metadata on the node pools..."
             gcloud container node-pools update default-pool \
                 --cluster="$CLUSTER_NAME" \
                 --region="$REGION_NAME" \
@@ -379,7 +397,7 @@ jobs:
             --dry-run=client -o yaml | kubectl apply -f - -n $K8S_DEPLOYMENT_NAMESPACE
       
       # 12. Deploy to Google Cloud Run GKE by built image
-      - name: ☸️ Dynamically Update Kubernetes Context & Deploy
+      - name: 🌐 Dynamically Update Kubernetes Context & Deploy
         if: success()                 # if previous step is successful
         env:
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
