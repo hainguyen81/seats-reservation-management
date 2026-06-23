@@ -80,6 +80,11 @@ on:
         required: false         # not require, due to be triggered standalone
         type: number            # receive enviroment from parent workflow under JSON string
         default: 1
+      cluster_disk_size:
+        description: "⚙️ The disk size of GKE Cluster (Ex: 20GB)"
+        required: false         # not require, due to be triggered standalone
+        type: string            # receive enviroment from parent workflow under JSON string
+        default: 20GB
 
 # permissions for GitHub Actions READ/WRITE
 permissions:
@@ -225,12 +230,14 @@ jobs:
           GCP_REGION: ${{ inputs.region }}
           GKE_MACHINE_TYPE: ${{ inputs.machine_type }}
           GKE_NODES_NUMBER: ${{ inputs.nodes_number }}
+          GKE_CLUSTER_DISK_SIZE: ${{ inputs.cluster_disk_size }}
           GCP_ADC_JSON: ${{ secrets.GCP_ADC_JSON }}
         run: |
           CLUSTER_NAME="$GKE_CLUSTER"
           REGION_NAME="$GCP_REGION"
           MACHINE_TYPE="$GKE_MACHINE_TYPE"
           NODES_NUMBER="$GKE_NODES_NUMBER"
+          CLUSTER_DISK_SIZE="$GKE_CLUSTER_DISK_SIZE"
           
           echo "========================================================================="
           echo "🕵️‍♂️ AUTOMATICALLY EXTRACTING SERVICE ACCOUNT EMAIL FROM ADC JSON KEY"
@@ -245,7 +252,7 @@ jobs:
               --region="$REGION_NAME" \
               --num-nodes=$NODES_NUMBER \
               --machine-type="$MACHINE_TYPE" \
-              --disk-size="10GB" \
+              --disk-size="$CLUSTER_DISK_SIZE" \
               --enable-autoscaling --min-nodes=1 --max-nodes=2 \
               --async \
               --quiet 2>&1) || CREATE_EXIT_CODE=$?

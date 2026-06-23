@@ -26,6 +26,7 @@ env:
   # GKE machine type: `e2-micro` (free), `e2-medium`, `e2-small` (exceed qouta, will require cost)
   GKE_MACHINE_TYPE: e2-micro
   GKE_NODES_NUMBER: 1
+  GKE_CLUSTER_DISK_SZIE: 20GB
   
   # Docker image
   ENV_JSON_DOCKER_IMAGE: |
@@ -113,6 +114,7 @@ jobs:
       env_gke_gcp_region: ${{ steps.config.outputs.env_gke_gcp_region }}
       env_gke_gcp_machine: ${{ steps.config.outputs.env_gke_gcp_machine }}
       env_gke_gcp_nodes_number: ${{ steps.config.outputs.env_gke_gcp_nodes_number }}
+      env_gke_gcp_cluster_disk_size: ${{ steps.config.outputs.env_gke_gcp_cluster_disk_size }}
     steps:
       - id: config
         name: ⚙️ Export JSON Environment Variables
@@ -145,6 +147,11 @@ jobs:
           # gcp/gke nodes number enviroment variables
           echo "env_gke_gcp_nodes_number<<EOF" >> $GITHUB_OUTPUT
           echo '${{ env.GKE_NODES_NUMBER }}' >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          # gcp/gke cluster disk size enviroment variables
+          echo "env_gke_gcp_cluster_disk_size<<EOF" >> $GITHUB_OUTPUT
+          echo '${{ env.GKE_CLUSTER_DISK_SZIE }}' >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
   # ===================================================
@@ -196,4 +203,5 @@ jobs:
       region: ${{ needs.setup-env.outputs.env_gke_gcp_region }}
       machine_type: ${{ needs.setup-env.outputs.env_gke_gcp_machine }}
       nodes_number: ${{ needs.setup-env.outputs.env_gke_gcp_nodes_number }}
+      cluster_disk_size: ${{ needs.setup-env.outputs.env_gke_gcp_cluster_disk_size }}
 
