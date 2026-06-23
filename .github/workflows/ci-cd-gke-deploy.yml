@@ -511,13 +511,18 @@ jobs:
           echo "🌐 3. EXTRACTING NETWORK ENDPOINTS (EXTERNAL IP & SERVICE PORTS)"
           echo "========================================================================="
           # Request public information (IP, access port)
-          if ! kubectl get service $K8S_DEPLOYMENT_SERVICE -n $K8S_DEPLOYMENT_NAMESPACE; then
+          if ! SERVICE_TABLE=$(kubectl get service $K8S_DEPLOYMENT_SERVICE -n $K8S_DEPLOYMENT_NAMESPACE --wait --timeout=60s 2>&1 | tee /dev/stderr); then
             # 🔥 Show as Step Warning on GITHUB CI/CD UI
-            echo "::warning::⚠️ Could not reach [GKE Service] $K8S_DEPLOYMENT_SERVICE (namespace=$K8S_DEPLOYMENT_NAMESPACE) before completion. Pods might still be initializing in the background."
+            echo "::warning::⚠️ Could not reach [GKE Service] $K8S_DEPLOYMENT_SERVICE (namespace=$K8S_DEPLOYMENT_NAMESPACE) or reached 60s timeout boundary."
             echo "Bypassing hard error check to prevent pipeline failure."
           
           else
-            EXTERNAL_IP=$(kubectl get svc $K8S_DEPLOYMENT_SERVICE -n $K8S_DEPLOYMENT_NAMESPACE -o jsonpath='{.status.loadBalancer.ingress.ip}' 2>/dev/null || echo "")
+            # 🎯 Read information from the responsed table info
+            # Column No. 4 ($4) is EXTERNAL-IP, Column No. 5 ($5) is PORT(S) under format '80:31234/TCP'
+            EXTERNAL_IP=$(echo "$SERVICE_TABLE" | awk 'NR==2 {print $4}')
+            
+            # Split Port from Column No. 5 (Ex: 80)
+            SERVICE_PORT=$(echo "$SERVICE_TABLE" | awk 'NR==2 {print $5}' | cut -d':' -f1)
           fi
           
           echo "========================================================================="
@@ -535,15 +540,11 @@ jobs:
           echo "📜 5. CALCULATE THE GKE PUBLIC URL"
           echo "========================================================================="
           # Calculate if after 60 seconds, and could not get the external IP (Ex: GKE Hardware Stuck)
-          if [ -z "$EXTERNAL_IP" ] || [ "$EXTERNAL_IP" == "<pending>" ]; then
-            echo "::warning::⚠️ GCP LoadBalancer failed to allocate a public IP within 60s. Skipping clickable link generation."
+          if [ -z "$EXTERNAL_IP" ] || [ "$EXTERNAL_IP" == "<pending>" ] || [ "$EXTERNAL_IP" == "<none>" ]; then
+            echo "::warning::⚠️ GCP LoadBalancer failed to allocate a public IP within 60s. Retry once more time to detect the GKE Public URL."
           
-          # retry once more time to get the external IP if step 3 could not get it
           else
-            # Extract Public Port of Service
-            SERVICE_PORT=$(kubectl get svc $K8S_DEPLOYMENT_SERVICE -n $K8S_DEPLOYMENT_NAMESPACE -o jsonpath='{.spec.ports[0].port}' 2>/dev/null || echo "3000")
-            
-            # Calculate the public URL
+            # Calculate the public URL (Sử dụng luôn $SERVICE_PORT vừa bốc từ bảng trên, không gọi lại lệnh jsonpath nữa)
             PUBLIC_URL="http://${EXTERNAL_IP}:${SERVICE_PORT}"
             echo "✅ Production-Ready Live Link Calculated: $PUBLIC_URL"
             
