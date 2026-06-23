@@ -276,14 +276,30 @@ jobs:
           cache-to: type=gha,mode=max
       
       # 8. Require GKE credentials to deploy
-      - name: 🔑 Require GKE Cluster Credentials
-        if: success()                 # if previous step is successful
-        uses: google-github-actions/get-gke-credentials@v2
-        with:
-          # !!!IMPORTANT!! Use one cluster for both SQLite/Postgres, so use GitHub repository name to save the cost
-          cluster_name: ${{ github.event.repository.name }}-cluster
-          location: ${{ inputs.region }}
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
+      # - name: 🔑 Require GKE Cluster Credentials
+        # if: success()                 # if previous step is successful
+        # uses: google-github-actions/get-gke-credentials@v2
+        # with:
+          # # !!!IMPORTANT!! Use one cluster for both SQLite/Postgres, so use GitHub repository name to save the cost
+          # cluster_name: ${{ github.event.repository.name }}-cluster
+          # location: ${{ inputs.region }}
+          # project_id: ${{ secrets.GCP_PROJECT_ID }}
+      - name: 🔑 Require GKE Cluster Credentials via Cloud SDK
+        if: success()
+        env:
+          GKE_CLUSTER: ${{ github.event.repository.name }}-cluster
+          GCP_REGION: ${{ inputs.region }}
+        run: |
+          echo "========================================================================="
+          echo "☸️ FETCHING KUBECONFIG CONTEXT VIA NATIVE GCLOUD CLIENT"
+          echo "========================================================================="
+          CLUSTER_NAME="$GKE_CLUSTER"
+          REGION_NAME="$GCP_REGION"
+          
+          # request GKE credentials 100% for Regional and Zonal
+          gcloud container clusters get-credentials "$CLUSTER_NAME" \
+            --region="$REGION_NAME" \
+            --quiet
       
       # 9. Check GKE Namespace, if not found, then creating it.
       # !!!IMPORTANT!! Use one cluster for both SQLite/Postgres, so use GitHub repository name to save the cost
