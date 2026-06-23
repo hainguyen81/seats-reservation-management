@@ -365,7 +365,7 @@ spec:
   selector:
     app: seats-reservation
   ports:
-  - port: 4000        # public port on browser (Ex: http://localhost:4000)
+  - port: 80          # public port on browser (Ex: http://localhost:4000)
     targetPort: 3000  # real port that Next.js listening in container
     protocol: TCP
 ---
@@ -451,6 +451,8 @@ metadata:
     # # for GCP/GKE
     # ://google.com: '{"default": "seats-backend-config"}'
     # ://google.com: '{"default": "seats-backend-config"}'
+    # use HTTP(S) Load Balancer official of Google Cloud (GCE)
+    kubernetes.io/ingress.class: "gce"
 spec:
   ingressClassName: nginx
   rules:
@@ -463,4 +465,4 @@ spec:
               # 🌟 point Service LoadBalancer to Docker Desktop map out to localhost
               name: seats-reservation-service-lb
               port:
-                number: 4000    # new port (from 3000 to 4000) for Ingress calling to
+                number: 80    # LoadBalancer Port for Ingress calling to
