@@ -218,6 +218,7 @@ jobs:
           GKE_MACHINE_TYPE: ${{ inputs.machine_type }}
           GKE_NODES_NUMBER: ${{ inputs.nodes_number }}
           GKE_CLUSTER_DISK_SIZE: ${{ inputs.cluster_disk_size }}
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
           GCP_ADC_JSON: ${{ secrets.GCP_ADC_JSON }}
         run: |
           CLUSTER_NAME="$GKE_CLUSTER"
@@ -240,6 +241,8 @@ jobs:
               --num-nodes=$NODES_NUMBER \
               --machine-type="$MACHINE_TYPE" \
               --disk-size="$CLUSTER_DISK_SIZE" \
+              --workload-pool="$PROJECT_ID.svc.id.goog" \
+              --workload-metadata=GKE_METADATA \
               --enable-autoscaling --min-nodes=1 --max-nodes=2 \
               --async \
               --quiet 2>&1) || CREATE_EXIT_CODE=$?
@@ -341,8 +344,8 @@ jobs:
           echo "Validating infrastructure partition status on GKE cluster..."
           kubectl create namespace $K8S_DEPLOYMENT_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
       
-      # 11. Auto Turn WORKLOAD IDENTITY on GKE if neccessary
-      - name: 📦 Ensure Workload Identity is Enabled on Cluster
+      # 11. Check `ENABLED` WORKLOAD IDENTITY on GKE
+      - name: 📦 Check Workload Identity Whether is `Enabled` on Cluster
         if: success()                 # if previous step is successful
         env:
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
@@ -353,58 +356,11 @@ jobs:
           REGION_NAME="${GCP_SERVICE_REGION}"
           PROJECT_ID="${GCP_PROJECT_ID}"
           
-          echo "Checking Workload Identity status for cluster '$CLUSTER_NAME' | Region '$REGION_NAME' | Project '$PROJECT_ID'..."
-          
           # check workloadPool configuration on GCP
+          echo "Checking Workload Identity status for cluster '$CLUSTER_NAME' | Region '$REGION_NAME' | Project '$PROJECT_ID'..."
           POOL_STATUS=$(gcloud container clusters describe "$CLUSTER_NAME" --region="$REGION_NAME" --format="value(workloadPool)" 2>/dev/null || echo "")
           if [ -z "$POOL_STATUS" ] || [ "$POOL_STATUS" = "null" ]; then
-            echo "========================================================================="
-            echo "⚠️ Workload Identity is disabled on this GKE cluster! Initiating activation..."
-            echo "========================================================================="
-            
-            # 🔥 1. Smart Loop Watch: request GCP to check cluster whether is busy (STATUS must be RUNNING and have no any PENDING operation)
-            echo "- ‍♂️ 1. MONITORING CLUSTER OPERATION STATUS (PREVENTING CONCURRENCY LOCKS)"
-            while true; do
-              CURRENT_STATUS=$(gcloud container clusters describe "$CLUSTER_NAME" --region="$REGION_NAME" --format="value(status)" 2>/dev/null || echo "RECONCILING")
-              echo "-> Current GKE Control Plane State: [ $CURRENT_STATUS ]"
-              
-              # Nếu trạng thái báo RUNNING (hoặc rảnh hoàn toàn), thoát khỏi vòng lặp để tiến hành update
-              if [ "$CURRENT_STATUS" = "RUNNING" ]; then
-                echo "---> ✅ Cluster infrastructure is completely IDLE. Ready for modification policy."
-                break
-              fi
-              
-              echo "---> ⚠️ Cluster is currently busy running an external operation. Sleeping 20 seconds..."
-              sleep 20
-            done
-            
-            # 2. Activate workload identity pool
-            echo "- 🛠️ 2. Update Workload Metadata on the node pools..."
-            gcloud container clusters update "$CLUSTER_NAME" \
-                --region="$REGION_NAME" \
-                --workload-pool="$PROJECT_ID.svc.id.goog" \
-                --quiet
-            
-            # 3. Check/Update workload meta if neccessary
-            echo "- 🛠️ 3. Checking Workload Metadata status on the 'default-pool'..."
-            NODE_METADATA_STATUS=$(gcloud container node-pools describe default-pool \
-              --cluster="$CLUSTER_NAME" \
-              --region="$REGION_NAME" \
-              --format="value(config.workloadMetadataConfig.mode)" 2>/dev/null || echo "")
-            echo "-> Current Node Pool Metadata Mode: [ $NODE_METADATA_STATUS ]"
-            # if not correct meta
-            if [ "$NODE_METADATA_STATUS" != "GKE_METADATA" ]; then
-              # run this command once when initializing cluster
-              echo "---> ⚠️ Nodes do not have GKE_METADATA configured. Initiating hard update meta 'GKE_METADATA' for default-pool..."
-              gcloud container node-pools update default-pool \
-                --cluster="$CLUSTER_NAME" \
-                --region="$REGION_NAME" \
-                --workload-metadata=GKE_METADATA --quiet || true
-              echo "-----> ✅ Node pool metadata synchronized successfully."
-            else
-              # not run if workload already had meta
-              echo "-> ✅ Node pool 'default-pool' already has GKE_METADATA active. Skipping heavy update phase safely."
-            fi
+            echo "❌ Fatal Error: Workload Identity is disabled on this GKE cluster..."
           else
             echo "✅ Workload Identity pool is already active ($POOL_STATUS). Proceeding safely."
           fi
