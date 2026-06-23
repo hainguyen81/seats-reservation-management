@@ -202,13 +202,19 @@ jobs:
           GCP_REGION: ${{ inputs.region }}
           GKE_MACHINE_TYPE: ${{ inputs.machine_type }}
           GKE_NODES_NUMBER: ${{ inputs.nodes_number }}
+          GCP_ADC_JSON: ${{ secrets.GCP_ADC_JSON }}
         run: |
           CLUSTER_NAME="$GKE_CLUSTER"
           REGION_NAME="$GCP_REGION"
           MACHINE_TYPE="$GKE_MACHINE_TYPE"
           NODES_NUMBER="$GKE_NODES_NUMBER"
           
-          echo "Checking if physical GKE Cluster '$CLUSTER_NAME' exists in region '$REGION_NAME'..."
+          echo "========================================================================="
+          echo "🕵️‍♂️ AUTOMATICALLY EXTRACTING SERVICE ACCOUNT EMAIL FROM ADC JSON KEY"
+          echo "========================================================================="
+          # Use Node.js to read file JSON and find "client_email"
+          GCP_SA_EMAIL=$(node -e "const data = JSON.parse(process.env.GCP_ADC_JSON); console.log(data.client_email);")
+          echo "Checking if physical GKE Cluster '$CLUSTER_NAME' exists in region '$REGION_NAME'. Service Account:  '$GCP_SA_EMAIL'..."
           
           # 1. Check Cluster whether existed on GCP
           if ! gcloud container clusters describe "$CLUSTER_NAME" --region="$REGION_NAME" --quiet >/dev/null 2>&1; then
