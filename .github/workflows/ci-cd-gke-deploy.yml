@@ -510,8 +510,12 @@ jobs:
           echo "========================================================================="
           echo "🌐 3. EXTRACTING NETWORK ENDPOINTS (EXTERNAL IP & SERVICE PORTS)"
           echo "========================================================================="
+          # Wait for public information (IP, access port)
+          echo "- Waiting up to 60s for GCP LoadBalancer to allocate a public IP..."
+          kubectl wait --namespace $K8S_DEPLOYMENT_NAMESPACE --for=jsonpath='{.status.loadBalancer.ingress.ip}' service/$K8S_DEPLOYMENT_SERVICE --timeout=60s || true
+          
           # Request public information (IP, access port)
-          if ! SERVICE_TABLE=$(kubectl get service $K8S_DEPLOYMENT_SERVICE -n $K8S_DEPLOYMENT_NAMESPACE --wait --timeout=60s 2>&1 | tee /dev/stderr); then
+          if ! SERVICE_TABLE=$(kubectl get service $K8S_DEPLOYMENT_SERVICE -n $K8S_DEPLOYMENT_NAMESPACE 2>&1 | tee /dev/stderr); then
             # 🔥 Show as Step Warning on GITHUB CI/CD UI
             echo "::warning::⚠️ Could not reach [GKE Service] $K8S_DEPLOYMENT_SERVICE (namespace=$K8S_DEPLOYMENT_NAMESPACE) or reached 60s timeout boundary."
             echo "Bypassing hard error check to prevent pipeline failure."
@@ -524,6 +528,8 @@ jobs:
             # Split Port from Column No. 5 (Ex: 80)
             SERVICE_PORT=$(echo "$SERVICE_TABLE" | awk 'NR==2 {print $5}' | cut -d':' -f1)
           fi
+          # debug
+          cat $SERVICE_TABLE
           
           echo "========================================================================="
           echo "📜 4. STREAMING LIVE APPLICATION BOOT LOGS"
