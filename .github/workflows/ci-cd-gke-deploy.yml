@@ -448,7 +448,7 @@ jobs:
           # If having error (CrashLoopBackOff, ImagePullBackOff), this line will show error and stop pipeline (Fail-Fast)
           if ! kubectl rollout status deployment/$K8S_DEPLOYMENT_NAME -n $K8S_DEPLOYMENT_NAMESPACE --timeout=150s; then
             # 🔥 Show as Step Warning on GITHUB CI/CD UI
-            echo "::warning::⚠️ Could not reach `GKE Rollout Status` before completion. Pods might still be initializing in the background."
+            echo "::warning::⚠️ Could not reach [GKE Rollout Status] before completion. Pods might still be initializing in the background."
             echo "Bypassing hard error check to prevent pipeline failure."
           fi
           
@@ -458,7 +458,7 @@ jobs:
           # Print to trace running pods, number of instances (Replicas) and status
           if ! kubectl get pods -l app=$K8S_DEPLOYMENT_NAME -o wide -n $K8S_DEPLOYMENT_NAMESPACE; then
             # 🔥 Show as Step Warning on GITHUB CI/CD UI
-            echo "::warning::⚠️ Could not reach `GKE Pods` before completion. Pods might still be initializing in the background."
+            echo "::warning::⚠️ Could not reach [GKE Pods] before completion. Pods might still be initializing in the background."
             echo "Bypassing hard error check to prevent pipeline failure."
           fi
           
@@ -468,7 +468,7 @@ jobs:
           # Request public information (IP, access port)
           if ! kubectl get service $K8S_DEPLOYMENT_SERVICE -n $K8S_DEPLOYMENT_NAMESPACE; then
             # 🔥 Show as Step Warning on GITHUB CI/CD UI
-            echo "::warning::⚠️ Could not reach `GKE Service` $K8S_DEPLOYMENT_SERVICE (namespace=$K8S_DEPLOYMENT_NAMESPACE) before completion. Pods might still be initializing in the background."
+            echo "::warning::⚠️ Could not reach [GKE Service] $K8S_DEPLOYMENT_SERVICE (namespace=$K8S_DEPLOYMENT_NAMESPACE) before completion. Pods might still be initializing in the background."
             echo "Bypassing hard error check to prevent pipeline failure."
           fi
           
@@ -479,7 +479,7 @@ jobs:
           # to check whether application start successful
           if ! kubectl logs deployment/$K8S_DEPLOYMENT_NAME --tail=50 --all-containers=true -n $K8S_DEPLOYMENT_NAMESPACE; then
             # 🔥 Show as Step Warning on GITHUB CI/CD UI
-            echo "::warning::⚠️ Could not reach `GKE Logs` deployment/$K8S_DEPLOYMENT_NAME (namespace=$K8S_DEPLOYMENT_NAMESPACE) before completion. Pods might still be initializing in the background."
+            echo "::warning::⚠️ Could not reach [GKE Logs] deployment/$K8S_DEPLOYMENT_NAME (namespace=$K8S_DEPLOYMENT_NAMESPACE) before completion. Pods might still be initializing in the background."
             echo "Bypassing hard error check to prevent pipeline failure."
           fi
           

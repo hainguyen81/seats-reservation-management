@@ -245,7 +245,7 @@ spec:
       
       # container template
       containers:
-      - name: seats-reservation-app
+      - name: seats-reservation-postgres-app
         image: PLACEHOLDER_GKE_REGISTRY_IMAGE       # Docker Hub/Registry Image
         imagePullPolicy: IfNotPresent
         ports:
