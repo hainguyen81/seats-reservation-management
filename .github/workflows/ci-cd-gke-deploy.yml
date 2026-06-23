@@ -515,6 +515,9 @@ jobs:
             # 🔥 Show as Step Warning on GITHUB CI/CD UI
             echo "::warning::⚠️ Could not reach [GKE Service] $K8S_DEPLOYMENT_SERVICE (namespace=$K8S_DEPLOYMENT_NAMESPACE) before completion. Pods might still be initializing in the background."
             echo "Bypassing hard error check to prevent pipeline failure."
+          
+          else
+            EXTERNAL_IP=$(kubectl get svc $K8S_DEPLOYMENT_SERVICE -n $K8S_DEPLOYMENT_NAMESPACE -o jsonpath='{.status.loadBalancer.ingress.ip}' 2>/dev/null || echo "")
           fi
           
           echo "========================================================================="
@@ -535,6 +538,7 @@ jobs:
           if [ -z "$EXTERNAL_IP" ] || [ "$EXTERNAL_IP" == "<pending>" ]; then
             echo "::warning::⚠️ GCP LoadBalancer failed to allocate a public IP within 60s. Skipping clickable link generation."
           
+          # retry once more time to get the external IP if step 3 could not get it
           else
             # Extract Public Port of Service
             SERVICE_PORT=$(kubectl get svc $K8S_DEPLOYMENT_SERVICE -n $K8S_DEPLOYMENT_NAMESPACE -o jsonpath='{.spec.ports[0].port}' 2>/dev/null || echo "3000")
