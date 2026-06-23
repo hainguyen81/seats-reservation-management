@@ -353,7 +353,7 @@ jobs:
           REGION_NAME="${GCP_SERVICE_REGION}"
           PROJECT_ID="${GCP_PROJECT_ID}"
           
-          echo "Checking Workload Identity status for cluster '$CLUSTER_NAME' | Region '$REGION_NAME | Project '$PROJECT_ID'..."
+          echo "Checking Workload Identity status for cluster '$CLUSTER_NAME' | Region '$REGION_NAME' | Project '$PROJECT_ID'..."
           
           # check workloadPool configuration on GCP
           POOL_STATUS=$(gcloud container clusters describe "$CLUSTER_NAME" --region="$REGION_NAME" --format="value(workloadPool)" 2>/dev/null || echo "")
