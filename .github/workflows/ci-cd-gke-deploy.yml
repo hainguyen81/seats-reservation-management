@@ -300,7 +300,16 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       
-      # 8. Require GKE credentials to deploy
+      # 8. Install GKE Cloud Authetication Plugin
+      - name: ⚙️ Install and Configure GKE Gcloud Auth Plugin for Kubectl
+        if: success()                 # if previous step is successful
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          # 🎯 Google action will download and install this component,
+          # and apply gke-gcloud-auth-plugin automatically
+          install_components: 'gke-gcloud-auth-plugin'
+      
+      # 9. Require GKE credentials to deploy
       # - name: 🔑 Require GKE Cluster Credentials
         # if: success()                 # if previous step is successful
         # uses: google-github-actions/get-gke-credentials@v2
@@ -322,16 +331,7 @@ jobs:
           REGION_NAME="$GCP_REGION"
           
           # request GKE credentials for regional (make sure cluster has been created by `--region` on step ensuring the existing cluster)
-          gcloud container clusters get-credentials "$CLUSTER_NAME" --region="$REGION_NAME" --quiet
-      
-      # 9. Install GKE Cloud Authetication Plugin
-      - name: ⚙️ Install and Configure GKE Gcloud Auth Plugin for Kubectl
-        if: success()                 # if previous step is successful
-        uses: google-github-actions/setup-gcloud@v2
-        with:
-          # 🎯 Google action will download and install this component,
-          # and apply gke-gcloud-auth-plugin automatically
-          install_components: 'gke-gcloud-auth-plugin'
+          gcloud container clusters get-credentials "$CLUSTER_NAME" --region="$REGION_NAME" --quiet || exit 1
       
       # 10. Check GKE Namespace, if not found, then creating it.
       # !!!IMPORTANT!! Use one cluster for both SQLite/Postgres, so use GitHub repository name to save the cost
