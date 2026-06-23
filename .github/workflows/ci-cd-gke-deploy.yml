@@ -360,7 +360,7 @@ jobs:
               --project="${GCP_PROJECT_ID}"
               --quiet
 
-      # 10. Create secret to adapt into K8s deployment
+      # 11. Create secret to adapt into K8s deployment
       - name: 🔐 Securely Create and Override GKE Database Secrets
         env:
           K8S_DEPLOYMENT_NAMESPACE: ${{ matrix.service.env_vars.K8S_DEPLOYMENT_NAMESPACE }}
@@ -378,7 +378,7 @@ jobs:
             --from-literal=DIRECT_DATABASE_URL="${{ secrets.DIRECT_DATABASE_URL_NEON_POSTGRES }}" \
             --dry-run=client -o yaml | kubectl apply -f - -n $K8S_DEPLOYMENT_NAMESPACE
       
-      # 11. Deploy to Google Cloud Run GKE by built image
+      # 12. Deploy to Google Cloud Run GKE by built image
       - name: ☸️ Dynamically Update Kubernetes Context & Deploy
         if: success()                 # if previous step is successful
         env:
@@ -397,7 +397,7 @@ jobs:
           # deploy GKE
           kubectl apply -f $GKE_DEPLOYMENT_FILE --force
       
-      # 12. Check deployment status
+      # 13. Check deployment status
       - name: 📊 Check Rollout Status & Extract Deployment Metadata
         if: success()                 # if previous step is successful
         env:
@@ -447,7 +447,7 @@ jobs:
             echo "Bypassing hard error check to prevent pipeline failure."
           fi
       
-      # Clean up
+      # 14. Clean up
       - name: ⚙️ Force Kill Orphan Processes
         if: always()    # Always run to clean up
         run: |
