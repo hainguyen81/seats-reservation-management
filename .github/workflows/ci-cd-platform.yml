@@ -183,8 +183,8 @@ jobs:
       packages: write
       id-token: write
     with:
-      env_data: ${{ needs.setup-env.outputs.env_gcp_deploy }}
       region: ${{ needs.setup-env.outputs.env_gke_gcp_region }}
+      env_data: ${{ needs.setup-env.outputs.env_gcp_deploy }}
   
   # ==============================================================================
   # 🌐 GKE DEPLOYMENT
@@ -199,9 +199,9 @@ jobs:
       packages: write
       id-token: write
     with:
-      env_data: ${{ needs.setup-env.outputs.env_gke_deploy }}
       region: ${{ needs.setup-env.outputs.env_gke_gcp_region }}
       machine_type: ${{ needs.setup-env.outputs.env_gke_gcp_machine }}
       nodes_number: ${{ needs.setup-env.outputs.env_gke_gcp_nodes_number }}
       cluster_disk_size: ${{ needs.setup-env.outputs.env_gke_gcp_cluster_disk_size }}
+      env_data: ${{ needs.setup-env.outputs.env_gke_deploy }}
 

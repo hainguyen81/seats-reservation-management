@@ -39,6 +39,26 @@ on:
   # manual trigger workflow
   workflow_dispatch:
     inputs:
+      region:
+        description: "🌍 GCP Region (us-central1, us-east1, us-west1)"
+        required: false         # not require, due to be triggered standalone
+        type: string            # receive enviroment from parent workflow under JSON string
+        default: us-central1    # Always Free
+      machine_type:
+        description: "⚙️ GKE Machine Type (e2-micro, e2-small, e2-medium)"
+        required: false         # not require, due to be triggered standalone
+        type: string            # receive enviroment from parent workflow under JSON string
+        default: e2-micro
+      nodes_number:
+        description: "⚙️ The number of GKE Machine Node"
+        required: false         # not require, due to be triggered standalone
+        type: number            # receive enviroment from parent workflow under JSON string
+        default: 1
+      cluster_disk_size:
+        description: "⚙️ The disk size of GKE Cluster (Ex: 20GB)"
+        required: false         # not require, due to be triggered standalone
+        type: string            # receive enviroment from parent workflow under JSON string
+        default: 20GB
       env_data:
         description: "🔧 Environment Variables (JSON)"
         required: false         # not require, due to be triggered standalone
@@ -65,26 +85,6 @@ on:
                 }
             }
           ]
-      region:
-        description: "🌍 GCP Region (us-central1, us-east1, us-west1)"
-        required: false         # not require, due to be triggered standalone
-        type: string            # receive enviroment from parent workflow under JSON string
-        default: us-central1    # Always Free
-      machine_type:
-        description: "⚙️ GKE Machine Type (e2-micro, e2-small, e2-medium)"
-        required: false         # not require, due to be triggered standalone
-        type: string            # receive enviroment from parent workflow under JSON string
-        default: e2-micro
-      nodes_number:
-        description: "⚙️ The number of GKE Machine Node"
-        required: false         # not require, due to be triggered standalone
-        type: number            # receive enviroment from parent workflow under JSON string
-        default: 1
-      cluster_disk_size:
-        description: "⚙️ The disk size of GKE Cluster (Ex: 20GB)"
-        required: false         # not require, due to be triggered standalone
-        type: string            # receive enviroment from parent workflow under JSON string
-        default: 20GB
 
 # permissions for GitHub Actions READ/WRITE
 permissions:
@@ -323,17 +323,11 @@ jobs:
       # 9. Install GKE Cloud Authetication Plugin
       - name: ⚙️ Install and Configure GKE Gcloud Auth Plugin for Kubectl
         if: success()                 # if previous step is successful
-        run: |
-          echo "========================================================================="
-          echo "🛠️ INSTALLING REQUISITE GKE AUTHENTICATION COMPONENTS"
-          echo "========================================================================="
-          # install authentication plugin in Kubernetes
-          sudo apt-get update -y
-          sudo apt-get install google-cloud-cli-gke-gcloud-auth-plugin -y
-          
-          # 🔥 Force GitHub load authentication plugin to context memory of kubectl
-          export USE_GKE_GCLOUD_AUTH_PLUGIN=true
-          echo "USE_GKE_GCLOUD_AUTH_PLUGIN=true" >> $GITHUB_ENV
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          # 🎯 Google action will download and install this component,
+          # and apply gke-gcloud-auth-plugin automatically
+          install_components: 'gke-gcloud-auth-plugin'
       
       # 10. Check GKE Namespace, if not found, then creating it.
       # !!!IMPORTANT!! Use one cluster for both SQLite/Postgres, so use GitHub repository name to save the cost
