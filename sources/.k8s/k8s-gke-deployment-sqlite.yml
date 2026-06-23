@@ -8,7 +8,7 @@
 # =========================================================================
 # 🛡️ GKE NATIVE BACKENDCONFIG MANIFEST (GOOGLE REVERSE PROXY MANAGER)
 # =========================================================================
-apiVersion: ://google.com
+apiVersion: cloud.google.com/v1
 kind: BackendConfig
 metadata:
   name: gke-seats-reserve-proxy-config
@@ -22,8 +22,8 @@ spec:
     type: HTTP
     requestPath: /api/health # if Next.js doesn't have api health check, point to home page (Ex: `/`) to receiving 200
     port: 3000               # Port of Next.js container
----
 
+---
 # ===================================================
 # 1. PERSISTENT VOLUME CLAIM - SQLite Database Storage
 # ===================================================
@@ -40,7 +40,6 @@ spec:
       storage: 1Gi
 
 ---
-
 # ===================================================
 # 2. REDIS CACHE
 # ===================================================
@@ -65,6 +64,7 @@ spec:
         image: redis:7-alpine
         ports:
         - containerPort: 6379
+
 ---
 apiVersion: v1
 kind: Service
@@ -79,8 +79,8 @@ spec:
       # nodePort: 32379 # Port for external host. Valid range: 30000-32767
   selector:
     app: redis-cache
----
 
+---
 # ===================================================
 # 3. RESOURCE CONFIGMAP
 # ===================================================
@@ -114,8 +114,8 @@ data:
   NEXT_PUBLIC_FIREBASE_APP_ID: "1:000000000000:web:0000000000000000000000"
   NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: "G-0000000000"
   NEXT_PUBLIC_FIREBASE_DB_URL: "https://your-project.firebaseio.com"
----
 
+---
 # ===================================================
 # 4. RESOURCE SECRET: encrypt Base64
 # ===================================================
@@ -130,8 +130,8 @@ data:
   DATABASE_URL: ZmlsZTouL2FwcC9wcmlzbWEvZGF0YS9zZWF0cy1yZXNlcnZhdGlvbi5kYg==
   # original: k8s-seats-reservation-management-secret-key-2026-v1.0
   JWT_SECRET: azhzLXNlYXRzLXJlc2VydmF0aW9uLW1hbmFnZW1lbnQtc2VjcmV0LWtleS0yMDI2LXYxLjA= # encryped to base64
----
 
+---
 # ===================================================
 # 5. RESOURCE DEPLOYMENT: Manage Pod is running Next.js
 # ===================================================
@@ -262,8 +262,8 @@ spec:
       - name: sqlite-storage
         persistentVolumeClaim:
           claimName: sqlite-db-pvc
----
 
+---
 # ===================================================
 # 6. RESOURCE SERVICE: Internal Network (ClusterIP)
 # ===================================================
@@ -272,6 +272,9 @@ kind: Service
 metadata:
   name: seats-reservation-service
   namespace: gke-seats-reservation-sqlite
+  annotations:
+    # Associates the config to all ports by default
+    cloud.google.com/backend-config: '{"default": "gke-seats-reserve-proxy-config"}'
 spec:
   type: ClusterIP
   ports:
@@ -279,8 +282,8 @@ spec:
     targetPort: 3000
   selector:
     app: seats-reservation
----
 
+---
 # ===================================================
 # 7. APPLICATION SERVICE LOADBALANCER
 # ===================================================
@@ -297,8 +300,8 @@ spec:
   - port: 80            # public port on browser (Ex: http://localhost:4000)
     targetPort: 3000    # real port that Next.js listening in container
     protocol: TCP
----
 
+---
 # ===================================================
 # 8. NETWORK POLICY - Security
 # ===================================================
@@ -334,8 +337,8 @@ spec:
       port: 53
     - protocol: UDP
       port: 53
----
 
+---
 # ===================================================
 # 9. RESOURCE INGRESS: Traffic Router from external
 # ===================================================
@@ -344,12 +347,8 @@ kind: Ingress
 metadata:
   name: seats-reservation-ingress
   namespace: gke-seats-reservation-sqlite
-  annotations:
-    # 🔥 GCE Annotation Standards: use Google Cloud Configuration
-    # Point to internal BackendConfig for Google Cloud Health Check automatically
-    ://google.com: '{"default": "gke-seats-reserve-proxy-config"}'
 spec:
-  ingressClassName: gce
+  ingressClassName: gce     # Ensures GKE controller manages the LB
   rules:
   - http:
       paths:
