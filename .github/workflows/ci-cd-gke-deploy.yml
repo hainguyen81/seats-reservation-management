@@ -385,7 +385,7 @@ jobs:
                 --workload-pool="$PROJECT_ID.svc.id.goog" \
                 --quiet
             
-            # 3. Check workload meta
+            # 3. Check/Update workload meta if neccessary
             echo "- 🛠️ 3. Checking Workload Metadata status on the 'default-pool'..."
             NODE_METADATA_STATUS=$(gcloud container node-pools describe default-pool \
               --cluster="$CLUSTER_NAME" \
