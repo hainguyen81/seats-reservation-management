@@ -344,28 +344,7 @@ jobs:
           echo "Validating infrastructure partition status on GKE cluster..."
           kubectl create namespace $K8S_DEPLOYMENT_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
       
-      # 11. Check `ENABLED` WORKLOAD IDENTITY on GKE
-      - name: 📦 Check Workload Identity Whether is `Enabled` on Cluster
-        if: success()                 # if previous step is successful
-        env:
-          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-          GKE_CLUSTER: ${{ github.event.repository.name }}-cluster
-          GCP_SERVICE_REGION: ${{ inputs.region }}
-        run: |
-          CLUSTER_NAME="${GKE_CLUSTER}"
-          REGION_NAME="${GCP_SERVICE_REGION}"
-          PROJECT_ID="${GCP_PROJECT_ID}"
-          
-          # check workloadPool configuration on GCP
-          echo "Checking Workload Identity status for cluster '$CLUSTER_NAME' | Region '$REGION_NAME' | Project '$PROJECT_ID'..."
-          POOL_STATUS=$(gcloud container clusters describe "$CLUSTER_NAME" --region="$REGION_NAME" --format="value(workloadPool)" 2>/dev/null || echo "")
-          if [ -z "$POOL_STATUS" ] || [ "$POOL_STATUS" = "null" ]; then
-            echo "❌ Fatal Error: Workload Identity is disabled on this GKE cluster..."
-          else
-            echo "✅ Workload Identity pool is already active ($POOL_STATUS). Proceeding safely."
-          fi
-      
-      # 12. Bind GKE Service Account for pulling image on GCP Repository
+      # 11. Bind GKE Service Account for pulling image on GCP Repository
       - name: 🔗 Bind GKE Service Account to Google IAM Role (Workload Identity)
         if: success()                 # if previous step is successful
         env:
@@ -415,7 +394,7 @@ jobs:
               --project="${GCP_PROJECT_ID}" \
               --quiet
 
-      # 13. Create secret to adapt into K8s deployment
+      # 12. Create secret to adapt into K8s deployment
       - name: 🔐 Securely Create and Override GKE Database Secrets
         env:
           K8S_DEPLOYMENT_NAMESPACE: ${{ matrix.service.env_vars.K8S_DEPLOYMENT_NAMESPACE }}
@@ -433,7 +412,7 @@ jobs:
             --from-literal=DIRECT_DATABASE_URL="${{ secrets.DIRECT_DATABASE_URL_NEON_POSTGRES }}" \
             --dry-run=client -o yaml | kubectl apply -f - -n $K8S_DEPLOYMENT_NAMESPACE
       
-      # 14. Deploy to Google Cloud Run GKE by built image
+      # 13. Deploy to Google Cloud Run GKE by built image
       - name: 🌐 Dynamically Update Kubernetes Context & Deploy
         if: success()                 # if previous step is successful
         env:
@@ -464,7 +443,7 @@ jobs:
           echo "========================================================================="
           kubectl apply -f $GKE_DEPLOYMENT_FILE --force
       
-      # 15. Check deployment status
+      # 14. Check deployment status
       - name: 📊 Check Rollout Status & Extract Deployment Metadata
         if: success()                 # if previous step is successful
         env:
