@@ -328,7 +328,8 @@ jobs:
           echo "🛠️ INSTALLING REQUISITE GKE AUTHENTICATION COMPONENTS"
           echo "========================================================================="
           # install authentication plugin in Kubernetes
-          sudo gcloud components install gke-gcloud-auth-plugin --quiet
+          sudo apt-get update -y
+          sudo apt-get install google-cloud-cli-gke-gcloud-auth-plugin -y
           
           # 🔥 Force GitHub load authentication plugin to context memory of kubectl
           export USE_GKE_GCLOUD_AUTH_PLUGIN=true
