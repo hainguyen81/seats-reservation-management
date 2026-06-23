@@ -70,6 +70,16 @@ on:
         required: false         # not require, due to be triggered standalone
         type: string            # receive enviroment from parent workflow under JSON string
         default: us-central1    # Always Free
+      machine_type:
+        description: "🌍 GKE Machine Type (e2-micro, e2-small, e2-medium)"
+        required: false         # not require, due to be triggered standalone
+        type: string            # receive enviroment from parent workflow under JSON string
+        default: e2-micro
+      nodes_number:
+        description: "🌍 The number of GKE Machine Node"
+        required: false         # not require, due to be triggered standalone
+        type: number            # receive enviroment from parent workflow under JSON string
+        default: 1
 
 # permissions for GitHub Actions READ/WRITE
 permissions:
@@ -190,9 +200,13 @@ jobs:
         env:
           GKE_CLUSTER: ${{ github.event.repository.name }}-cluster
           GCP_REGION: ${{ inputs.region }}
+          GKE_MACHINE_TYPE: ${{ inputs.machine_type }}
+          GKE_NODES_NUMBER: ${{ inputs.nodes_number }}
         run: |
           CLUSTER_NAME="$GKE_CLUSTER"
           REGION_NAME="$GCP_REGION"
+          MACHINE_TYPE="$GKE_MACHINE_TYPE"
+          NODES_NUMBER="$GKE_NODES_NUMBER"
           
           echo "Checking if physical GKE Cluster '$CLUSTER_NAME' exists in region '$REGION_NAME'..."
           
@@ -200,14 +214,18 @@ jobs:
           if ! gcloud container clusters describe "$CLUSTER_NAME" --region="$REGION_NAME" --quiet >/dev/null 2>&1; then
             echo "⚠️ GKE Cluster '$CLUSTER_NAME' not found! Initiating automated hardware provisioning under Free Tier parameters..."
             
+            # ==============================================================================
+            # !!!IMPORTANT!!! Free Tier:
+            # - Should only use `--machine-type="e2-micro"`, `--num-nodes=1`
+            # ==============================================================================
             # 2. Create new Cluster auto by gcloud command
             # - Use flag `--async` to continue CI/CD workflow
             # - Config `e2-micro/e2-small` and `--num-nodes=1` to keep Free Tier, avoid GCP Payment
             gcloud container clusters create "$CLUSTER_NAME" \
               --region="$REGION_NAME" \
-              --num-nodes=1 \
-              --machine-type="e2-small" \
-              --disk-size="20GB" \
+              --num-nodes=$NODES_NUMBER \
+              --machine-type="$MACHINE_TYPE" \
+              --disk-size="10GB" \
               --enable-autoscaling --min-nodes=1 --max-nodes=2 \
               --async \
               --quiet

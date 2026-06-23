@@ -14,8 +14,18 @@ env:
   LANG: 'C.UTF-8'
   LC_ALL: 'C.UTF-8'
   
+  # ==============================================================================
+  # GCP/GKE Free Tier
+  # ==============================================================================
   # GCP region
-  GCP_REGION: us-central1   # Always Free
+  # Free Tier Regions:
+  # - us-central1         (Iowa)
+  # - us-east1            (South Carolina)
+  # - us-west1            (Oregon)
+  GCP_REGION: us-central1
+  # GKE machine type: `e2-micro` (free), `e2-medium`, `e2-small` (exceed qouta, will require cost)
+  GKE_MACHINE_TYPE: e2-micro
+  GKE_NODES_NUMBER: 1
   
   # Docker image
   ENV_JSON_DOCKER_IMAGE: |
@@ -101,6 +111,8 @@ jobs:
       env_gcp_deploy: ${{ steps.config.outputs.env_gcp_deploy }}
       env_gke_deploy: ${{ steps.config.outputs.env_gke_deploy }}
       env_gke_gcp_region: ${{ steps.config.outputs.env_gke_gcp_region }}
+      env_gke_gcp_machine: ${{ steps.config.outputs.env_gke_gcp_machine }}
+      env_gke_gcp_nodes_number: ${{ steps.config.outputs.env_gke_gcp_nodes_number }}
     steps:
       - id: config
         name: ⚙️ Export JSON Environment Variables
@@ -123,6 +135,16 @@ jobs:
           # gcp/gke region enviroment variables
           echo "env_gke_gcp_region<<EOF" >> $GITHUB_OUTPUT
           echo '${{ env.GCP_REGION }}' >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          # gcp/gke machine type enviroment variables
+          echo "env_gke_gcp_machine<<EOF" >> $GITHUB_OUTPUT
+          echo '${{ env.GKE_MACHINE_TYPE }}' >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          # gcp/gke nodes number enviroment variables
+          echo "env_gke_gcp_nodes_number<<EOF" >> $GITHUB_OUTPUT
+          echo '${{ env.GKE_NODES_NUMBER }}' >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
   # ===================================================
@@ -172,4 +194,6 @@ jobs:
     with:
       env_data: ${{ needs.setup-env.outputs.env_gke_deploy }}
       region: ${{ needs.setup-env.outputs.env_gke_gcp_region }}
+      machine_type: ${{ needs.setup-env.outputs.env_gke_gcp_machine }}
+      nodes_number: ${{ needs.setup-env.outputs.env_gke_gcp_nodes_number }}
 
