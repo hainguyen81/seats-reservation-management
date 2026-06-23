@@ -5,6 +5,25 @@
 
 ---
 
+# =========================================================================
+# 🛡️ GKE NATIVE BACKENDCONFIG MANIFEST (GOOGLE REVERSE PROXY MANAGER)
+# =========================================================================
+apiVersion: ://google.com
+kind: BackendConfig
+metadata:
+  name: gke-seats-reserve-proxy-config
+  namespace: gke-seats-reservation-postgres
+spec:
+  healthCheck:
+    checkIntervalSec: 15
+    timeoutSec: 5
+    healthyThreshold: 1
+    unhealthyThreshold: 3
+    type: HTTP
+    requestPath: /api/health # if Next.js doesn't have api health check, point to home page (Ex: `/`) to receiving 200
+    port: 3000               # Port of Next.js container
+---
+
 # ===================================================
 # 1. POSTGRESQL
 # ===================================================
@@ -444,17 +463,11 @@ metadata:
   name: seats-reservation-ingress
   namespace: gke-seats-reservation-postgres
   annotations:
-    ingress.class: nginx
-    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
-    # Ingress call health check web-app
-    nginx.ingress.kubernetes.io/healthcheck-path: "/api/health"
-    # # for GCP/GKE
-    # ://google.com: '{"default": "seats-backend-config"}'
-    # ://google.com: '{"default": "seats-backend-config"}'
-    # use HTTP(S) Load Balancer official of Google Cloud (GCE)
-    kubernetes.io/ingress.class: "gce"
+    # 🔥 GCE Annotation Standards: use Google Cloud Configuration
+    # Point to internal BackendConfig for Google Cloud Health Check automatically
+    ://google.com: '{"default": "gke-seats-reserve-proxy-config"}'
 spec:
-  ingressClassName: nginx
+  ingressClassName: gce
   rules:
   - http:
       paths:
