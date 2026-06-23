@@ -519,14 +519,20 @@ jobs:
             # 🔥 Show as Step Warning on GITHUB CI/CD UI
             echo "::warning::⚠️ Could not reach [GKE Service] $K8S_DEPLOYMENT_SERVICE (namespace=$K8S_DEPLOYMENT_NAMESPACE) or reached 60s timeout boundary."
             echo "Bypassing hard error check to prevent pipeline failure."
+            EXTERNAL_IP=""
           
           else
             # 🎯 Read information from the responsed table info
             # Column No. 4 ($4) is EXTERNAL-IP, Column No. 5 ($5) is PORT(S) under format '80:31234/TCP'
-            EXTERNAL_IP=$(echo "$SERVICE_TABLE" | awk 'NR==2 {print $4}')
-            
-            # Split Port from Column No. 5 (Ex: 80)
-            SERVICE_PORT=$(echo "$SERVICE_TABLE" | awk 'NR==2 {print $5}' | cut -d':' -f1)
+            RAW_IP=$(echo "$SERVICE_TABLE" | awk 'NR==2 {print $4}')
+            if [[ "$RAW_IP" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              EXTERNAL_IP="$RAW_IP"
+              # Split Port from Column No. 5 (Ex: 80)
+              SERVICE_PORT=$(echo "$SERVICE_TABLE" | awk 'NR==2 {print $5}' | cut -d':' -f1)
+            else
+              echo "⚠️ Warning: Captured invalid IP format from table output: [$RAW_IP]. Setting EXTERNAL_IP to empty."
+              EXTERNAL_IP=""
+            fi
           fi
           
           echo "========================================================================="
