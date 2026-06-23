@@ -40,7 +40,7 @@ on:
   workflow_dispatch:
     inputs:
       env_data:
-        description: "🌍 Environment Variables (JSON)"
+        description: "🔧 Environment Variables (JSON)"
         required: false         # not require, due to be triggered standalone
         type: string            # receive enviroment from parent workflow under JSON string
         default: |
@@ -71,12 +71,12 @@ on:
         type: string            # receive enviroment from parent workflow under JSON string
         default: us-central1    # Always Free
       machine_type:
-        description: "🌍 GKE Machine Type (e2-micro, e2-small, e2-medium)"
+        description: "⚙️ GKE Machine Type (e2-micro, e2-small, e2-medium)"
         required: false         # not require, due to be triggered standalone
         type: string            # receive enviroment from parent workflow under JSON string
         default: e2-micro
       nodes_number:
-        description: "🌍 The number of GKE Machine Node"
+        description: "⚙️ The number of GKE Machine Node"
         required: false         # not require, due to be triggered standalone
         type: number            # receive enviroment from parent workflow under JSON string
         default: 1
