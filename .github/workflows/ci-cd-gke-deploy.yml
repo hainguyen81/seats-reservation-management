@@ -180,18 +180,40 @@ jobs:
         run: |
           # request repository information from GCP
           echo "📦 Checking if repository '$GKE_REPOSITORY' exists in region '${{ inputs.region }}'..."
-          if ! gcloud artifacts repositories list --location="$GCP_REGION" --format="value(name)" | grep -q "/repositories/$GKE_REPOSITORY$"; then
-            # invoke creating repository if not found
-            echo "⚠️ Repository not found! Initiating automated creation lifecycle..."
-            gcloud artifacts repositories create "$GKE_REPOSITORY" \
+          CREATE_OUTPUT=$(gcloud artifacts repositories create "$GKE_REPOSITORY" \
               --repository-format=docker \
               --location="$GCP_REGION" \
-              --description="Automated GKE Docker Repository (GitHub Owner: $GITHUB_REPO_OWNER) created via GitHub Actions CI/CD Pipeline" \
-              --quiet
-            echo "✅ Repository $GKE_REPOSITORY created successfully."
+              --description="Automated Docker repository created via GitHub Actions CI/CD Pipeline" \
+              --quiet 2>&1) || CREATE_EXIT_CODE=$?
+          if [ -z "$CREATE_EXIT_CODE" ] || [ "$CREATE_EXIT_CODE" -eq 0 ]; then
+            echo "✅ Success: Repository '$REPO_NAME' created for the first time."
           else
-            echo "✅ Repository $GKE_REPOSITORY already exists. Skipping creation phase."
+            # 🔥 if 409: if Google responsed ALREADY_EXISTS, force pipeline continue
+            if echo "$CREATE_OUTPUT" | grep -q "ALREADY_EXISTS"; then
+              echo "========================================================================="
+              echo "✅ Notice: Repository '$REPO_NAME' already exists on GCP (Bypassing 409 conflict safely)."
+              echo "Proceeding directly to the application container compilation layer."
+              echo "========================================================================="
+            else
+              # other error (Ex: Permission Denied), stop pipeline
+              echo "❌ Fatal Error: Google Cloud API rejected operation with code $CREATE_EXIT_CODE"
+              echo "$CREATE_OUTPUT"
+              exit 1
+            fi
           fi
+          
+          # if ! gcloud artifacts repositories list --location="$GCP_REGION" --format="value(name)" | grep -q "/repositories/$GKE_REPOSITORY$"; then
+          #   # invoke creating repository if not found
+          #   echo "⚠️ Repository not found! Initiating automated creation lifecycle..."
+          #   gcloud artifacts repositories create "$GKE_REPOSITORY" \
+          #     --repository-format=docker \
+          #     --location="$GCP_REGION" \
+          #     --description="Automated GKE Docker Repository (GitHub Owner: $GITHUB_REPO_OWNER) created via GitHub Actions CI/CD Pipeline" \
+          #     --quiet
+          #   echo "✅ Repository $GKE_REPOSITORY created successfully."
+          # else
+          #   echo "✅ Repository $GKE_REPOSITORY already exists. Skipping creation phase."
+          # fi
       
       # 6. Check GKE cluster, if not found, then creating it.
       # !!!IMPORTANT!! Use one cluster for both SQLite/Postgres, so use GitHub repository name to save the cost
