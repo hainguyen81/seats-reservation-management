@@ -25,107 +25,6 @@ spec:
 
 ---
 # ===================================================
-# 1. POSTGRESQL
-# ===================================================
-# Secret
-apiVersion: v1
-kind: Secret
-metadata:
-  name: postgres-secret
-  namespace: gke-seats-reservation-postgres
-type: Opaque
-data:
-  # 💡 original: postgres_secret_pass
-  POSTGRES_PASSWORD: cG9zdGdyZXNfc2VjcmV0X3Bhc3M=
-
----
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: postgres-db
-  namespace: gke-seats-reservation-postgres
-spec:
-  serviceName: postgres-service
-  replicas: 1
-  selector:
-    matchLabels:
-      app: postgres-db
-  template:
-    metadata:
-      labels:
-        app: postgres-db
-    spec:
-      containers:
-      - name: postgres
-        image: postgres:16-alpine
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 5432
-          name: postgres
-        env:
-        - name: POSTGRES_DB
-          value: seats_reservation
-        - name: POSTGRES_USER
-          value: postgres
-        - name: POSTGRES_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: postgres-secret
-              key: POSTGRES_PASSWORD
-        - name: PGDATA
-          value: /var/lib/postgresql/data/pgdata
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "250m"
-          limits:
-            memory: "512Mi"
-            cpu: "1000m"
-        livenessProbe:
-          exec:
-            command:
-            - /bin/sh
-            - -c
-            - pg_isready -U postgres
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          exec:
-            command:
-            - /bin/sh
-            - -c
-            - pg_isready -U postgres
-          initialDelaySeconds: 5
-          periodSeconds: 5
-        volumeMounts:
-        - name: postgres-storage
-          mountPath: /var/lib/postgresql/data
-  volumeClaimTemplates:
-  - metadata:
-      name: postgres-storage
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      resources:
-        requests:
-          storage: 5Gi
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: postgres-service
-  namespace: gke-seats-reservation-postgres
-spec:
-  type: ClusterIP       # not using due to already use Neon Postgres
-  ports:
-    - port: 5432        # Internal communication port between container in K8s
-      targetPort: 5432  # Listen Port that Spring Boot Service is using
-      # nodePort: 32133 # Port for external host. Valid range: 30000-32767
-  selector:
-    app: postgres-db
-
----
-# ===================================================
 # 2. REDIS CACHE
 # ===================================================
 apiVersion: apps/v1
@@ -256,10 +155,6 @@ spec:
       
       # depend on other services
       initContainers:
-      - name: wait-for-postgres
-        image: busybox:1.28
-        command: ['sh', '-c', 'until nc -z postgres-service 5432; do echo waiting for postgres; sleep 2; done']
-      
       - name: wait-for-redis
         image: busybox:1.28
         command: ['sh', '-c', 'until nc -z redis-service 6379; do echo waiting for redis; sleep 2; done']
