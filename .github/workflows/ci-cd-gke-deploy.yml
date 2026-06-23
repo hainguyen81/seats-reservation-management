@@ -272,6 +272,45 @@ jobs:
           echo "Validating infrastructure partition status on GKE cluster..."
           kubectl create namespace $K8S_DEPLOYMENT_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
       
+      # 10. Auto Turn WORKLOAD IDENTITY on GKE if neccessary
+      - name: 🌐 Ensure Workload Identity is Enabled on Cluster
+        if: success()                 # if previous step is successful
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GKE_CLUSTER: ${{ github.event.repository.name }}-cluster
+          GCP_SERVICE_REGION: ${{ inputs.region }}
+        run: |
+          CLUSTER_NAME="${GKE_CLUSTER}"
+          REGION_NAME="${GCP_SERVICE_REGION}"
+          PROJECT_ID="${GCP_PROJECT_ID}"
+          
+          echo "Checking Workload Identity status for cluster '$CLUSTER_NAME' | Region '$REGION_NAME | Project '$PROJECT_ID'..."
+          
+          # check workloadPool configuration on GCP
+          POOL_STATUS=$(gcloud container clusters describe "$CLUSTER_NAME" --region="$REGION_NAME" --format="value(workloadPool)" 2>/dev/null || echo "")
+          if [ -z "$POOL_STATUS" ] || [ "$POOL_STATUS" = "null" ]; then
+            echo "⚠️ Workload Identity is disabled on this GKE cluster! Initiating activation..."
+            
+            # 1. Activate workload identity pool
+            echo "- 🛠️ Update Workload Metadata on the node pools..."
+            gcloud container clusters update "$CLUSTER_NAME" \
+                --region="$REGION_NAME" \
+                --workload-pool="$PROJECT_ID.svc.id.goog" \
+                --quiet
+            
+            # 2. Synchronize metadata configuration to virtual machines (Node Pool)
+            # Default is the first pool default-pool.
+            echo "- 🛠️ Activating Workload Metadata on the node pools..."
+            gcloud container node-pools update default-pool \
+                --cluster="$CLUSTER_NAME" \
+                --region="$REGION_NAME" \
+                --workload-metadata=GKE_METADATA --quiet || true
+            
+            echo "✅ Workload Identity pool setup successfully completed."
+          else
+            echo "✅ Workload Identity pool is already active ($POOL_STATUS). Proceeding safely."
+          fi
+      
       # 10. Bind GKE Service Account for pulling image on GCP Repository
       - name: 🔗 Bind GKE Service Account to Google IAM Role (Workload Identity)
         env:
