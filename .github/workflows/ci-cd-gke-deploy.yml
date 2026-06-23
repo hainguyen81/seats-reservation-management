@@ -239,19 +239,8 @@ jobs:
           GCP_SA_EMAIL=$(node -e "const data = JSON.parse(process.env.GCP_ADC_JSON); console.log(data.client_email);")
           echo "Checking if physical GKE Cluster '$CLUSTER_NAME' exists in region '$REGION_NAME'. Service Account:  '$GCP_SA_EMAIL'..."
           
-          # 1. Check Cluster whether existed on GCP
-          # Scan on all clusters list to check existing on GCP
-          if ! gcloud container clusters list --format="value(name)" | grep -q "^${CLUSTER_NAME}$"; then
-            echo "⚠️ GKE Cluster '$CLUSTER_NAME' not found! Initiating automated hardware provisioning under Free Tier parameters..."
-            
-            # ==============================================================================
-            # !!!IMPORTANT!!! Free Tier:
-            # - Should only use `--machine-type="e2-micro"`, `--num-nodes=1`
-            # ==============================================================================
-            # 2. Create new Cluster auto by gcloud command
-            # - Use flag `--async` to continue CI/CD workflow
-            # - Config `e2-micro/e2-small` and `--num-nodes=1` to keep Free Tier, avoid GCP Payment
-            gcloud container clusters create "$CLUSTER_NAME" \
+          # 🎯 1. Receive Response to check Error from create command
+          CREATE_OUTPUT=$(gcloud container clusters create "$CLUSTER_NAME" \
               --service-account="$GCP_SA_EMAIL" \
               --region="$REGION_NAME" \
               --num-nodes=$NODES_NUMBER \
@@ -259,30 +248,91 @@ jobs:
               --disk-size="10GB" \
               --enable-autoscaling --min-nodes=1 --max-nodes=2 \
               --async \
-              --quiet
-            
-            # 2. Smart Wait Loop
-            # Loop every 30 seconds to ask GCP whether cluster is 'RUNNING'.
-            # to avoid pipeline timeout and other push code requests not stuck by this.
-            echo "🛸 Hardware creation dispatched. Initiating smart monitoring loop..."
-            while true; do
-              STATUS=$(gcloud container clusters describe "$CLUSTER_NAME" --region="$REGION_NAME" --format="value(status)" 2>/dev/null || echo "PROVISIONING")
-              echo "Current GKE Infrastructure Status: [ $STATUS ]"
-              
-              if [ "$STATUS" = "RUNNING" ]; then
-                echo "✅ GKE Cluster hardware is fully assembled and live! Proceeding to software layer."
-                break
-              elif [ "$STATUS" = "STOPPING" ] || [ "$STATUS" = "ERROR" ] || [ "$STATUS" = "DEGRADED" ]; then
-                echo "❌ GKE Hardware initialization failed with status: $STATUS"
-                exit 1
-              fi
-              
-              echo "⚠️ Waiting 30 seconds for Google Cloud infrastructure layer to complete..."
-              sleep 30
-            done
+              --quiet 2>&1) || CREATE_EXIT_CODE=$?
+          
+          # Check reposne Google Cloud Engine API
+          if [ -z "$CREATE_EXIT_CODE" ] || [ "$CREATE_EXIT_CODE" -eq 0 ]; then
+            echo "✅ Success: GKE Cluster infrastructure dispatched for the first time."
+            exit 0
           else
-            echo "❌ Physical GKE Cluster already exists. Proceeding directly to software orchestration layer."
+            # 🔥 Check 409: if error is Already exists / ALREADY_EXISTS, bypass to continue
+            if echo "$CREATE_OUTPUT" | grep -q -i "already exists"; then
+              echo "========================================================================="
+              echo "✅ Notice: GKE Cluster '$CLUSTER_NAME' already exists on Google Cloud."
+              echo "Bypassing 409 conflict safely. Proceeding directly to software layers."
+              echo "========================================================================="
+            else
+              # other error (Ex: Not enough quota or permission denied), stop pipeline
+              echo "❌ Fatal Error: Google Cloud Infrastructure Layer rejected operation with code $CREATE_EXIT_CODE"
+              echo "$CREATE_OUTPUT"
+              exit 1
+            fi
           fi
+          
+          # 2. Smart Wait Loop
+          # Loop every 30 seconds to ask GCP whether cluster is 'RUNNING'.
+          # to avoid pipeline timeout and other push code requests not stuck by this.
+          echo "🛸 Hardware creation dispatched. Initiating smart monitoring loop..."
+          while true; do
+            STATUS=$(gcloud container clusters describe "$CLUSTER_NAME" --region="$REGION_NAME" --format="value(status)" 2>/dev/null || echo "PROVISIONING")
+            echo "Current GKE Infrastructure Status: [ $STATUS ]"
+            
+            if [ "$STATUS" = "RUNNING" ]; then
+              echo "✅ GKE Cluster hardware is fully assembled and live! Proceeding to software layer."
+              break
+            elif [ "$STATUS" = "STOPPING" ] || [ "$STATUS" = "ERROR" ] || [ "$STATUS" = "DEGRADED" ]; then
+              echo "❌ GKE Hardware initialization failed with status: $STATUS"
+              exit 1
+            fi
+            
+            echo "⚠️ Waiting 30 seconds for Google Cloud infrastructure layer to complete..."
+            sleep 30
+          done
+          
+          # # 1. Check Cluster whether existed on GCP
+          # # Scan on all clusters list to check existing on GCP
+          # if ! gcloud container clusters list --format="value(name)" | grep -q "^${CLUSTER_NAME}$"; then
+          #   echo "⚠️ GKE Cluster '$CLUSTER_NAME' not found! Initiating automated hardware provisioning under Free Tier parameters..."
+          #   
+          #   # ==============================================================================
+          #   # !!!IMPORTANT!!! Free Tier:
+          #   # - Should only use `--machine-type="e2-micro"`, `--num-nodes=1`
+          #   # ==============================================================================
+          #   # 2. Create new Cluster auto by gcloud command
+          #   # - Use flag `--async` to continue CI/CD workflow
+          #   # - Config `e2-micro/e2-small` and `--num-nodes=1` to keep Free Tier, avoid GCP Payment
+          #   gcloud container clusters create "$CLUSTER_NAME" \
+          #     --service-account="$GCP_SA_EMAIL" \
+          #     --region="$REGION_NAME" \
+          #     --num-nodes=$NODES_NUMBER \
+          #     --machine-type="$MACHINE_TYPE" \
+          #     --disk-size="10GB" \
+          #     --enable-autoscaling --min-nodes=1 --max-nodes=2 \
+          #     --async \
+          #     --quiet
+          #   
+          #   # 2. Smart Wait Loop
+          #   # Loop every 30 seconds to ask GCP whether cluster is 'RUNNING'.
+          #   # to avoid pipeline timeout and other push code requests not stuck by this.
+          #   echo "🛸 Hardware creation dispatched. Initiating smart monitoring loop..."
+          #   while true; do
+          #     STATUS=$(gcloud container clusters describe "$CLUSTER_NAME" --region="$REGION_NAME" --format="value(status)" 2>/dev/null || echo "PROVISIONING")
+          #     echo "Current GKE Infrastructure Status: [ $STATUS ]"
+          #    
+          #     if [ "$STATUS" = "RUNNING" ]; then
+          #       echo "✅ GKE Cluster hardware is fully assembled and live! Proceeding to software layer."
+          #       break
+          #     elif [ "$STATUS" = "STOPPING" ] || [ "$STATUS" = "ERROR" ] || [ "$STATUS" = "DEGRADED" ]; then
+          #       echo "❌ GKE Hardware initialization failed with status: $STATUS"
+          #       exit 1
+          #     fi
+          #    
+          #     echo "⚠️ Waiting 30 seconds for Google Cloud infrastructure layer to complete..."
+          #     sleep 30
+          #   done
+          # else
+          #   echo "❌ Physical GKE Cluster already exists. Proceeding directly to software orchestration layer."
+          # fi
       
       # 7. Build immutable image and push to GCP Registry
       - name: 🏗️ Build and Push Production Image to GCP Registry
