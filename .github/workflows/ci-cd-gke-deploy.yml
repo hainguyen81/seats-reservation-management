@@ -247,11 +247,11 @@ jobs:
                 exit 1
               fi
               
-              echo "Waiting 30 seconds for Google Cloud infrastructure layer to complete..."
+              echo "⚠️ Waiting 30 seconds for Google Cloud infrastructure layer to complete..."
               sleep 30
             done
           else
-            echo "✅ Physical GKE Cluster already exists. Proceeding directly to software orchestration layer."
+            echo "❌ Physical GKE Cluster already exists. Proceeding directly to software orchestration layer."
           fi
       
       # 7. Build immutable image and push to GCP Registry
@@ -323,7 +323,7 @@ jobs:
                 break
               fi
               
-              echo "---> ⏳ Cluster is currently busy running an external operation. Sleeping 20 seconds..."
+              echo "---> ⚠️ Cluster is currently busy running an external operation. Sleeping 20 seconds..."
               sleep 20
             done
             
@@ -448,7 +448,7 @@ jobs:
           # If having error (CrashLoopBackOff, ImagePullBackOff), this line will show error and stop pipeline (Fail-Fast)
           if ! kubectl rollout status deployment/$K8S_DEPLOYMENT_NAME -n $K8S_DEPLOYMENT_NAMESPACE --timeout=150s; then
             # 🔥 Show as Step Warning on GITHUB CI/CD UI
-            echo "::warning::Could not reach `GKE Rollout Status` before completion. Pods might still be initializing in the background."
+            echo "::warning::⚠️ Could not reach `GKE Rollout Status` before completion. Pods might still be initializing in the background."
             echo "Bypassing hard error check to prevent pipeline failure."
           fi
           
@@ -458,7 +458,7 @@ jobs:
           # Print to trace running pods, number of instances (Replicas) and status
           if ! kubectl get pods -l app=$K8S_DEPLOYMENT_NAME -o wide -n $K8S_DEPLOYMENT_NAMESPACE; then
             # 🔥 Show as Step Warning on GITHUB CI/CD UI
-            echo "::warning::Could not reach `GKE Pods` before completion. Pods might still be initializing in the background."
+            echo "::warning::⚠️ Could not reach `GKE Pods` before completion. Pods might still be initializing in the background."
             echo "Bypassing hard error check to prevent pipeline failure."
           fi
           
@@ -468,7 +468,7 @@ jobs:
           # Request public information (IP, access port)
           if ! kubectl get service $K8S_DEPLOYMENT_SERVICE -n $K8S_DEPLOYMENT_NAMESPACE; then
             # 🔥 Show as Step Warning on GITHUB CI/CD UI
-            echo "::warning::Could not reach `GKE Service` $K8S_DEPLOYMENT_SERVICE (namespace=$K8S_DEPLOYMENT_NAMESPACE) before completion. Pods might still be initializing in the background."
+            echo "::warning::⚠️ Could not reach `GKE Service` $K8S_DEPLOYMENT_SERVICE (namespace=$K8S_DEPLOYMENT_NAMESPACE) before completion. Pods might still be initializing in the background."
             echo "Bypassing hard error check to prevent pipeline failure."
           fi
           
@@ -479,8 +479,33 @@ jobs:
           # to check whether application start successful
           if ! kubectl logs deployment/$K8S_DEPLOYMENT_NAME --tail=50 --all-containers=true -n $K8S_DEPLOYMENT_NAMESPACE; then
             # 🔥 Show as Step Warning on GITHUB CI/CD UI
-            echo "::warning::Could not reach `GKE Logs` deployment/$K8S_DEPLOYMENT_NAME (namespace=$K8S_DEPLOYMENT_NAMESPACE) before completion. Pods might still be initializing in the background."
+            echo "::warning::⚠️ Could not reach `GKE Logs` deployment/$K8S_DEPLOYMENT_NAME (namespace=$K8S_DEPLOYMENT_NAMESPACE) before completion. Pods might still be initializing in the background."
             echo "Bypassing hard error check to prevent pipeline failure."
+          fi
+          
+          echo "========================================================================="
+          echo "📜 5. CALCULATE THE GKE PUBLIC URL"
+          echo "========================================================================="
+          # Calculate if after 60 seconds, and could not get the external IP (Ex: GKE Hardware Stuck)
+          if [ -z "$EXTERNAL_IP" ] || [ "$EXTERNAL_IP" == "<pending>" ]; then
+            echo "::warning::⚠️ GCP LoadBalancer failed to allocate a public IP within 60s. Skipping clickable link generation."
+          
+          else
+            # Extract Public Port of Service
+            SERVICE_PORT=$(kubectl get svc $K8S_DEPLOYMENT_SERVICE -n $K8S_DEPLOYMENT_NAMESPACE -o jsonpath='{.spec.ports[0].port}' 2>/dev/null || echo "3000")
+            
+            # Calculate the public URL
+            PUBLIC_URL="http://${EXTERNAL_IP}:${SERVICE_PORT}"
+            echo "✅ Production-Ready Live Link Calculated: $PUBLIC_URL"
+            
+            # 🎯 Mẹo in thông báo nổi bật màu xanh lá cây bấm được ngay tại trang log chính
+            echo "::notice title=💡 Deployment Live Endpoint::Your application is running smoothly at: $PUBLIC_URL"
+            
+            # 🎯 Mẹo viết bảng báo cáo ra màn hình Summary bên ngoài GitHub UI để nhà tuyển dụng dễ click
+            echo "### 💡 Live Deployment Metadata Info" >> $GITHUB_STEP_SUMMARY
+            echo "* **Matrix Target Name:** \`${{ matrix.service.name }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "* **Kubernetes Room (Namespace):** \`$K8S_DEPLOYMENT_NAMESPACE\`" >> $GITHUB_STEP_SUMMARY
+            echo "* **Clickable Production Endpoint Link:** [$PUBLIC_URL]($PUBLIC_URL)" >> $GITHUB_STEP_SUMMARY
           fi
       
       # 14. Clean up
