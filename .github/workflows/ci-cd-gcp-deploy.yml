@@ -42,7 +42,7 @@ on:
   workflow_dispatch:
     inputs:
       env_data:
-        description: "🌍 Environment Variables (JSON)"
+        description: "🔧 Environment Variables (JSON)"
         required: false         # not require, due to be triggered standalone
         type: string            # receive enviroment from parent workflow under JSON string
         default: |
