@@ -306,7 +306,7 @@ jobs:
           # location: ${{ inputs.region }}
           # project_id: ${{ secrets.GCP_PROJECT_ID }}
       - name: 🔑 Require GKE Cluster Credentials via Cloud SDK
-        if: success()
+        if: success()                 # if previous step is successful
         env:
           GKE_CLUSTER: ${{ github.event.repository.name }}-cluster
           GCP_REGION: ${{ inputs.region }}
@@ -320,7 +320,21 @@ jobs:
           # request GKE credentials for regional (make sure cluster has been created by `--region` on step ensuring the existing cluster)
           gcloud container clusters get-credentials "$CLUSTER_NAME" --region="$REGION_NAME" --quiet
       
-      # 9. Check GKE Namespace, if not found, then creating it.
+      # 9. Install GKE Cloud Authetication Plugin
+      - name: ⚙️ Install and Configure GKE Gcloud Auth Plugin for Kubectl
+        if: success()                 # if previous step is successful
+        run: |
+          echo "========================================================================="
+          echo "🛠️ INSTALLING REQUISITE GKE AUTHENTICATION COMPONENTS"
+          echo "========================================================================="
+          # install authentication plugin in Kubernetes
+          sudo gcloud components install gke-gcloud-auth-plugin --quiet
+          
+          # 🔥 Force GitHub load authentication plugin to context memory of kubectl
+          export USE_GKE_GCLOUD_AUTH_PLUGIN=true
+          echo "USE_GKE_GCLOUD_AUTH_PLUGIN=true" >> $GITHUB_ENV
+      
+      # 10. Check GKE Namespace, if not found, then creating it.
       # !!!IMPORTANT!! Use one cluster for both SQLite/Postgres, so use GitHub repository name to save the cost
       # Requires GCP Kubernetes Engine Admin Rights to create
       - name: 📦 Ensure Target Kubernetes Namespace Exists
@@ -332,7 +346,7 @@ jobs:
           echo "Validating infrastructure partition status on GKE cluster..."
           kubectl create namespace $K8S_DEPLOYMENT_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
       
-      # 10. Auto Turn WORKLOAD IDENTITY on GKE if neccessary
+      # 11. Auto Turn WORKLOAD IDENTITY on GKE if neccessary
       - name: 📦 Ensure Workload Identity is Enabled on Cluster
         if: success()                 # if previous step is successful
         env:
@@ -389,7 +403,7 @@ jobs:
             echo "✅ Workload Identity pool is already active ($POOL_STATUS). Proceeding safely."
           fi
       
-      # 10. Bind GKE Service Account for pulling image on GCP Repository
+      # 12. Bind GKE Service Account for pulling image on GCP Repository
       - name: 🔗 Bind GKE Service Account to Google IAM Role (Workload Identity)
         if: success()                 # if previous step is successful
         env:
@@ -439,7 +453,7 @@ jobs:
               --project="${GCP_PROJECT_ID}" \
               --quiet
 
-      # 11. Create secret to adapt into K8s deployment
+      # 13. Create secret to adapt into K8s deployment
       - name: 🔐 Securely Create and Override GKE Database Secrets
         env:
           K8S_DEPLOYMENT_NAMESPACE: ${{ matrix.service.env_vars.K8S_DEPLOYMENT_NAMESPACE }}
@@ -457,7 +471,7 @@ jobs:
             --from-literal=DIRECT_DATABASE_URL="${{ secrets.DIRECT_DATABASE_URL_NEON_POSTGRES }}" \
             --dry-run=client -o yaml | kubectl apply -f - -n $K8S_DEPLOYMENT_NAMESPACE
       
-      # 12. Deploy to Google Cloud Run GKE by built image
+      # 14. Deploy to Google Cloud Run GKE by built image
       - name: 🌐 Dynamically Update Kubernetes Context & Deploy
         if: success()                 # if previous step is successful
         env:
@@ -488,7 +502,7 @@ jobs:
           echo "========================================================================="
           kubectl apply -f $GKE_DEPLOYMENT_FILE --force
       
-      # 13. Check deployment status
+      # 15. Check deployment status
       - name: 📊 Check Rollout Status & Extract Deployment Metadata
         if: success()                 # if previous step is successful
         env:
@@ -563,7 +577,7 @@ jobs:
             echo "* **Clickable Production Endpoint Link:** [$PUBLIC_URL]($PUBLIC_URL)" >> $GITHUB_STEP_SUMMARY
           fi
       
-      # 14. Clean up
+      # Clean up
       - name: ⚙️ Force Kill Orphan Processes
         if: always()    # Always run to clean up
         run: |
