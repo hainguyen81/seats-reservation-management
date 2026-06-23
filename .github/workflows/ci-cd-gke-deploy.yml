@@ -222,14 +222,14 @@ jobs:
             # - Use flag `--async` to continue CI/CD workflow
             # - Config `e2-micro/e2-small` and `--num-nodes=1` to keep Free Tier, avoid GCP Payment
             gcloud container clusters create "$CLUSTER_NAME" \
-              --region="$REGION_NAME" \
-              --num-nodes=$NODES_NUMBER \
-              --machine-type="$MACHINE_TYPE" \
-              --disk-size="10GB" \
-              --enable-autoscaling --min-nodes=1 --max-nodes=2 \
-              --async \
-              --quiet
-              
+                --service-account="$GCP_SA_EMAIL" \
+                --region="$REGION_NAME" \
+                --num-nodes=$NODES_NUMBER \
+                --machine-type="$MACHINE_TYPE" \
+                --disk-size="10GB" \
+                --enable-autoscaling --min-nodes=1 --max-nodes=2 \
+                --async \
+                --quiet
             echo "🛸 Hardware creation dispatched. Initiating smart monitoring loop..."
           
             # 2. Smart Wait Loop
