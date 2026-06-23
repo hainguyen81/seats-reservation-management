@@ -291,15 +291,13 @@ jobs:
           GCP_REGION: ${{ inputs.region }}
         run: |
           echo "========================================================================="
-          echo "☸️ FETCHING KUBECONFIG CONTEXT VIA NATIVE GCLOUD CLIENT"
+          echo "🔑 FETCHING KUBECONFIG CONTEXT VIA NATIVE GCLOUD CLIENT"
           echo "========================================================================="
           CLUSTER_NAME="$GKE_CLUSTER"
           REGION_NAME="$GCP_REGION"
           
-          # request GKE credentials 100% for Regional and Zonal
-          gcloud container clusters get-credentials "$CLUSTER_NAME" \
-            --region="$REGION_NAME" \
-            --quiet
+          # request GKE credentials for regional (make sure cluster has been created by `--region` on step ensuring the existing cluster)
+          gcloud container clusters get-credentials "$CLUSTER_NAME" --region="$REGION_NAME" --quiet
       
       # 9. Check GKE Namespace, if not found, then creating it.
       # !!!IMPORTANT!! Use one cluster for both SQLite/Postgres, so use GitHub repository name to save the cost
