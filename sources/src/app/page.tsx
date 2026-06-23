@@ -13,9 +13,11 @@ export default function Home() {
     const [password, setPassword] = useState('');
     const [seats, setSeats] = useState<any[]>([]);
     const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
+    const [processingSeats, setProcessingSeats] = useState<Set<string>>(new Set());
     const [message, setMessage] = useState('');
     const [timeLeft, setTimeLeft] = useState<number | null>(null);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const [isPaying, setIsPaying] = useState<boolean>(false);
 
     // 1. check Cookie for valid session and request seats
     const fetchSeats = () => {
@@ -103,52 +105,73 @@ export default function Home() {
         const currentSelectedStrings = selectedSeats.map(id => String(id).trim());
         const targetSeatString = String(seatId).trim();
 
+        // 🛡️ ANTI-SPAM GUARD: Instantly abort execution if this explicit seat is already processing
+        if (processingSeats.has(seatId)) return;
+        // 🔥 IMMUTABLE STATE MUTATION: Instantly lock down the button on the UI layer
+        setProcessingSeats((prev) => {
+            const next = new Set(prev);
+            next.add(seatId);
+            return next;
+        });
+
         const isCurrentlySelectedByMe = currentSelectedStrings.includes(targetSeatString);
 
-        if (isCurrentlySelectedByMe) {
-            // ===================================================
-            // 🔓 RELEASE
-            // ===================================================
-            setMessage('⏳ Releasing seat reservation...');
-            const res = await fetch('/api/reserve/release-single', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ seatId: targetSeatString }),
-            });
+        try {
+            if (isCurrentlySelectedByMe) {
+                // ===================================================
+                // 🔓 RELEASE
+                // ===================================================
+                setMessage('⏳ Releasing seat reservation...');
+                const res = await fetch('/api/reserve/release-single', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ seatId: targetSeatString }),
+                });
 
-            if (res.ok) {
-                setSelectedSeats((prev) => prev.map(id => String(id).trim()).filter((id) => id !== targetSeatString));
-                setMessage('✅ Seat released successfully.');
-                fetchSeats(); // Tải lại sơ đồ ghế từ DB
+                if (res.ok) {
+                    setSelectedSeats((prev) => prev.map(id => String(id).trim()).filter((id) => id !== targetSeatString));
+                    setMessage('✅ Seat released successfully.');
+                    fetchSeats(); // Tải lại sơ đồ ghế từ DB
+                } else {
+                    const data = await res.json();
+                    setMessage(`❌ Failed to release seat: ${data.error}`);
+                }
+
             } else {
+                // ===================================================
+                // 🔒 HOLD: Reserve in expired minutes
+                // ===================================================
+                setMessage('⏳ Holding seat...');
+                const res = await fetch('/api/reserve/hold', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ seatId: targetSeatString }),
+                });
                 const data = await res.json();
-                setMessage(`❌ Failed to release seat: ${data.error}`);
-            }
 
-        } else {
-            // ===================================================
-            // 🔒 HOLD: Reserve in expired minutes
-            // ===================================================
-            setMessage('⏳ Holding seat...');
-            const res = await fetch('/api/reserve/hold', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ seatId: targetSeatString }),
+                if (data.success) {
+                    setSelectedSeats((prev) => [...prev.map(id => String(id).trim()), targetSeatString]);
+
+                    // reset expiry timer
+                    const secondsLeft = Math.floor((new Date(data.expiresAt).getTime() - Date.now()) / 1000);
+                    setTimeLeft(secondsLeft > 0 ? secondsLeft : 300);
+                    fetchSeats();
+                } else {
+                    setMessage(`❌ Cannot hold seat: ${data.error}`);
+                }
+            }
+        } catch (e) {
+            console.error('Transactional communication fracture:', e);
+            setMessage('Transactional communication fracture.');
+        } finally {
+            // 🔓 LIFECYCLE RELEASE: Re-enable the target element by evicting its tracking token
+            setProcessingSeats((prev) => {
+                const next = new Set(prev);
+                next.delete(seatId);
+                return next;
             });
-            const data = await res.json();
-
-            if (data.success) {
-                setSelectedSeats((prev) => [...prev.map(id => String(id).trim()), targetSeatString]);
-
-                // reset expiry timer
-                const secondsLeft = Math.floor((new Date(data.expiresAt).getTime() - Date.now()) / 1000);
-                setTimeLeft(secondsLeft > 0 ? secondsLeft : 300);
-                fetchSeats();
-            } else {
-                setMessage(`❌ Cannot hold seat: ${data.error}`);
-            }
         }
     };
 
@@ -228,32 +251,40 @@ export default function Home() {
 
     // handle reserving seat
     const handleReserve = async (mockSuccess: boolean) => {
-        if (selectedSeats.length === 0) return;
+        if (selectedSeats.length === 0 || processingSeats.size > 0 || isPaying) return;
+        setIsPaying(true);
         setMessage('⏳ Processing payment transaction...');
 
-        const res = await fetch('/api/reserve', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ seatIds: selectedSeats, mockPaymentSuccess: mockSuccess }),
-        });
+        try {
+            const res = await fetch('/api/reserve', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ seatIds: selectedSeats, mockPaymentSuccess: mockSuccess }),
+            });
 
-        const data = await res.json();
-        if (data.success) {
-            // firebase analytics
-            if (firebaseClientAnalytics && process.env.NEXT_PUBLIC_AUTH_PROVIDER === 'firebase') {
-                logEvent(firebaseClientAnalytics, 'purchase_seats', {
-                    seat_count: selectedSeats.length,
-                    seat_numbers: selectedSeats.map(id => seats.find(s => s.id === id)?.number).join(','),
-                    transaction_status: mockSuccess ? 'SUCCESS' : 'FAILED'
-                });
+            const data = await res.json();
+            if (data.success) {
+                // firebase analytics
+                if (firebaseClientAnalytics && process.env.NEXT_PUBLIC_AUTH_PROVIDER === 'firebase') {
+                    logEvent(firebaseClientAnalytics, 'purchase_seats', {
+                        seat_count: selectedSeats.length,
+                        seat_numbers: selectedSeats.map(id => seats.find(s => s.id === id)?.number).join(','),
+                        transaction_status: mockSuccess ? 'SUCCESS' : 'FAILED'
+                    });
+                }
+                setMessage(mockSuccess ? '🎉 Seats successfully booked!' : '❌ Payment failed. Seats released.');
+                setSelectedSeats([]);
+                setTimeLeft(null);
+                fetchSeats();
+            } else {
+                setMessage(`❌ Transaction Error: ${data.error}`);
             }
-            setMessage(mockSuccess ? '🎉 Seats successfully booked!' : '❌ Payment failed. Seats released.');
-            setSelectedSeats([]);
-            setTimeLeft(null);
-            fetchSeats();
-        } else {
-            setMessage(`❌ Transaction Error: ${data.error}`);
+        } catch (e) {
+            console.error('Payment connection error:', e);
+            setMessage('❌ Payment Connection Error');
+        } finally {
+            setIsPaying(false);
         }
     };
 
@@ -394,6 +425,7 @@ export default function Home() {
                             let borderStyle = '1px solid #e5e7eb';
                             let isCursorAllowed = 'pointer';
                             const isSelected = selectedSeats.includes(seat.id);
+                            const isTargetProcessing = processingSeats.has(seat.id);
 
                             if (isSelected) {
                                 bgStyle = '#065f46'; // SELECTED
@@ -414,7 +446,7 @@ export default function Home() {
                             return (
                                 <button
                                     key={seat.id}
-                                    disabled={seat.status !== 'AVAILABLE' && !isSelected}
+                                    disabled={isTargetProcessing  || (seat.status !== 'AVAILABLE' && !isSelected)}
                                     onClick={() => handleSeatClick(seat.id)}
                                     style={{
                                         padding: '12px 8px',
@@ -490,6 +522,7 @@ export default function Home() {
 
                         {/* Mock Success Payment */}
                         <button
+                            disabled={selectedSeats.length === 0 || processingSeats.size > 0 || isPaying}
                             onClick={() => handleReserve(true)}
                             style={{
                                 flex: 1,
