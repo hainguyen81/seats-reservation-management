@@ -176,15 +176,16 @@ jobs:
         env:
           GITHUB_REPO_OWNER: ${{ github.repository_owner }}
           GKE_REPOSITORY: ${{ github.event.repository.name }}
+          GCP_REGION: ${{ inputs.region }}
         run: |
           # request repository information from GCP
           echo "📦 Checking if repository '$GKE_REPOSITORY' exists in region '${{ inputs.region }}'..."
-          if ! gcloud artifacts repositories describe "$GKE_REPOSITORY" --location="${{ inputs.region }}" --quiet >/dev/null 2>&1; then
+          if ! gcloud artifacts repositories list --location="$GCP_REGION" --format="value(name)" | grep -q "/repositories/$GKE_REPOSITORY$"; then
             # invoke creating repository if not found
             echo "⚠️ Repository not found! Initiating automated creation lifecycle..."
             gcloud artifacts repositories create "$GKE_REPOSITORY" \
               --repository-format=docker \
-              --location="${{ inputs.region }}" \
+              --location="$GCP_REGION" \
               --description="Automated GKE Docker Repository (GitHub Owner: $GITHUB_REPO_OWNER) created via GitHub Actions CI/CD Pipeline" \
               --quiet
             echo "✅ Repository $GKE_REPOSITORY created successfully."
