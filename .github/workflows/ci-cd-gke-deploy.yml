@@ -355,6 +355,7 @@ jobs:
       
       # 10. Bind GKE Service Account for pulling image on GCP Repository
       - name: 🔗 Bind GKE Service Account to Google IAM Role (Workload Identity)
+        if: success()                 # if previous step is successful
         env:
           K8S_DEPLOYMENT_NAMESPACE: ${{ matrix.service.env_vars.K8S_DEPLOYMENT_NAMESPACE }}
           GCP_ADC_JSON: ${{ secrets.GCP_ADC_JSON }}
