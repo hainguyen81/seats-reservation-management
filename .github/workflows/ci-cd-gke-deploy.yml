@@ -424,13 +424,25 @@ jobs:
           GKE_DEPLOYMENT_FILE: ${{ matrix.service.env_vars.K8S_DEPLOYMENT }}
           IMAGE_SHA: ${{ github.sha }}
         run: |
+          echo "========================================================================="
+          echo "🧹 STEP 1: PURGING STALE CACHED DEPLOYMENTS FROM GKE INFRASTRUCTURE"
+          echo "========================================================================="
+          # 🔥 delete old deployment to avoid cache out of namespace
+          kubectl delete deployment seats-reservation-deployment -n ${{ matrix.service.namespace }} --ignore-not-found=true || true
+          
+          echo "========================================================================="
+          echo "🔄 STEP 2: INJECTING DYNAMIC REGISTRY PATH INTO MANIFEST"
+          echo "========================================================================="
           # fix k8s deployment image yml file by region
           sed -i "s|PLACEHOLDER_GKE_REGISTRY_IMAGE|${GCP_SERVICE_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_SERVICE}:${IMAGE_SHA}|g" $GKE_DEPLOYMENT_FILE
           # fix k8s deployment service account runner yml file for pulling image when deploying
           sed -i "s|PLACEHOLDER_GCP_SERVICE_ACCOUNT_RUNNER|gcp-service-account-runner|g" $GKE_DEPLOYMENT_FILE
           # # debug
           # cat $GKE_DEPLOYMENT_FILE
-          # deploy GKE
+          
+          echo "========================================================================="
+          echo "🚀 STEP 3: APPLYING FRESH IMMUTABLE MANIFEST TO GKE CLUSTER"
+          echo "========================================================================="
           kubectl apply -f $GKE_DEPLOYMENT_FILE --force
       
       # 13. Check deployment status
