@@ -146,11 +146,11 @@ spec:
     type: Recreate
   selector:
     matchLabels:
-      app: seats-reservation
+      app: seats-reservation-sqlite
   template:
     metadata:
       labels:
-        app: seats-reservation
+        app: seats-reservation-sqlite
     spec:
       # Specify GCP Service Account for pulling image on GCP Repository
       serviceAccountName: PLACEHOLDER_GCP_SERVICE_ACCOUNT_RUNNER
@@ -283,7 +283,7 @@ spec:
   - port: 80            # port open for K8s Ingress calling to
     targetPort: 3000    # real port that Next.js listening in container
   selector:
-    app: seats-reservation
+    app: seats-reservation-sqlite
 
 ---
 # ===================================================
@@ -297,7 +297,7 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      app: seats-reservation
+      app: seats-reservation-sqlite
   policyTypes:
   - Ingress
   - Egress

@@ -126,11 +126,11 @@ spec:
     type: Recreate
   selector:
     matchLabels:
-      app: seats-reservation
+      app: seats-reservation-sqlite
   template:
     metadata:
       labels:
-        app: seats-reservation
+        app: seats-reservation-sqlite
     spec:
       # depend on other services
       initContainers:
@@ -242,11 +242,11 @@ metadata:
   namespace: default
 spec:
   type: ClusterIP
+  selector:
+    app: seats-reservation-sqlite
   ports:
   - port: 3000          # port open for K8s Ingress calling to
     targetPort: 3000    # real port that Next.js listening in container
-  selector:
-    app: seats-reservation
 ---
 
 # ===================================================
@@ -260,7 +260,7 @@ metadata:
 spec:
   type: LoadBalancer
   selector:
-    app: seats-reservation
+    app: seats-reservation-sqlite
   ports:
   - port: 3000        # port open for K8s Ingress calling to
     targetPort: 3000  # real port that Next.js listening in container
@@ -278,7 +278,7 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      app: seats-reservation
+      app: seats-reservation-sqlite
   policyTypes:
   - Ingress
   - Egress

@@ -212,11 +212,11 @@ spec:
   replicas: 2             # SQLite, only 1 replica to avoid data mismatch.
   selector:
     matchLabels:
-      app: seats-reservation
+      app: seats-reservation-postgres
   template:
     metadata:
       labels:
-        app: seats-reservation
+        app: seats-reservation-postgres
     spec:
       affinity:
         podAntiAffinity:
@@ -338,7 +338,7 @@ spec:
   - port: 4000          # port open for K8s Ingress calling to
     targetPort: 3000    # real port that Next.js listening in container
   selector:
-    app: seats-reservation
+    app: seats-reservation-postgres
 
 ---
 # ===================================================
@@ -352,7 +352,7 @@ metadata:
 spec:
   type: LoadBalancer
   selector:
-    app: seats-reservation
+    app: seats-reservation-postgres
   ports:
   - port: 4000        # port open for K8s Ingress calling to
     targetPort: 3000  # real port that Next.js listening in container
@@ -368,9 +368,9 @@ metadata:
   name: seats-reservation-netpol
   namespace: default
 spec:
-  ingress:
-  - from:
-    - podSelector: {}     # 🔓 Allow all internal Ingress Controller calling into
+  podSelector:
+    matchLabels:
+      app: seats-reservation-postgres
   policyTypes:
   - Ingress
   - Egress
