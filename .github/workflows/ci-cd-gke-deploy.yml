@@ -483,6 +483,7 @@ jobs:
         if: success()                 # if previous step is successful
         env:
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GCP_REPOSITORY: ${{ github.event.repository.name }}
           GCP_SERVICE: ${{ matrix.service.name }}
           GCP_SERVICE_REGION: ${{ inputs.region }}
           GKE_DEPLOYMENT_FILE: ${{ matrix.service.env_vars.K8S_DEPLOYMENT }}
@@ -498,7 +499,8 @@ jobs:
           echo "🔄 STEP 2: INJECTING DYNAMIC REGISTRY PATH INTO MANIFEST"
           echo "========================================================================="
           # fix k8s deployment image yml file by region
-          sed -i "s|PLACEHOLDER_GKE_REGISTRY_IMAGE|${GCP_SERVICE_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_SERVICE}:${IMAGE_SHA}|g" $GKE_DEPLOYMENT_FILE
+          # image tags: ${{ inputs.region }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ github.event.repository.name }}/${{ matrix.service.name }}:${{ github.sha }}
+          sed -i "s|PLACEHOLDER_GKE_REGISTRY_IMAGE|${GCP_SERVICE_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_REPOSITORY}/${GCP_SERVICE}:${IMAGE_SHA}|g" $GKE_DEPLOYMENT_FILE
           # fix k8s deployment service account runner yml file for pulling image when deploying
           sed -i "s|PLACEHOLDER_GCP_SERVICE_ACCOUNT_RUNNER|gcp-service-account-runner|g" $GKE_DEPLOYMENT_FILE
           # # debug
