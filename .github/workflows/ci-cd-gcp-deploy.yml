@@ -218,7 +218,7 @@ jobs:
           
           if [ $STATUS -eq 200 ]; then
             echo "✅ Service worked successful! Status: $STATUS"
-            echo "- ✅ Public URL: $URL"
+            echo "- 🚀 Public URL: $URL"
             echo "gcp_cloud_run_url=$URL" >> $GITHUB_OUTPUT
           else
             echo "❌ Service Error on GCP! Status: $STATUS"
