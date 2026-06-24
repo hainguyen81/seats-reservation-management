@@ -243,8 +243,8 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-  - port: 3000
-    targetPort: 3000
+  - port: 3000          # port open for K8s Ingress calling to
+    targetPort: 3000    # real port that Next.js listening in container
   selector:
     app: seats-reservation
 ---
@@ -262,8 +262,8 @@ spec:
   selector:
     app: seats-reservation
   ports:
-  - port: 3000
-    targetPort: 3000
+  - port: 3000        # port open for K8s Ingress calling to
+    targetPort: 3000  # real port that Next.js listening in container
     protocol: TCP
 ---
 
@@ -284,17 +284,24 @@ spec:
   - Egress
   ingress:
   - from:
-    - namespaceSelector:
-        matchLabels:
-          name: ingress-nginx
+    - podSelector: {}     # 🔓 Allow all internal Ingress Controller calling into
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector: {}     # 🔓 Allow all internal Ingress Controller (including Docker Desktop) calling into
   egress:
   - to:
-    - podSelector:
-        matchLabels:
-          app: redis-cache
+    - podSelector: {}     # 🔓 Allow all Pod Redis in namespace
     ports:
     - protocol: TCP
-      port: 6379
+      port: 6379          # Port Redis
+  - to:
+    - podSelector: {}     # 🔓 Allow all Pod Next.js in namespace
+    ports:
+    - protocol: TCP
+      port: 3000          # Port Next.js
   - to:
     - namespaceSelector: {}
     ports:
@@ -317,9 +324,6 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-body-size: "10m"
     # Ingress call health check web-app
     nginx.ingress.kubernetes.io/healthcheck-path: "/api/health"
-    # # for GCP/GKE
-    # ://google.com: '{"default": "seats-backend-config"}'
-    # ://google.com: '{"default": "seats-backend-config"}'
 spec:
   ingressClassName: nginx
   rules:
@@ -329,6 +333,7 @@ spec:
           pathType: Prefix
           backend:
             service:
+              # 🌟 point Service LoadBalancer to Docker Desktop map out to localhost
               name: seats-reservation-service-lb
               port:
                 number: 3000

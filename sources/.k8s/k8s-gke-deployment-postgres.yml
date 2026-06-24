@@ -1,10 +1,10 @@
 # ===================================================
 # KUBERNETES DEPLOYMENT: Seats Reservation System
 # Database: PostgreSQL with PgBouncer
+# !!!NOTE!!! No need LoadBalancer, due to using GKE Cloud LoadBalancer
 # ===================================================
 
 ---
-
 # =========================================================================
 # 🛡️ GKE NATIVE BACKENDCONFIG MANIFEST (GOOGLE REVERSE PROXY MANAGER)
 # =========================================================================
@@ -260,67 +260,21 @@ metadata:
   name: seats-reservation-service
   namespace: gke-seats-reservation-postgres
   annotations:
-    # Associates the config to all ports by default
-    cloud.google.com/backend-config: '{"default": "gke-seats-reserve-proxy-config"}'
+    # This critical line allows ClusterIP to pair with GKE Ingress
+    cloud.google.com/neg: '{"ingress": true}'
+    # BackendConfig for Next.js health check
+    cloud.google.com/v1: '{"ports": {"80": "gke-seats-reserve-proxy-config"}}'
 spec:
   type: ClusterIP
   ports:
-  - port: 4000          # port open for K8s Ingress calling to
+  - port: 80            # port open for K8s Ingress calling to
     targetPort: 3000    # real port that Next.js listening in container
   selector:
     app: seats-reservation
 
 ---
 # ===================================================
-# 7. APPLICATION SERVICE LOADBALANCER
-# ===================================================
-apiVersion: v1
-kind: Service
-metadata:
-  name: seats-reservation-service-lb
-  namespace: gke-seats-reservation-postgres
-spec:
-  type: LoadBalancer
-  selector:
-    app: seats-reservation
-  ports:
-  - port: 80          # public port on browser (Ex: http://localhost:4000)
-    targetPort: 3000  # real port that Next.js listening in container
-    protocol: TCP
-
----
-# ===================================================
-# 8. HORIZONTAL POD AUTOSCALER
-# ===================================================
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: seats-reservation-hpa
-  namespace: gke-seats-reservation-postgres
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: seats-reservation-deployment
-  minReplicas: 2
-  maxReplicas: 5
-  metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      target:
-        type: Utilization
-        averageUtilization: 70
-  - type: Resource
-    resource:
-      name: memory
-      target:
-        type: Utilization
-        averageUtilization: 80
-
----
-# ===================================================
-# 9. NETWORK POLICY - Security
+# 7. NETWORK POLICY - Security
 # ===================================================
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -339,31 +293,38 @@ spec:
     - podSelector: {}     # 🔓 Allow all internal Ingress Controller (including Docker Desktop) calling into
   egress:
   - to:
-    - podSelector: {}     # 🔓 Allow all Pod Postgres and Redis in namespace
+    - podSelector: {}     # 🔓 Allow all Pod Redis in namespace
     ports:
     - protocol: TCP
-      port: 5432          # Port Postgres
-    - protocol: TCP
       port: 6379          # Port Redis
+  - to:
+    - podSelector: {}     # 🔓 Allow all Pod Next.js in namespace
+    ports:
+    - protocol: TCP
+      port: 3000          # Port Next.js
   - to:
     - namespaceSelector: {}
     ports:
     - protocol: TCP
       port: 53
+    - protocol: TCP
+      port: 80
     - protocol: UDP
       port: 53
 
 ---
 # ===================================================
-# 10. RESOURCE INGRESS: Traffic Router from external
+# 8. RESOURCE INGRESS: Traffic Router from external
 # ===================================================
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: seats-reservation-ingress
   namespace: gke-seats-reservation-postgres
+  annotations:
+    # Use "gce" for external HTTP(S) LB or "gce-internal" for internal HTTP(S) LB
+    kubernetes.io/ingress.class: "gce"  # Ensures GKE controller manages the LB
 spec:
-  ingressClassName: gce     # Ensures GKE controller manages the LB
   rules:
   - http:
       paths:
@@ -371,7 +332,37 @@ spec:
           pathType: Prefix
           backend:
             service:
-              # 🌟 point Service LoadBalancer to Docker Desktop map out to localhost
-              name: seats-reservation-service-lb
+              # 🌟 point ClusterIP Service (no need to use LoadBalancer, due to using GKE Cloud LoadBalancer)
+              name: seats-reservation-service
               port:
-                number: 80    # LoadBalancer Port for Ingress calling to
+                number: 80    # ClusterIP Service (`seats-reservation-service`) Port for Ingress calling to
+
+---
+# ===================================================
+# 9. HORIZONTAL POD AUTOSCALER
+# ===================================================
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: seats-reservation-hpa
+  namespace: gke-seats-reservation-postgres
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: seats-reservation-deployment      # Name of Next.js deployment to scale
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

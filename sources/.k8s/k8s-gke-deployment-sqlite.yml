@@ -1,10 +1,10 @@
 # ===================================================
 # KUBERNETES DEPLOYMENT: Seats Reservation System
 # Database: PostgreSQL with PgBouncer
+# !!!NOTE!!! No need LoadBalancer, due to using GKE Cloud LoadBalancer
 # ===================================================
 
 ---
-
 # =========================================================================
 # 🛡️ GKE NATIVE BACKENDCONFIG MANIFEST (GOOGLE REVERSE PROXY MANAGER)
 # =========================================================================
@@ -273,37 +273,21 @@ metadata:
   name: seats-reservation-service
   namespace: gke-seats-reservation-sqlite
   annotations:
-    # Associates the config to all ports by default
-    cloud.google.com/backend-config: '{"default": "gke-seats-reserve-proxy-config"}'
+    # This critical line allows ClusterIP to pair with GKE Ingress
+    cloud.google.com/neg: '{"ingress": true}'
+    # BackendConfig for Next.js health check
+    cloud.google.com/v1: '{"ports": {"80": "gke-seats-reserve-proxy-config"}}'
 spec:
   type: ClusterIP
   ports:
-  - port: 3000
-    targetPort: 3000
-  selector:
-    app: seats-reservation
-
----
-# ===================================================
-# 7. APPLICATION SERVICE LOADBALANCER
-# ===================================================
-apiVersion: v1
-kind: Service
-metadata:
-  name: seats-reservation-service-lb
-  namespace: gke-seats-reservation-sqlite
-spec:
-  type: LoadBalancer
-  selector:
-    app: seats-reservation
-  ports:
-  - port: 80            # public port on browser (Ex: http://localhost:4000)
+  - port: 80            # port open for K8s Ingress calling to
     targetPort: 3000    # real port that Next.js listening in container
-    protocol: TCP
+  selector:
+    app: seats-reservation
 
 ---
 # ===================================================
-# 8. NETWORK POLICY - Security
+# 7. NETWORK POLICY - Security
 # ===================================================
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -319,36 +303,41 @@ spec:
   - Egress
   ingress:
   - from:
-    - namespaceSelector:
-        matchLabels:
-          name: ingress-nginx
+    - podSelector: {}     # 🔓 Allow all internal Ingress Controller (including Docker Desktop) calling into
   egress:
   - to:
-    - podSelector:
-        matchLabels:
-          app: redis-cache
+    - podSelector: {}     # 🔓 Allow all Pod Redis in namespace
     ports:
     - protocol: TCP
-      port: 6379
+      port: 6379          # Port Redis
+  - to:
+    - podSelector: {}     # 🔓 Allow all Pod Next.js in namespace
+    ports:
+    - protocol: TCP
+      port: 3000          # Port Next.js
   - to:
     - namespaceSelector: {}
     ports:
     - protocol: TCP
       port: 53
+    - protocol: TCP
+      port: 80
     - protocol: UDP
       port: 53
 
 ---
 # ===================================================
-# 9. RESOURCE INGRESS: Traffic Router from external
+# 8. RESOURCE INGRESS: Traffic Router from external
 # ===================================================
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: seats-reservation-ingress
-  namespace: gke-seats-reservation-sqlite
+  namespace: gke-seats-reservation-postgres
+  annotations:
+    # Use "gce" for external HTTP(S) LB or "gce-internal" for internal HTTP(S) LB
+    kubernetes.io/ingress.class: "gce"  # Ensures GKE controller manages the LB
 spec:
-  ingressClassName: gce     # Ensures GKE controller manages the LB
   rules:
   - http:
       paths:
@@ -356,6 +345,7 @@ spec:
           pathType: Prefix
           backend:
             service:
-              name: seats-reservation-service-lb
+              # 🌟 point ClusterIP Service (no need to use LoadBalancer, due to using GKE Cloud LoadBalancer)
+              name: seats-reservation-service
               port:
-                number: 80          # LoadBalancer Port for Ingress calling to
+                number: 80    # ClusterIP Service (`seats-reservation-service`) Port for Ingress calling to
