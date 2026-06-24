@@ -564,7 +564,7 @@ graph TD
         
         %% NS 1: SQLITE ENGINE
         subgraph NS_SQLITE ["📁 Namespace: gke-seats-reservation-sqlite"]
-            D1["⚙️ ClusterIP Service <br> (Port 4000)"]
+            D1["⚙️ ClusterIP Service <br> (Port 80)"]
             D2["⚛️ Next.js Web App Pod <br> (Port 3000)"]
             D3["📦 Redis Cache Pod <br> (Locking Engine)"]
             D4["💾 Local Disk Storage <br> (Prisma SQLite: dev.db)"]
@@ -572,7 +572,7 @@ graph TD
 
         %% NS 2: POSTGRES ENGINE
         subgraph NS_POSTGRES ["📁 Namespace: gke-seats-reservation-postgres"]
-            E1["⚙️ ClusterIP Service <br> (Port 4000)"]
+            E1["⚙️ ClusterIP Service <br> (Port 80)"]
             E2["⚛️ Next.js Web App Pod <br> (Port 3000)"]
             E3["📦 Redis Cache Pod <br> (Locking Engine)"]
             
