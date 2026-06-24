@@ -646,7 +646,7 @@ graph TD
 * $${\color{orange}\text{| Item 2 |}}$$ GCP Cloud Armor Firewall Substrate: Packets traverse the enterprise Web Application Firewall (WAF) tier, Cloud Armor enforces strict L7 inspection policies, sanitizing traffic from DDoS saturation attacks, bot spikes, and executing aggressive Rate Limiting to shield the runtime against coordinate reservation seat-scraping automated scripts
 * $${\color{orange}\text{| Item 3 |}}$$ Google External HTTP(S) Load Balancer: Validated network packets land on the physical Google routing substrate, Here, TLS Termination occurs at the edge, freeing internal GKE node compute resources from execution-expensive cryptographic workloads
 
-### 🧭 STAGE 2: KUBERNETES GATEWAY MANAGEMENT & CONTAINER-NATIVE NEG ROUTING
+### ☁️ STAGE 2: KUBERNETES GATEWAY MANAGEMENT & CONTAINER-NATIVE NEG ROUTING
 * $${\color{orange}\text{| Item 1 |}}$$ GKE Ingress Controller (networking.k8s.io/v1): Google's GCE Ingress system evaluates the ingress manifest rules and forwards traffic based on URL route context trees:
   * Traffic directed to /sqlite -> Scoped to the gke-seats-reservation-sqlite namespace
   * Traffic directed to /postgres -> Scoped to the gke-seats-reservation-postgres namespace
