@@ -195,7 +195,7 @@ jobs:
             --max-instances=1
             --memory=512Mi
             --cpu=1
-            --service-account="${{ steps['gcp-deploy-env'].outputs.gcp_sa_email }}" \
+            --service-account="${{ steps['gcp-deploy-env'].outputs.gcp_sa_email }}"
             --set-env-vars="${{ steps['gcp-deploy-env'].outputs.env_vars }}"
       
       # 4. Check deployment status
