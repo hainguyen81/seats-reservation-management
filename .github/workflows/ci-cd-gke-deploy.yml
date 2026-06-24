@@ -517,7 +517,7 @@ jobs:
           echo "🌐 3. EXTRACTING NETWORK ENDPOINTS (EXTERNAL IP & SERVICE PORTS)"
           echo "========================================================================="
           # Wait for public information (IP, access port)
-          echo "- Waiting up to 60s for GCP LoadBalancer to allocate a public IP..."
+          echo "- Waiting for GCP LoadBalancer to allocate a public IP..."
           kubectl wait --namespace $K8S_DEPLOYMENT_NAMESPACE --for=jsonpath='{.status.loadBalancer.ingress.ip}' service/$K8S_DEPLOYMENT_SERVICE --timeout=150s 2>&1 || true
           
           # Request public information (IP, access port)
