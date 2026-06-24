@@ -577,6 +577,26 @@ jobs:
       - name: ⚙️ Force Kill Orphan Processes
         if: always()    # Always run to clean up
         run: |
+          echo "========================================================================="
+          echo "📊 REAL-TIME CLUSTER RESOURCE UTILIZATION (DEBUG HOOK)"
+          echo "========================================================================="
+          # Print out % RAM/CPU Node Resource (|| true to void stop pipeline while metrics-server is busy)
+          echo "- Checking real-time memory and CPU consumption on the single physical GKE Node..."
+          kubectl top nodes || echo "⚠️ Metrics API temporarily unavailable."
+          echo "-------------------------------------------------------------------------"
+          
+          echo "- Checking memory and CPU consumption across all active app containers..."
+          kubectl top pods -n $K8S_DEPLOYMENT_NAMESPACE || true
+          
+          echo "-------------------------------------------------------------------------"
+          echo "- Analyzing allocation capacity gates (Investigating Insufficient Memory limits)..."
+          # Find current Node name and print out allocated resources table 'Allocated resources'
+          FIRST_NODE_NAME=$(kubectl get nodes -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+          if [ ! -z "$FIRST_NODE_NAME" ]; then
+            echo "* Allocated Resource Status for Host Node [$FIRST_NODE_NAME]:"
+            kubectl describe node "$FIRST_NODE_NAME" | grep -A 7 -E "Resource.*Requests.*Limits" || true
+          fi
+          
           # Kill background node process
           echo "--- 1. Cleaning background host processes ---"
           pkill -f node || true
