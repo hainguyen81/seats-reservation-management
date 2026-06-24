@@ -266,7 +266,28 @@ spec:
 
 ---
 # ===================================================
-# 7. NETWORK POLICY - Security
+# 7. APPLICATION SERVICE LOADBALANCER
+# ===================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: seats-reservation-service-lb
+  namespace: gke-seats-reservation-sqlite
+  annotations:
+    # This critical line allows ClusterIP to pair with GKE Ingress
+    cloud.google.com/neg: '{"ingress": true}'
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80            # port open for K8s Ingress calling to
+    targetPort: 3000    # real port that Next.js listening in container
+    protocol: TCP
+  selector:
+    app: seats-reservation-sqlite
+
+---
+# ===================================================
+# 8. NETWORK POLICY - Security
 # ===================================================
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -306,7 +327,7 @@ spec:
 
 ---
 # ===================================================
-# 8. RESOURCE INGRESS: Traffic Router from external
+# 9. RESOURCE INGRESS: Traffic Router from external
 # ===================================================
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -323,7 +344,7 @@ spec:
           pathType: Prefix
           backend:
             service:
-              # 🌟 point ClusterIP Service (no need to use LoadBalancer, due to using GKE Cloud LoadBalancer)
-              name: seats-reservation-service
+              # 🌟 point LoadBalancer Service
+              name: seats-reservation-service-lb
               port:
-                number: 80    # ClusterIP Service (`seats-reservation-service`) Port for Ingress calling to
+                number: 80    # LoadBalancer Service (`seats-reservation-service-lb`) Port for Ingress calling to
