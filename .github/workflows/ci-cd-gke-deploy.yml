@@ -476,6 +476,7 @@ jobs:
           kubectl create secret generic $K8S_DEPLOYMENT_SECRET \
             --from-literal=DATABASE_URL="${{ secrets.DATABASE_URL_NEON_POSTGRES }}" \
             --from-literal=DIRECT_DATABASE_URL="${{ secrets.DIRECT_DATABASE_URL_NEON_POSTGRES }}" \
+            --from-literal=JWT_SECRET="${{ secrets.GKE_JWT_SECRET }}" \
             --dry-run=client -o yaml | kubectl apply -f - -n $K8S_DEPLOYMENT_NAMESPACE
       
       # 13. Deploy to Google Cloud Run GKE by built image
