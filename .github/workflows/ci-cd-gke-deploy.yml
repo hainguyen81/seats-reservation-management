@@ -694,5 +694,4 @@ jobs:
           # Clean context of K8s and Token GCP on Virtual Runner Machine for security and cache conflicting next build time
           echo "--- 4. Clearing localized Kubernetes context ---"
           rm -rf ~/.kube ~/.config/gcloud || true
-          rm -f k8s-deployment.yaml || true
 

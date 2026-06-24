@@ -57,8 +57,19 @@ jobs:
         service: ${{ fromJson(inputs.env_data) }}
         
     steps:
+      # Check whether allow for running workflow
+      - name: 🛡️ Gatekeeper - Validate Administrative Access
+        env:
+          ALLOW_DOCKER_BUILD: ${{ secrets.ALLOW_DOCKER_BUILD }}
+        if: ${{ env.ALLOW_DOCKER_BUILD != 'true' }}
+        run: |
+          echo "❌ Deployment is administratively DISABLED via GitHub Secrets (secrets.ALLOW_DOCKER_BUILD is not true)."
+          echo "Terminating pipeline execution immediately to protect production infrastructure."
+          exit 1 # Require Admin Rights
+      
       # Check out source code
       - name: ⬇️ Checkout Source Code
+        if: success()                 # if previous step is successful
         uses: actions/checkout@v4
 
       # Login docker
@@ -168,4 +179,29 @@ jobs:
           # attach project README.md (Overview)
           # or if service has README.md, use: ./${{ matrix.service.name }}/README.md
           readme-filepath: ./README.md
+      
+      # Clean up
+      - name: ⚙️ Force Kill Orphan Processes
+        if: always()    # Always run to clean up
+        run: |
+          # Kill background node process
+          echo "--- 1. Cleaning background host processes ---"
+          pkill -f node || true
+          
+          # Clean all container sidecar (Postgres, Redis) and Volume to avoid cache port
+          echo "--- 2. Flushing dynamic docker infrastructure ---"
+          docker ps -aq | xargs -r docker rm -f || true
+          docker volume prune -f || true
+          
+          # !!!IMPORTANT!!!
+          # Use Prisma CLI to clean all data in Database Neon/Postgres Production
+          # Help next build to have clean database, not conflicting data
+          # Only running if database local (virtual local test).
+          # If DATABASE_URL is PRODUCTION (Neon / GCP Cloud SQL), skip to protect Production
+          if [[ "$DATABASE_URL" == *"localhost"* || "$DATABASE_URL" == *"127.0.0.1"* ]]; then
+            echo "⚠️ - Detected local test database. Running safe purge..."
+            npx prisma db purge --force || npx prisma migrate reset --force || true
+          else
+            echo "🔒 - !!!ATTENTION!!! Detected PRODUCTION Database. Skipping purge to protect live data!"
+          fi
 

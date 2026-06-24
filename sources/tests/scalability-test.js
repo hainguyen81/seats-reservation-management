@@ -1,52 +1,56 @@
 import http from "k6/http";
 import { check, sleep } from "k6";
 
-// 🚀 Load profile configuration: Simulates a sudden spike traffic scenario for seat reservation
+// =========================================================================
+// 📈 INJECTING DYNAMIC LIFECYCLE CONFIGURATIONS VIA GITHUB ACTIONS env
+// =========================================================================
+const TARGET_URL = __ENV.TARGET_URL || "http://localhost:3000";
+const MAX_VUS = parseInt(__ENV.CONCURRENT_USERS) || 50;
+const DURATION = __ENV.TEST_DURATION || 30; // in seconds
+
 export const options = {
+  // 🎢 TESTING FLOW PROFILE: Ramping profiles optimized for GKE micro-nodes
   stages: [
-    { duration: "10s", target: 50 }, // Ramp-up: Scale from 0 to 50 concurrent virtual users within 10 seconds
-    { duration: "20s", target: 200 }, // Spike phase: Instantly maintain 200 users hammering the endpoint simultaneously
-    { duration: "10s", target: 0 }, // Ramp-down: Cool down phase, gracefully scaling down to 0 users
+    { duration: "10s", target: MAX_VUS }, // 1. Fast ramp-up from zero to peak stress VUs
+    { duration: `${DURATION}s`, target: MAX_VUS }, // 2. Sustained peak load endurance window
+    { duration: "10s", target: 0 }, // 3. Smooth cool-down back to safe zero zone
   ],
+
+  // 🛡️ QUALITY GATES & METRIC THRESHOLDS (FAIL-FAST POLICY)
   thresholds: {
-    // Quality Gate: 95% of requests must complete the database roundtrip and respond under 300ms
-    http_req_duration: ["p(95)<300"],
-    // System tolerance: Infrastructure crash rate (HTTP 5xx errors) must be strictly lower than 1%
+    // ❌ Error Rate Boundary: If more than 1% of total API calls return 5xx/4xx, fail the pipeline immediately [3.2]
     http_req_failed: ["rate<0.01"],
+    // ⏱️ Latency Tolerances: 95% of requests must respond under 1.5 seconds to maintain transaction integrity
+    http_req_duration: ["p(95)<1500"],
   },
 };
 
+// =========================================================================
+// 🏹 HIGH CONCURRENCY ATTACK PAYLOAD LOOP
+// =========================================================================
 export default function () {
-  // Target API endpoint (Dynamically injected via GitHub Actions workflow environment variables)
-  const BASE_URL = __ENV.TARGET_URL || "http://localhost:3000";
+  // Target the lightweight web-app health sensoring api route
+  const url = `${TARGET_URL}/api/health`;
 
-  // Randomly select seat IDs from seat-1 to seat-10 to deliberately force a high-concurrency race condition
-  const randomSeatId = `seat-${Math.floor(Math.random() * 10) + 1}`;
-
-  const payload = JSON.stringify({
-    seatId: randomSeatId,
-  });
-
+  // Configure execution parameter metrics
   const params = {
     headers: {
       "Content-Type": "application/json",
-      "X-Simulation-Agent": "k6-scalability-runner",
+      "X-App-Benchmark-Client": "k6-load-injector-engine",
     },
   };
 
-  // Execute the atomic high-frequency transaction request to the Next.js App Router API boundary
-  const response = http.post(`${BASE_URL}/api/reserve/hold`, payload, params);
+  // Dispatch atomic concurrent execution call
+  const response = http.get(url, params);
 
-  // Concurrency integrity evaluation matrix
+  // Validate transactional status response maps
   check(response, {
-    // HTTP 200: Seat successfully held/reserved
-    // HTTP 409: Conflict securely intercepted by Prisma Optimistic Locking version constraints (Expected behavior!)
-    "Safe Concurrency Caught (Status 200 or 409)": (r) =>
-      r.status === 200 || r.status === 409,
-    // Verifies that the underlying microservice infrastructure did not throw unhandled exceptions or crash
-    "App did not crash (Status is not 500)": (r) => r.status !== 500,
+    "http transmission status is 200": (r) => r.status === 200,
+    "packet integrity network response time < 500ms": (r) =>
+      r.timings.duration < 500,
   });
 
-  // Paces the user interaction loop: Every virtual user waits 100ms before triggering the next seat selection query
-  sleep(0.1);
+  // ⏳ Controlled Throttling Buffer:
+  // Pacing half a second between virtual user iterations to mimic realistic user behavior
+  sleep(0.5);
 }

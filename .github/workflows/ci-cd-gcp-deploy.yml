@@ -234,7 +234,7 @@ jobs:
             🚀 Deployment successful!
             🔍 GCP Cloud Run Public URL: ${{ steps.gcp_cloud_run_deployment_check.outputs.gcp_cloud_run_url }}
       
-      # 5. Clean up
+      # Clean up
       - name: ⚙️ Force Kill Orphan Processes
         if: always()    # Always run to clean up
         run: |
@@ -258,4 +258,8 @@ jobs:
           else
             echo "🔒 - !!!ATTENTION!!! Detected PRODUCTION Database. Skipping purge to protect live data!"
           fi
+          
+          # Clean context of K8s and Token GCP on Virtual Runner Machine for security and cache conflicting next build time
+          echo "--- 4. Clearing localized Kubernetes context ---"
+          rm -rf ~/.kube ~/.config/gcloud || true
 
