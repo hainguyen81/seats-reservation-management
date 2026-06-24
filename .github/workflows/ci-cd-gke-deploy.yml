@@ -71,6 +71,7 @@ on:
                     "K8S_DEPLOYMENT_NAMESPACE":   "gke-seats-reservation-sqlite",
                     "K8S_DEPLOYMENT_NAME":        "seats-reservation-deployment",
                     "K8S_DEPLOYMENT_SERVICE":     "seats-reservation-service",
+                    "K8S_DEPLOYMENT_SECRET":      "GKE_SECRET_SQLITE",
                     "K8S_DEPLOYMENT":             "./sources/.k8s/k8s-gke-deployment-sqlite.yml"
                 }
             },
@@ -80,7 +81,7 @@ on:
                     "K8S_DEPLOYMENT_NAMESPACE":   "gke-seats-reservation-postgres",
                     "K8S_DEPLOYMENT_NAME":        "seats-reservation-deployment",
                     "K8S_DEPLOYMENT_SERVICE":     "seats-reservation-service",
-                    "K8S_DEPLOYMENT_SECRET":      "seats-reservation-secret",
+                    "K8S_DEPLOYMENT_SECRET":      "GKE_SECRET_POSTGRES",
                     "K8S_DEPLOYMENT":             "./sources/.k8s/k8s-gke-deployment-postgres.yml"
                 }
             }
@@ -459,25 +460,62 @@ jobs:
             echo "❌ Fatal: Exceeded maximum retry gates due to heavy concurrent contention."
             exit 1
           fi
-
+      
       # 12. Create secret to adapt into K8s deployment
-      - name: 🔐 Securely Create and Override GKE Database Secrets
+      - name: 🔐 Advanced Universal JSON Secret Provisioner for GKE
         env:
-          K8S_DEPLOYMENT_NAMESPACE: ${{ matrix.service.env_vars.K8S_DEPLOYMENT_NAMESPACE }}
+          # GitHub Secret Name to parse for GKE secret if neccessary
+          # Ex: inputs.github_secret_name chứa chữ "G_POSTGRES_JSON"
           K8S_DEPLOYMENT_SECRET: ${{ matrix.service.env_vars.K8S_DEPLOYMENT_SECRET }}
+          # Load all GitHub secret to parse
+          ALL_GITHUB_SECRETS: ${{ toJSON(secrets) }}
         if: success() && env.K8S_DEPLOYMENT_SECRET != null && env.K8S_DEPLOYMENT_SECRET != ''    # if previous step is successful
         run: |
+          # Extract raw JSON based on the secret key name
           echo "========================================================================="
-          echo "🔒 GENERATING IMMUTABLE KUBERNETES SECRETS WITH AUTOMATIC OVERRIDE"
+          echo "🗜️ Extracting value for Secret Key: [ $K8S_DEPLOYMENT_SECRET ]"
           echo "========================================================================="
+          RAW_JSON_VALUE=$(echo "$ALL_GITHUB_SECRETS" | jq -r ".\"$K8S_DEPLOYMENT_SECRET\"" 2>/dev/null || echo "")
+          if [ -z "$RAW_JSON_VALUE" ] || [ "$RAW_JSON_VALUE" = "null" ]; then
+            echo "::warning::⚠️ GitHub Secret '$K8S_DEPLOYMENT_SECRET' is either empty or does not exist. Skipping."
+            exit 0
+          fi
           
-          # Use `--dry-run=client -o yaml | kubectl apply -f -`
-          # to help auto updating (Upsert) new value from GitHub Secrets to GKE
-          kubectl create secret generic $K8S_DEPLOYMENT_SECRET \
-            --from-literal=DATABASE_URL="${{ secrets.DATABASE_URL_NEON_POSTGRES }}" \
-            --from-literal=DIRECT_DATABASE_URL="${{ secrets.DIRECT_DATABASE_URL_NEON_POSTGRES }}" \
-            --from-literal=JWT_SECRET="${{ secrets.GKE_JWT_SECRET }}" \
-            --dry-run=client -o yaml | kubectl apply -f - -n $K8S_DEPLOYMENT_NAMESPACE
+          # Extract GKE Secret Name/Namespace from the extracted GitHub Secret JSON
+          echo "========================================================================="
+          echo "🕵️‍♂️ PARSING METADATA FROM DYNAMIC JSON CONTENT"
+          echo "========================================================================="
+          # Extract GKE secret name/namespace from the extracted GitHub Secret by key
+          GKE_SECRET_NAME=$(echo "$RAW_JSON_VALUE" | jq -r '.name' 2>/dev/null || echo "")
+          GKE_NAMESPACE=$(echo "$RAW_JSON_VALUE" | jq -r '.namespace' 2>/dev/null || echo "")
+          if [ -z "$GKE_SECRET_NAME" ] || [ "$GKE_SECRET_NAME" = "null" ] || [ -z "$GKE_NAMESPACE" ] || [ "$GKE_NAMESPACE" = "null" ]; then
+            echo "❌ Fatal Error: Missing 'name' or 'namespace' in JSON payload. Aborting!"
+            exit 1
+          else
+            echo "- 📝 Target GKE Secret Object: $GKE_SECRET_NAME"
+            echo "- 📝 Target GKE Namespace: $GKE_NAMESPACE"
+          fi
+          
+          # Calculate the K8s command to create the GKE secret
+          echo "========================================================================="
+          echo "🚀 DYNAMICALLY GENERATING KUBERNETES SECRETS FROM ENV OBJECT"
+          echo "========================================================================="
+          KUBECTL_CMD="kubectl create secret generic \"$GKE_SECRET_NAME\" --dry-run=client -o yaml"
+          
+          # 🎯 Loop via enviroment variables from the 'env' JSON of the extracted GitHub Secret JSON by key
+          # Use `--from-literal='KEY=VALUE'`
+          while IFS='=' read -r key value; do
+            if [ ! -z "$key" ]; then
+              echo "-> Mapping environment variable payload: $key"
+              KUBECTL_CMD="$KUBECTL_CMD --from-literal=\"$key\"=\"$value\""
+            fi
+          done < <(echo "$RAW_JSON_VALUE" | jq -r '.env | to_entries[] | "\(.key)=\(.value)"' 2>/dev/null)
+          
+          # 🎯 Final step: Combine GKE Kubernetes Command and apply to create GKE secret
+          echo "- 📝 Transmitting orchestrated payload to Google Cloud Engine..."
+          eval "$KUBECTL_CMD" | kubectl apply -f - -n "$GKE_NAMESPACE"
+          
+          echo "✅ Success: Dynamic K8s Secret has been fully established in the partition room!"
       
       # 13. Deploy to Google Cloud Run GKE by built image
       - name: 🌐 Dynamically Update Kubernetes Context & Deploy
