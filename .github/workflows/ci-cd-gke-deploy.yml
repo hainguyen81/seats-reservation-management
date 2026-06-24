@@ -236,6 +236,28 @@ jobs:
           echo "Checking if physical GKE Cluster '$CLUSTER_NAME' exists in region '$REGION_NAME'. Project: '$PROJECT_ID' | Service Account:  '$GCP_SA_EMAIL'..."
           
           # 🎯 1. Receive Response to check Error from create command
+          # -------------------------------------------------
+          # `e-micro`:
+          # -------------------------------------------------
+          # no scaling, no logs, no balancing (smallest if possible)
+          # CREATE_OUTPUT=$(gcloud container clusters create "$CLUSTER_NAME" \
+          #     --service-account="$GCP_SA_EMAIL" \
+          #     --region="$REGION_NAME" \
+          #     --num-nodes=$NODES_NUMBER \
+          #     --machine-type="$MACHINE_TYPE" \
+          #     --disk-size="$CLUSTER_DISK_SIZE" \
+          #     --workload-pool="$PROJECT_ID.svc.id.goog" \
+          #     --workload-metadata=GKE_METADATA \
+          #     --no-enable-autoscaling \
+          #     --logging=NONE \
+          #     --monitoring=NONE \
+          #     --disable-addons=HorizontalPodAutoscaler,HttpLoadBalancing \
+          #     --async \
+          #     --quiet 2>&1) || CREATE_EXIT_CODE=$?
+          # -------------------------------------------------
+          # `e-small`:
+          # -------------------------------------------------
+          # no logs
           CREATE_OUTPUT=$(gcloud container clusters create "$CLUSTER_NAME" \
               --service-account="$GCP_SA_EMAIL" \
               --region="$REGION_NAME" \
@@ -246,6 +268,8 @@ jobs:
               --workload-metadata=GKE_METADATA \
               --enable-autoscaling --min-nodes=1 --max-nodes=2 \
               --addons=HttpLoadBalancing \
+              --logging=NONE \
+              --monitoring=NONE \
               --async \
               --quiet 2>&1) || CREATE_EXIT_CODE=$?
           
