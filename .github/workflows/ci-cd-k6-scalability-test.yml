@@ -9,7 +9,7 @@ on:
         required: false
         default: "./sources/tests/scalability-test.js"
         type: string
-      gke_target_url:
+      target_url:
         description: "🌐 Target Environment URL for Scalability Load Testing (LoadBalancer IP or Domain)"
         required: true
         type: string
