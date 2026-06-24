@@ -141,7 +141,16 @@ jobs:
           GCP_SECRETS: ${{ matrix.service.gcp_secrets }}
           # Load all GitHub secret to parse
           ALL_GITHUB_SECRETS: ${{ toJSON(secrets) }}
+          GCP_ADC_JSON: ${{ secrets.GCP_ADC_JSON }}
         run: |
+          # Use Node.js to read file JSON and find "client_email"
+          GCP_SA_EMAIL=$(node -e "const data = JSON.parse(process.env.GCP_ADC_JSON); console.log(data.client_email);")
+          # # debug
+          # echo "- Detected Identity Email: $GCP_SA_EMAIL"
+          echo "gcp_sa_email<<EOF" >> $GITHUB_OUTPUT
+          echo '$GCP_SA_EMAIL' >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
           node -e '
             // 1. Request JSON object
             const jsonRaw = process.env.SERVICE_ENV_VARS;
@@ -186,6 +195,7 @@ jobs:
             --max-instances=1
             --memory=512Mi
             --cpu=1
+            --service-account="${{ steps['gcp-deploy-env'].outputs.gcp_sa_email }}" \
             --set-env-vars="${{ steps['gcp-deploy-env'].outputs.env_vars }}"
       
       # 4. Check deployment status
