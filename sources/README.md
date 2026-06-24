@@ -417,8 +417,8 @@ To authenticate the pipeline against Google Cloud Platform (GCP) and safely prov
 | :--- | :--- | :--- |
 | `GCP_PROJECT_ID` | The explicit global project identifier string from your Google Cloud Console. | Global GCP Scope |
 | `GCP_ADC_JSON` | The complete, encrypted JSON key file generated for the Google Service Account. Requires `Kubernetes Engine Developer` and `Artifact Registry Writer` IAM roles. | IAM Auth Gateway |
-| `DATABASE_URL_NEON_POSTGRES` | Serverless Connection-Pooled database string containing the `-pooler` hostname string routing through Neon's transaction mode proxy. | Production App Core |
-| `DIRECT_DATABASE_URL_NEON_POSTGRES` | Direct connection string bypassing connection poolers, bound to port 5432, utilized strictly for Schema Migrations and Data Seeding. | CI/CD Seed Pipeline |
+| `GKE_SECRET_POSTGRES` | Specify the secret environments for PostgreSQL version. | CI/CD GKE Deployment Pipeline |
+| `GKE_SECRET_SQLITE` | Specify the secret environments for SQLite version. | CI/CD GKE Deployment Pipeline |
 | `ALLOW_GKE_DEPLOY` | Administrative feature flag toggled via system settings (`true` / `false`) acting as the ultimate automated security gatekeeper. | Execution Gate |
 
 ---
@@ -474,8 +474,6 @@ To authenticate the pipeline against Google Cloud Platform (GCP) and safely prov
 | :--- | :--- | :--- |
 | `GCP_PROJECT_ID` | The explicit global project identifier string from your Google Cloud Console. | Global GCP Scope |
 | `GCP_ADC_JSON` | The complete, encrypted JSON key file generated for the Google Service Account. Requires `Kubernetes Engine Developer` and `Artifact Registry Writer` IAM roles. | IAM Auth Gateway |
-| `DATABASE_URL_NEON_POSTGRES` | Serverless Connection-Pooled database string containing the `-pooler` hostname string routing through Neon's transaction mode proxy. | Production App Core |
-| `DIRECT_DATABASE_URL_NEON_POSTGRES` | Direct connection string bypassing connection poolers, bound to port 5432, utilized strictly for Schema Migrations and Data Seeding. | CI/CD Seed Pipeline |
 | `ALLOW_GKE_SCABILITY_TEST` | Administrative feature flag toggled via system settings (`true` / `false`) acting as the ultimate automated security gatekeeper. | Execution Gate |
 
 ---
@@ -519,6 +517,160 @@ Under a dense traffic surge (simulating parallel Virtual Users executing rapid m
 * **The Validation Goal:** Proving that the underlying data access abstraction layer strictly rejects multi-ownership allocations of an identical seat node.
 * **The Telemetry Matrix:** The test suite monitors HTTP response streams. While an optimal lock yields `HTTP 200 (OK)`, near-simultaneous concurrent hits must dynamically hit the **Prisma Optimistic Concurrency Control (OCC) `version` hook**, yielding an expected **`HTTP 409 (Conflict)`**. 
 * **Quality Standard:** Any unhandled asynchronous query exceptions or thread deadlocks will saturate the cluster with `HTTP 500 (Internal Server Error)`. The k6 automation suite operates a quality gate threshold of `http_req_failed: ['rate<0.01']`, failing the pipeline instantly if system-wide errors exceed a 1% threshold.
+
+---
+
+# 🌐 12. GKE END-TO-END NETWORK ARCHITECTURE & TRAFFIC FLOW DOCUMENTATION
+
+This technical documentation elaborates on the end-to-end packet ingestion journey from external user clients (Internet/Mobile) through the Google Cloud Platform (GCP) enterprise edge security substrate, navigating down to Google Kubernetes Engine (GKE) context routers, and terminating securely into two multi-tenant isolated database backends: SQLite (Localized Isolated POSIX filesystem) and Postgres (Distributed Serverless Neon Cloud Engine).
+
+---
+
+## 🏗️ 12.1. ARCHITECTURE VISUALIZATION (MERMAID FLUID SYSTEM FLOW)
+
+```mermaid
+graph TD
+    %% ----------------------------------------------------
+    %% STAGE 1: THE PUBLIC INTERNET EDGE
+    %% ----------------------------------------------------
+    subgraph STAGE_1 ["🌐 EDGE 1: Public Internet / Mobile Clients"]
+        A1["📱 Mobile App Client"]
+        A2["💻 Desktop Browser"]
+    end
+
+    %% ----------------------------------------------------
+    %% STAGE 2: GCP EDGE SECURITY & INFRASTRUCTURE ROUTER
+    %% ----------------------------------------------------
+    subgraph STAGE_2 ["🛡️ EDGE 2: Google Cloud Platform (GCP Layer)"]
+        B1["🧱 GCP Cloud Armor <br> (Anti-DDoS, WAF, Rate Limiting)"]
+        B2["📡 Google Cloud External HTTP(S) Load Balancer <br> (Anycast IP, TLS Termination)"]
+    end
+
+    %% ----------------------------------------------------
+    %% STAGE 3: GKE ORCHESTRATION GATEKEEPER
+    %% ----------------------------------------------------
+    subgraph STAGE_3 ["☸️ EDGE 3: Google Kubernetes Engine (GKE Core)"]
+        C1["🧭 GKE GCE Ingress Controller <br> (networking.k8s.io/v1)"]
+        C2["🎛️ GKE BackendConfig <br> (://google.com)"]
+        C3["⚡ GKE Network Endpoint Groups (NEG) <br> (Container-Native Direct Routing)"]
+    end
+
+    %% ----------------------------------------------------
+    %% STAGE 4: ISOLATED RUNTIME NAMESPACES
+    %% ----------------------------------------------------
+    subgraph STAGE_4 ["🚀 EDGE 4: Isolated Application Runtime Matrix"]
+        
+        %% NS 1: SQLITE ENGINE
+        subgraph NS_SQLITE ["📁 Namespace: gke-seats-reservation-sqlite"]
+            D1["⚙️ ClusterIP Service <br> (Port 4000)"]
+            D2["⚛️ Next.js Web App Pod <br> (Port 3000)"]
+            D3["📦 Redis Cache Pod <br> (Locking Engine)"]
+            D4["💾 Local Disk Storage <br> (Prisma SQLite: dev.db)"]
+        end
+
+        %% NS 2: POSTGRES ENGINE
+        subgraph NS_POSTGRES ["📁 Namespace: gke-seats-reservation-postgres"]
+            E1["⚙️ ClusterIP Service <br> (Port 4000)"]
+            E2["⚛️ Next.js Web App Pod <br> (Port 3000)"]
+            E3["📦 Redis Cache Pod <br> (Locking Engine)"]
+            
+            %% SUB-STAGE 5: WORKLOAD IDENTITY BOUNDARY
+            subgraph WI_GUARD ["🔐 GKE Workload Identity Boundary"]
+                F1["🔑 K8s ServiceAccount <br> (gcp-service-account-runner)"]
+                F2["🆔 GCP IAM Identity Role <br> (iam.workloadIdentityUser)"]
+            end
+        end
+    end
+
+    %% ----------------------------------------------------
+    %% STAGE 5: EXTERNAL MULTI-TENANT BACKEND
+    %% ----------------------------------------------------
+    subgraph STAGE_5 ["☁️ EDGE 5: External Enterprise Managed Datastore"]
+        G1["⚡ Neon Serverless Postgres Cloud <br> (AWS Substrate / Connection Pooling)"]
+    end
+
+    %% ----------------------------------------------------
+    %% DEFINING THE PHYSICAL PACKET JOURNEY CONNECTORS
+    %% ----------------------------------------------------
+    %% Client to GCP Edge
+    A1 & A2 -->|HTTP/S Request: Port 80/443| B1
+    B1 -->|Filter Clean Traffic| B2
+
+    %% GCP Edge to GKE Routing Layer
+    B2 -->|Read Ingress Manifest Rules| C1
+    C1 <==>|Enforce Probes & Polices| C2
+    C1 -->|Bypass Kube-Proxy Virtual IPs| C3
+
+    %% NEG Container-Native Split (Matrix Routing)
+    C3 ===>|Route path: /sqlite| D2
+    C3 ===>|Route path: /postgres| E2
+
+    %% SQLite Namespace Internal Mechanics
+    D1 -.->|Virtual Mapping| D2
+    D2 <-->|In-Memory Mutual Lock Check| D3
+    D2 <-->|Direct Local POSIX Disk I/O| D4
+
+    %% Postgres Namespace Internal Mechanics
+    E1 -.->|Virtual Mapping| E2
+    E2 <-->|In-Memory Mutual Lock Check| E3
+    E2 ===|Assume Identity| F1
+    F1 ===|Cross-Authenticate OAuth| F2
+    
+    %% Egress to Neon Cloud
+    F2 ===>|Encrypted TLS Wire Protocol: Port 5432| G1
+
+    %% ----------------------------------------------------
+    %% GRAPHICAL AESTHETICS (COLOR STYLING)
+    %% ----------------------------------------------------
+    classDef edgeStyle fill:#1e1e2e,stroke:#313244,stroke-width:2px,color:#cdd6f4;
+    classDef securityStyle fill:#f38ba8,stroke:#eba0ac,stroke-width:2px,color:#11111b,font-weight:bold;
+    classDef routerStyle fill:#fab387,stroke:#f9e2af,stroke-width:2px,color:#11111b,font-weight:bold;
+    classDef runtimeStyle fill:#89b4fa,stroke:#b4befe,stroke-width:2px,color:#11111b;
+    classDef dbStyle fill:#a6e3a1,stroke:#94e2d5,stroke-width:2px,color:#11111b,font-weight:bold;
+
+    class STAGE_1,STAGE_4 edgeStyle;
+    class B1,WI_GUARD,F1,F2 securityStyle;
+    class B2,C1,C2,C3,D1,E1 routerStyle;
+    class D2,D3,E2,E3 runtimeStyle;
+    class D4,G1 dbStyle;
+```
+
+---
+
+## 📑 12.2. THE CHRONOLOGICAL TRAFFIC JOURNEY
+
+### 🚪 STAGE 1: EDGE SECURITY & GLOBAL LOAD BALANCING
+• | Item 1 | Connection Initiation: The user interacts with the seat-reservation UI on a Mobile or Desktop client, and the browser emits a network packet routed to Google Cloud's globally distributed Anycast static IP network
+• | Item 2 | GCP Cloud Armor Firewall Substrate: Packets traverse the enterprise Web Application Firewall (WAF) tier, Cloud Armor enforces strict L7 inspection policies, sanitizing traffic from DDoS saturation attacks, bot spikes, and executing aggressive Rate Limiting to shield the runtime against coordinate reservation seat-scraping automated scripts
+• | Item 3 | Google External HTTP(S) Load Balancer: Validated network packets land on the physical Google routing substrate, Here, TLS Termination occurs at the edge, freeing internal GKE node compute resources from execution-expensive cryptographic workloads
+
+### 🧭 STAGE 2: KUBERNETES GATEWAY MANAGEMENT & CONTAINER-NATIVE NEG ROUTING
+• | Item 1 | GKE Ingress Controller (networking.k8s.io/v1): Google's GCE Ingress system evaluates the ingress manifest rules and forwards traffic based on URL route context trees:
+  * Traffic directed to /sqlite -> Scoped to the gke-seats-reservation-sqlite namespace
+  * Traffic directed to /postgres -> Scoped to the gke-seats-reservation-postgres namespace
+• | Item 2 | BackendConfig Probes Policy (://google.com): The GCP Load Balancer couples with the customized BackendConfig to query the app's internal /api/health endpoint on an automated 15-second loop, and traffic is strictly restricted from entering containers failing to throw an explicit HTTP 200 OK
+• | Item 3 | Container-Native Routing via Network Endpoint Groups (NEG): GKE establishes direct proxy-bypass communication lines, Instead of relying on old-school, multi-hop Kube-Proxy virtual iptables mappings, Google's Load Balancer communicates Point-to-Point directly with the localized Pod IP addresses via NEGs at container port 3000, This shifts data hops from virtual route lookups down to a near-zero latency network overlay (<1ms), radically strengthening load endurance against parallel execution loads generated by k6 benchmark scripts
+
+### ⚛️ STAGE 3: RUNTIME APPLICATION BUSINESS CONTEXT LOOP
+Once the packet reaches the target Next.js computing instance inside container port 3000, the concurrency throttling architecture handles the transaction payload:
+• | Item 1 | Temporal Set Throttle Gate: The immediate seat interaction ID registers into an in-memory mutable processingSeats Set collection at the Node.js runtime, disabling redundant UI operations for a micro-window frame to eliminate double-clicks at the edge
+• | Item 2 | Distributed Redis Mutex Lock: Next.js throws an atomic SET NX PX command via the virtual ClusterIP network layer directly into the Redis Cache Pod running inside the local namespace
+  * If Redis returns confirmation -> The seat lock shifts to the temporary HELD state
+  * If Redis throws a rejection (seat claimed a fraction of a millisecond prior) -> The process fails fast and sends an execution conflict code to the client browser, mitigating double-bookings (Race Conditions)
+
+### 💾 STAGE 4: DATASTORE AGGREGATION & TRANSACTIONS CONTEXT RECONCILIATION
+Upon clearing the ephemeral Redis lock layer, business transactions commit state down to the persistent database engine excelled to the matrix layout:
+
+📁 BRANCH A: LOCALIZED SQLITE SUBSYSTEM ENGINE
+• | Item 1 | Execution: Next.js initializes the Prisma Client framework to write data
+• | Item 2 | Substrate Architecture: Prisma executes synchronous low-latency atomic file operations directly on the node kernel filesystem using standard POSIX Disk I/O system calls, and state persists onto the isolated dev.db file embedded inside the container volume context
+• | Item 3 | Traits: Delivers phenomenal execution read/write speed since it operates with absolute zero external network overhead, However, state remains ephemeral and bound to the host container lifecycle unless coupled to a persistent block device
+
+🔐 BRANCH B: REMOTE SERVERLESS NEON POSTGRES CLUSTER
+• | Item 1 | Assume Identity: The Next.js container relies on the local Kubernetes ServiceAccount (gcp-service-account-runner) created inside the target namespace
+• | Item 2 | Workload Identity Federation: GKE automatically links the virtual K8s identity to a cloud IAM role using native token exchange via the official workloadIdentityUser setup rules
+• | Item 3 | Egress to Neon Cloud: After secure cross-platform authentication, Next.js opens a secure TLS Wire Protocol tunnel (Port 5432) over the egress network gateway, connecting directly to the remote Neon Serverless cloud datastore database
+• | Item 4 | Neon Datastore Substrate: The Neon connection manager captures the incoming packet, proxies the request through PgBouncer Connection Poolers to serialize database handle exhaustion, and commits the transaction state down to the cloud datastore partition before firing back an HTTP 200 permanent book data state record
 
 ---
 
@@ -591,3 +743,10 @@ Under a dense traffic surge (simulating parallel Virtual Users executing rapid m
 > 
 > * **Production Auto-Scaling Transition Blueprint:** For enterprise live-traffic deployments, this setup is designed to decouple seamlessly. By replacing the single static machine topology with the **GKE Cluster Autoscaler**, the cluster can automatically provision independent, multi-zone physical machine nodes dynamically as application traffic spikes, elevating the cluster from a lean demo matrix to a horizontally infinite corporate infrastructure.
 >
+> ### 💡 Senior DevOps SecOps Tips for PRODUCTION
+> 
+> * 💡 TIP 1: Fine-Tune Resource Limits for Free Tier Nodes (e2-micro / e2-small): Kubernetes engine system pods carry significant overhead. Always enforce low, precise resources.requests settings (64Mi - 100Mi RAM) for application Next.js and Redis workloads. Budgeting your cluster RAM strictly prevents GKE from drowning host instances in resource debt and safely eliminates PodUnschedulable (Insufficient memory) initialization errors.
+> * 💡 TIP 2: Eliminate 502 Bad Gateways via Warm-Up Probes Initialization Delay: Next.js framework components require roughly 10-15 seconds to cache assets and compile server paths into node memory during initial boot stages. Always enforce an explicit initialDelaySeconds: 15 on your readinessProbe blocks. This prevents the Google Load Balancer from validating unhealthy, booting containers too early, which otherwise places your public IP into a bad routing state.
+> * 💡 TIP 3: Protect API Secrets via Secure Dynamic Idempotent Injection: Never store hardcoded base64 credentials inside static Kind: Secret manifest files inside git repositories. Delegate your secret compilation pipelines exclusively to the CI/CD platform using dynamic dry-run execution streams: kubectl create secret generic ... --dry-run=client -o yaml | kubectl apply -f -. This prevents password visibility leaks and removes resource collision anomalies like AlreadyExists from crashing your pipeline deployments.
+> * 💡 TIP 4: Toggle Dedicated Connection Pooling for High-Throughput k6 Benchmarks: Simulating large scale stress tests using k6 can force Node.js applications to rapidly consume hundreds of TCP sockets. When running your Postgres test suites, always use the dedicated PgBouncer connection url string provided by Neon (using the pooler connection string syntax pointing to port 5432 containing pgbouncer=true). This recycles stale data handles and protects the backend datastore core from throwing severe Too many connections exceptions under heavy stress load.
+> 
