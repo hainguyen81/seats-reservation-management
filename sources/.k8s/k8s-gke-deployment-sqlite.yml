@@ -5,26 +5,6 @@
 # ===================================================
 
 ---
-# =========================================================================
-# 🛡️ GKE NATIVE BACKENDCONFIG MANIFEST (GOOGLE REVERSE PROXY MANAGER)
-# =========================================================================
-apiVersion: cloud.google.com/v1beta1
-kind: BackendConfig
-metadata:
-  name: gke-seats-reserve-proxy-config
-  namespace: gke-seats-reservation-sqlite
-spec:
-  timeoutSec: 60              # connection timeout. default is 30 seconds
-  healthCheck:
-    checkIntervalSec: 15
-    timeoutSec: 5
-    healthyThreshold: 1
-    unhealthyThreshold: 3
-    type: HTTP
-    requestPath: /api/health # if Next.js doesn't have api health check, point to home page (Ex: `/`) to receiving 200
-    port: 3000               # Port of Next.js container
-
----
 # ===================================================
 # 1. PERSISTENT VOLUME CLAIM - SQLite Database Storage
 # ===================================================
@@ -276,8 +256,6 @@ metadata:
   annotations:
     # This critical line allows ClusterIP to pair with GKE Ingress
     cloud.google.com/neg: '{"ingress": true}'
-    # BackendConfig for Next.js health check
-    cloud.google.com/v1beta1: '{"ports": {"80": "gke-seats-reserve-proxy-config"}}'
 spec:
   type: ClusterIP
   ports:
