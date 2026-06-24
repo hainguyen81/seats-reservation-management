@@ -5,7 +5,7 @@
 
 ---
 # ===================================================
-# 2. REDIS CACHE
+# 1. REDIS CACHE
 # ===================================================
 apiVersion: apps/v1
 kind: StatefulSet
@@ -46,7 +46,7 @@ spec:
 
 ---
 # ===================================================
-# 3. RESOURCE CONFIGMAP
+# 2. RESOURCE CONFIGMAP
 # ===================================================
 apiVersion: v1
 kind: ConfigMap
@@ -81,7 +81,7 @@ data:
 
 ---
 ## ===================================================
-## 4. RESOURCE SECRET: encrypt Base64 (will be created from GitHub CI/CD)
+## 3. RESOURCE SECRET: encrypt Base64 (will be created from GitHub CI/CD)
 ## ===================================================
 #apiVersion: v1
 #kind: Secret
@@ -99,7 +99,7 @@ data:
 #
 #---
 # ===================================================
-# 5. RESOURCE DEPLOYMENT: Manage Pod is running Next.js
+# 4. RESOURCE DEPLOYMENT: Manage Pod is running Next.js
 # ===================================================
 apiVersion: apps/v1
 kind: Deployment
@@ -232,7 +232,7 @@ spec:
 
 ---
 # ===================================================
-# 6. RESOURCE SERVICE: Internal Network (ClusterIP)
+# 5. RESOURCE SERVICE: Internal Network (ClusterIP)
 # ===================================================
 apiVersion: v1
 kind: Service
@@ -253,7 +253,7 @@ spec:
 
 ---
 # ===================================================
-# 7. APPLICATION SERVICE LOADBALANCER
+# 6. APPLICATION SERVICE LOADBALANCER
 # !!!IMPORTANT!!! Require LoadBalancer to publish INTERNET/EXTERNAL
 # ===================================================
 apiVersion: v1
@@ -275,7 +275,7 @@ spec:
 
 ---
 # ===================================================
-# 8. NETWORK POLICY - Security
+# 7. NETWORK POLICY - Security
 # ===================================================
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -315,7 +315,7 @@ spec:
 
 ---
 # ===================================================
-# 9. RESOURCE INGRESS: Traffic Router from external
+# 8. RESOURCE INGRESS: Traffic Router from external
 # ===================================================
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -339,7 +339,7 @@ spec:
 
 ---
 # ===================================================
-# 10. HORIZONTAL POD AUTOSCALER
+# 9. HORIZONTAL POD AUTOSCALER
 # ===================================================
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
