@@ -663,12 +663,12 @@ Once the packet reaches the target Next.js computing instance inside container p
 ### 💾 STAGE 4: DATASTORE AGGREGATION & TRANSACTIONS CONTEXT RECONCILIATION
 Upon clearing the ephemeral Redis lock layer, business transactions commit state down to the persistent database engine excelled to the matrix layout:
 
-**$${\color{orange}\text{📁 BRANCH A: LOCALIZED SQLITE SUBSYSTEM ENGINE}}$$
+$${\color{orange}\mathbf{\text{📁 BRANCH A: LOCALIZED SQLITE SUBSYSTEM ENGINE}}}$$
 * $${\color{orange}\text{| Item 1 |}}$$ Execution: Next.js initializes the Prisma Client framework to write data
 * $${\color{orange}\text{| Item 2 |}}$$ Substrate Architecture: Prisma executes synchronous low-latency atomic file operations directly on the node kernel filesystem using standard POSIX Disk I/O system calls, and state persists onto the isolated dev.db file embedded inside the container volume context
 * $${\color{orange}\text{| Item 3 |}}$$ Traits: Delivers phenomenal execution read/write speed since it operates with absolute zero external network overhead, However, state remains ephemeral and bound to the host container lifecycle unless coupled to a persistent block device
 
-**$${\color{orange}\text{🔐 BRANCH B: REMOTE SERVERLESS NEON POSTGRES CLUSTER}}$$
+$${\color{orange}\mathbf{\text{🔐 BRANCH B: REMOTE SERVERLESS NEON POSTGRES CLUSTER}}}$$
 * $${\color{orange}\text{| Item 1 |}}$$ Assume Identity: The Next.js container relies on the local Kubernetes ServiceAccount (gcp-service-account-runner) created inside the target namespace
 * $${\color{orange}\text{| Item 2 |}}$$ Workload Identity Federation: GKE automatically links the virtual K8s identity to a cloud IAM role using native token exchange via the official workloadIdentityUser setup rules
 * $${\color{orange}\text{| Item 3 |}}$$ Egress to Neon Cloud: After secure cross-platform authentication, Next.js opens a secure TLS Wire Protocol tunnel (Port 5432) over the egress network gateway, connecting directly to the remote Neon Serverless cloud datastore database
