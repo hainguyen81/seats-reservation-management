@@ -374,6 +374,8 @@ To operate this automation workflow smoothly, you must configure the following k
 | :--- | :--- |
 | `DOCKERHUB_USERNAME` | Your official Docker Hub or registry account handle name. |
 | `DOCKERHUB_TOKEN` | Securely generated Personal Access Token (PAT) with Read & Write access. |
+| `GCP_SECRET_POSTGRES` | Specify the secret environments for PostgreSQL version. | CI/CD GCP Deployment Pipeline |
+| `GCP_SECRET_SQLITE` | Specify the secret environments for SQLite version. | CI/CD GCP Deployment Pipeline |
 | `GCP_ADC_JSON` | The complete, encrypted JSON key file generated for your Google Service Account. |
 | `ALLOW_GCP_DEPLOY` | Administrative feature flag toggled via system settings (`true` / `false`) acting as the ultimate automated security gatekeeper. | Execution Gate |
 

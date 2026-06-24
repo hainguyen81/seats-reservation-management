@@ -58,13 +58,10 @@ on:
                     "DATABASE_PROVIDER":          "sqlite",
                     "AUTH_PROVIDER":              "custom",
                     "NEXT_PUBLIC_AUTH_PROVIDER":  "custom",
-                    "DATABASE_URL":               "file:/app/prisma/data/seats_reservation.db",
-                    "DIRECT_DATABASE_URL":        "file:/app/prisma/data/seats_reservation.db",
-                    "REDIS_URL":                  "redis://redis-cache:6379",
-                    "JWT_SECRET":                 "seats-reservation-management-secret-key-2026",
                     "TOTAL_SEATS":                9,
                     "SHOULD_SEED":                true
-                }
+                },
+                "gcp_secrets":                    "GCP_SECRET_SQLITE"
             },
             {
                 "name":     "seats-reservation-postgres",
@@ -73,10 +70,10 @@ on:
                     "AUTH_PROVIDER":              "custom",
                     "NEXT_PUBLIC_AUTH_PROVIDER":  "custom",
                     "REDIS_URL":                  "redis://redis-cache:6379",
-                    "JWT_SECRET":                 "seats-reservation-management-secret-key-2026",
                     "TOTAL_SEATS":                9,
                     "SHOULD_SEED":                true
-                }
+                },
+                "gcp_secrets":                    "GCP_SECRET_POSTGRES"
             }
           ]
 
@@ -135,37 +132,43 @@ jobs:
           create_credentials_file: true       # export credentials for next steps
           export_environment_variables: true  # export enviroment variables for next steps
       
-      # 2. Temporary Step: Convert deploy enviroment variables
-      - name: 🔍 Convert JSON Enviroment Variables to Comma Separated Key-Value
+      # 2. Temporary Step: Meger HitHub secret and enviroment variables to deploy image up GCP
+      - name: 🔐 Advanced Universal JSON Secret Provisioner and JSON Enviroment Variables for GCP
         if: success()                 # if previous step is successful
-        id: convert-deploy-env-vars
+        id: gcp-deploy-env
         env:
           SERVICE_ENV_VARS: ${{ toJson(matrix.service.env_vars) }}
-          NEON_DATABASE_URL: ${{ secrets.DATABASE_URL_NEON_POSTGRES }}
-          NEON_DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL_NEON_POSTGRES }}
+          GCP_SECRETS: ${{ matrix.service.gcp_secrets }}
+          # Load all GitHub secret to parse
+          ALL_GITHUB_SECRETS: ${{ toJSON(secrets) }}
         run: |
           node -e '
-            // 1. request JSON object
-            const jsonRaw = process.env.SERVICE_ENV_VARS; 
-            const obj = JSON.parse(jsonRaw);
-            if (!obj["DATABASE_URL"] || !obj["DIRECT_DATABASE_URL"]) {
-              obj["DATABASE_URL"] = process.env.NEON_DATABASE_URL;
-              obj["DIRECT_DATABASE_URL"] = process.env.NEON_DIRECT_DATABASE_URL;
+            // 1. Request JSON object
+            const jsonRaw = process.env.SERVICE_ENV_VARS;
+            const secretKey = process.env.GCP_SECRETS;
+            let envObj = jsonRaw ? JSON.parse(jsonRaw) : {};
+            if (secretKey && process.env.ALL_GITHUB_SECRETS) {
+              const githubSecrets = JSON.parse(process.env.ALL_GITHUB_SECRETS);
+              const secretRaw = githubSecrets[secretKey];
+              if (secretRaw) {
+                const secretObject = typeof secretRaw === "object" ? secretRaw : JSON.parse(secretRaw);
+                envObj = { ...envObj, ...secretObject };
+              }
             }
             
             // 2. convert to array key=value
-            const kvArray = Object.entries(obj).map(([key, value]) => `${key}=${value}`);
+            const kvArray = Object.entries(envObj).map(([key, value]) => `${key}=${value}`);
             
             // 3. combine array by comma
             const resultString = kvArray.join(",");
             
             // 4. output to GitHub Actions
             const fs = require("fs");
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, `converted_env_vars=${resultString}\n`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `env_vars=${resultString}\n`);
           '
       
       # 3. Deploy to Google Cloud Run by pulling image from Docker Hub
-      - name: 🚀 Deploy to Cloud Run
+      - name: 🚀 Deploy to GCP Cloud Run
         if: success()                 # if previous step is successful
         uses: google-github-actions/deploy-cloudrun@v2
         with:
@@ -183,7 +186,7 @@ jobs:
             --max-instances=1
             --memory=512Mi
             --cpu=1
-            --set-env-vars="${{ steps['convert-deploy-env-vars'].outputs.converted_env_vars }}"
+            --set-env-vars="${{ steps['gcp-deploy-env'].outputs.env_vars }}"
       
       # 4. Check deployment status
       - name: 🔍 Check GCP Service Status (Health Check)
@@ -205,7 +208,7 @@ jobs:
           
           if [ $STATUS -eq 200 ]; then
             echo "✅ Service worked successful! Status: $STATUS"
-            echo "- Public URL: $URL"
+            echo "- ✅ Public URL: $URL"
             echo "gcp_cloud_run_url=$URL" >> $GITHUB_OUTPUT
           else
             echo "❌ Service Error on GCP! Status: $STATUS"
