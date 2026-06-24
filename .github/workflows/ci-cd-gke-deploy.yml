@@ -245,6 +245,7 @@ jobs:
               --workload-pool="$PROJECT_ID.svc.id.goog" \
               --workload-metadata=GKE_METADATA \
               --enable-autoscaling --min-nodes=1 --max-nodes=2 \
+              --addons=HttpLoadBalancing \
               --async \
               --quiet 2>&1) || CREATE_EXIT_CODE=$?
           

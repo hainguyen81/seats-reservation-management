@@ -8,12 +8,13 @@
 # =========================================================================
 # 🛡️ GKE NATIVE BACKENDCONFIG MANIFEST (GOOGLE REVERSE PROXY MANAGER)
 # =========================================================================
-apiVersion: cloud.google.com/v1
+apiVersion: cloud.google.com/v1beta1
 kind: BackendConfig
 metadata:
   name: gke-seats-reserve-proxy-config
   namespace: gke-seats-reservation-postgres
 spec:
+  timeoutSec: 60              # connection timeout. default is 30 seconds
   healthCheck:
     checkIntervalSec: 15
     timeoutSec: 5
@@ -263,8 +264,7 @@ metadata:
     # This critical line allows ClusterIP to pair with GKE Ingress
     cloud.google.com/neg: '{"ingress": true}'
     # BackendConfig for Next.js health check
-    cloud.google.com/backend-config: '{"default": "gke-seats-reserve-proxy-config"}'
-    cloud.google.com/v1: '{"ports": {"80": "gke-seats-reserve-proxy-config"}}'
+    cloud.google.com/v1beta1: '{"ports": {"80": "gke-seats-reserve-proxy-config"}}'
 spec:
   type: ClusterIP
   ports:
@@ -322,10 +322,9 @@ kind: Ingress
 metadata:
   name: seats-reservation-ingress
   namespace: gke-seats-reservation-postgres
-  annotations:
-    # Use "gce" for external HTTP(S) LB or "gce-internal" for internal HTTP(S) LB
-    kubernetes.io/ingress.class: "gce"  # Ensures GKE controller manages the LB
 spec:
+  # Use "gce" for external HTTP(S) LB or "gce-internal" for internal HTTP(S) LB
+  ingressClassName: gce
   rules:
   - http:
       paths:
