@@ -48,7 +48,7 @@ on:
         description: "⚙️ GKE Machine Type (e2-micro, e2-small, e2-medium)"
         required: false         # not require, due to be triggered standalone
         type: string            # receive enviroment from parent workflow under JSON string
-        default: e2-micro
+        default: e2-small
       nodes_number:
         description: "⚙️ The number of GKE Machine Node"
         required: false         # not require, due to be triggered standalone
