@@ -148,7 +148,7 @@ jobs:
           # # debug
           # echo "- Detected Identity Email: $GCP_SA_EMAIL"
           echo "gcp_sa_email<<EOF" >> $GITHUB_OUTPUT
-          echo '$GCP_SA_EMAIL' >> $GITHUB_OUTPUT
+          echo "$GCP_SA_EMAIL" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
           
           node -e '
