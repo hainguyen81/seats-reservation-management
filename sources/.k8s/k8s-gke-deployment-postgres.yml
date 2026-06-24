@@ -254,6 +254,7 @@ spec:
 ---
 # ===================================================
 # 7. APPLICATION SERVICE LOADBALANCER
+# !!!IMPORTANT!!! Require LoadBalancer to publish INTERNET/EXTERNAL
 # ===================================================
 apiVersion: v1
 kind: Service
