@@ -1,6 +1,6 @@
 # ===================================================
 # KUBERNETES DEPLOYMENT: Seats Reservation System
-# Database: PostgreSQL with PgBouncer
+# Database: SQLite
 # ===================================================
 
 ---

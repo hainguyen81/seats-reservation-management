@@ -1,6 +1,6 @@
 # ===================================================
 # KUBERNETES DEPLOYMENT: Seats Reservation System
-# Database: PostgreSQL with PgBouncer
+# Database: SQLite
 # !!!NOTE!!! No need LoadBalancer, due to using GKE Cloud LoadBalancer
 # ===================================================
 
