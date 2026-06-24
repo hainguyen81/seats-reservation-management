@@ -1,7 +1,6 @@
 # ===================================================
 # KUBERNETES DEPLOYMENT: Seats Reservation System
 # Database: SQLite
-# !!!NOTE!!! No need LoadBalancer, due to using GKE Cloud LoadBalancer
 # ===================================================
 
 ---
