@@ -270,7 +270,11 @@ jobs:
           # Loop every 30 seconds to ask GCP whether cluster is 'RUNNING'.
           # to avoid pipeline timeout and other push code requests not stuck by this.
           echo "🛸 Hardware creation dispatched. Initiating smart monitoring loop..."
-          while true; do
+          ATTEMPT=1
+          MAX_ATTEMPTS=5
+          DELAY_TIME=30
+          EXCEEDED_TIME=$((MAX_ATTEMPTS * DELAY_TIME))
+          while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
             STATUS=$(gcloud container clusters describe "$CLUSTER_NAME" --region="$REGION_NAME" --format="value(status)" 2>/dev/null || echo "PROVISIONING")
             echo "Current GKE Infrastructure Status: [ $STATUS ]"
             
@@ -278,12 +282,13 @@ jobs:
               echo "✅ GKE Cluster hardware is fully assembled and live! Proceeding to software layer."
               break
             elif [ "$STATUS" = "STOPPING" ] || [ "$STATUS" = "ERROR" ] || [ "$STATUS" = "DEGRADED" ]; then
-              echo "❌ GKE Hardware initialization failed with status: $STATUS"
+              echo "❌ GKE Hardware initialization failed with status: $STATUS (timeout $EXCEEDED_TIME seconds)"
               exit 1
             fi
             
             echo "⚠️ Waiting 30 seconds for Google Cloud infrastructure layer to complete..."
-            sleep 30
+            ATTEMPT=$((ATTEMPT + 1))
+            sleep $DELAY_TIME
           done
       
       # 7. Build immutable image and push to GCP Registry
