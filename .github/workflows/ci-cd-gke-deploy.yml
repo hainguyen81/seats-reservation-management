@@ -286,7 +286,7 @@ jobs:
               exit 1
             fi
             
-            echo "⚠️ Waiting 30 seconds for Google Cloud infrastructure layer to complete..."
+            echo "⚠️ Waiting $DELAY_TIME seconds for Google Cloud infrastructure layer to complete..."
             ATTEMPT=$((ATTEMPT + 1))
             sleep $DELAY_TIME
           done
