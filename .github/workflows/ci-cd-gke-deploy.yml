@@ -578,17 +578,21 @@ jobs:
       # Clean up
       - name: ⚙️ Force Kill Orphan Processes
         if: always()    # Always run to clean up
+        env:
+          K8S_DEPLOYMENT_NAMESPACE: ${{ matrix.service.env_vars.K8S_DEPLOYMENT_NAMESPACE }}
+          K8S_DEPLOYMENT_NAME: ${{ matrix.service.env_vars.K8S_DEPLOYMENT_NAME }}
+          K8S_DEPLOYMENT_SERVICE: ${{ matrix.service.env_vars.K8S_DEPLOYMENT_SERVICE }}
         run: |
           echo "========================================================================="
           echo "📊 REAL-TIME CLUSTER RESOURCE UTILIZATION (DEBUG HOOK)"
           echo "========================================================================="
           # Print out % RAM/CPU Node Resource (|| true to void stop pipeline while metrics-server is busy)
           echo "- Checking real-time memory and CPU consumption on the single physical GKE Node..."
-          kubectl top nodes || echo "⚠️ Metrics API temporarily unavailable."
+          kubectl top nodes 2>/dev/null || echo "⚠️ Metrics-Server is disabled on GKE Free Tier. Bypassing node telemetry query safely."
           echo "-------------------------------------------------------------------------"
           
           echo "- Checking memory and CPU consumption across all active app containers..."
-          kubectl top pods -n $K8S_DEPLOYMENT_NAMESPACE || true
+          kubectl top pods -n "$K8S_DEPLOYMENT_NAMESPACE" 2>/dev/null || echo "⚠️ Metrics API temporarily unavailable for pods."
           
           echo "-------------------------------------------------------------------------"
           echo "- Analyzing allocation capacity gates (Investigating Insufficient Memory limits)..."
