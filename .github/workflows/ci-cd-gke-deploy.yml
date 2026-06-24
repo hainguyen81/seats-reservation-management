@@ -520,12 +520,14 @@ jobs:
           K8S_DEPLOYMENT_NAME: ${{ matrix.service.env_vars.K8S_DEPLOYMENT_NAME }}
           K8S_DEPLOYMENT_SERVICE: ${{ matrix.service.env_vars.K8S_DEPLOYMENT_SERVICE }}
         run: |
+          TIMEOUT="180s" # 3 minutes
+          
           echo "========================================================================="
           echo "🚀 1. MONITORING KUBERNETES ROLLING UPDATE STATUS"
           echo "========================================================================="
           # Force CI/CD wait until GKE Pods running successful
           # If having error (CrashLoopBackOff, ImagePullBackOff), this line will show error and stop pipeline (Fail-Fast)
-          if ! kubectl rollout status deployment/$K8S_DEPLOYMENT_NAME -n $K8S_DEPLOYMENT_NAMESPACE --timeout=150s; then
+          if ! kubectl rollout status deployment/$K8S_DEPLOYMENT_NAME -n $K8S_DEPLOYMENT_NAMESPACE --timeout=$TIMEOUT; then
             # 🔥 Show as Step Warning on GITHUB CI/CD UI
             echo "::warning::⚠️ Could not reach [GKE Rollout Status] before completion. Pods might still be initializing in the background."
             echo "Bypassing hard error check to prevent pipeline failure."
@@ -546,7 +548,7 @@ jobs:
           echo "========================================================================="
           # Wait for public information (IP, access port)
           echo "- Waiting for GCP LoadBalancer to allocate a public IP..."
-          kubectl wait --namespace $K8S_DEPLOYMENT_NAMESPACE --for=jsonpath='{.status.loadBalancer.ingress.ip}' service/$K8S_DEPLOYMENT_SERVICE --timeout=150s 2>&1 || true
+          kubectl wait --namespace $K8S_DEPLOYMENT_NAMESPACE --for=jsonpath='{.status.loadBalancer.ingress.ip}' service/$K8S_DEPLOYMENT_SERVICE --timeout=$TIMEOUT 2>&1 || true
           
           # Request public information (IP, access port)
           if ! SERVICE_TABLE=$(kubectl get service $K8S_DEPLOYMENT_SERVICE -n $K8S_DEPLOYMENT_NAMESPACE 2>&1 | tee /dev/stdout); then
@@ -583,9 +585,9 @@ jobs:
           echo "========================================================================="
           echo "📜 5. CALCULATE THE GKE PUBLIC URL"
           echo "========================================================================="
-          # Calculate if after 60 seconds, and could not get the external IP (Ex: GKE Hardware Stuck)
+          # Calculate if after delay time, and could not get the external IP (Ex: GKE Hardware Stuck)
           if [ -z "$EXTERNAL_IP" ] || [ "$EXTERNAL_IP" == "<pending>" ] || [ "$EXTERNAL_IP" == "<none>" ]; then
-            echo "::warning::⚠️ GCP LoadBalancer failed to allocate a public IP within 60s. Retry once more time to detect the GKE Public URL."
+            echo "::warning::⚠️ GCP LoadBalancer failed to allocate a public IP within $TIMEOUT. Retry once more time to detect the GKE Public URL."
           
           else
             # Calculate the public URL (Sử dụng luôn $SERVICE_PORT vừa bốc từ bảng trên, không gọi lại lệnh jsonpath nữa)
