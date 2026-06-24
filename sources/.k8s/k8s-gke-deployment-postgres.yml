@@ -298,7 +298,7 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: seats-reservation-ingress
+  name: seats-reservation-ingress-postgres
   namespace: gke-seats-reservation-postgres
 spec:
   # Use "gce" for external HTTP(S) LB or "gce-internal" for internal HTTP(S) LB
