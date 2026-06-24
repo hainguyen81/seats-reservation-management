@@ -7,7 +7,7 @@ on:
       k6_test_file:
         description: "👷 Concurrency k6 Stress Testing File Path (Ex: ./sources/tests/scalability-test.js)"
         required: false
-        default: "./sources/tests/scalability-test.js"
+        default: "./sources/tests/scalability-health-check-test.js"
         type: string
       target_url:
         description: "🌐 Target Environment URL for Scalability Load Testing (LoadBalancer IP or Domain)"
