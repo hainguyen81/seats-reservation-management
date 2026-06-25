@@ -91,8 +91,8 @@ jobs:
         DATABASE_URL: "postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public&pgbouncer=true"
         DIRECT_DATABASE_URL: "postgresql://postgres:postgres_secret_pass@localhost:5432/seats_reservation?schema=public"
         REDIS_URL: "redis://localhost:6379"
-        JWT_SECRET: "github-actions-testing-postgres-secret-key-padding-2026"
-        TOTAL_SEATS: "15"
+        JWT_SECRET: "github-seats-reservation-secret-key-2026-v1.0"
+        TOTAL_SEATS: 12
         SHOULD_SEED: "true"
 
     - name: 🎭 Install Playwright Browser Binaries
@@ -110,7 +110,7 @@ jobs:
         DATABASE_PROVIDER: "postgres"
         DATABASE_URL: "postgresql://postgres:password123@localhost:5432/seat_reservation?schema=public"
         DIRECT_DATABASE_URL: "postgresql://postgres:password123@localhost:5432/seat_reservation?schema=public"
-        JWT_SECRET: "github-actions-testing-postgres-secret-key-padding-2026"
+        JWT_SECRET: "github-seats-reservation-secret-key-2026-v1.0"
         TOTAL_SEATS: 12
         SHOULD_SEED: "true"
         NEXT_PUBLIC_AUTH_PROVIDER: "custom" # custom local test
@@ -171,8 +171,8 @@ jobs:
         DATABASE_URL: "file:./sqlite-test.db"
         DIRECT_DATABASE_URL: "file:./sqlite-test.db"
         REDIS_URL: "redis://localhost:6379"
-        JWT_SECRET: "github-actions-testing-sqlite-secret-key-padding-2026"
-        TOTAL_SEATS: "15"
+        JWT_SECRET: "github-seats-reservation-secret-key-2026-v1.0"
+        TOTAL_SEATS: 12
         SHOULD_SEED: "true"
 
     - name: 🎭 Install Playwright Browser Binaries
@@ -190,7 +190,7 @@ jobs:
         DATABASE_PROVIDER: "sqlite"
         DATABASE_URL: "file:/app/prisma/data/sqlite-test.db"
         DIRECT_DATABASE_URL: "file:/app/prisma/data/sqlite-test.db"
-        JWT_SECRET: "github-actions-testing-sqlite-secret-key-padding-2026"
+        JWT_SECRET: "github-seats-reservation-secret-key-2026-v1.0"
         TOTAL_SEATS: 12
         SHOULD_SEED: "true"
         NEXT_PUBLIC_AUTH_PROVIDER: "custom" # custom local test
