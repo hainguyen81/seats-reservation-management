@@ -1,5 +1,12 @@
 import { test, expect } from '@playwright/test';
 
+// Target endpoint based on your Next.js App Router structure
+const BASE_URL = process.env.TARGET_URL || 'http://localhost:3000';
+const SECRET_TOKEN = process.env.SECRET_TOKEN || '';
+
+// 🔥 run test sequential
+test.describe.configure({ mode: 'serial' });
+
 test.describe('Seats Reservation Management - End-to-End Business Flow', () => {
 
     test.beforeEach(async ({ page }) => {
@@ -7,7 +14,32 @@ test.describe('Seats Reservation Management - End-to-End Business Flow', () => {
         await page.goto('/');
     });
 
-    test('Should block seat matrix for unauthenticated users, then log in and complete reservation loop', async ({ page }) => {
+    test('1. Reset all cluster seats state back to AVAILABLE via API Egress', async ({ request }) => {
+        console.log(`Sending dynamic state eviction signal to: ${BASE_URL}/api/seats/release`);
+
+        // 🚀 Call REQUEST to API CORES RELEASE
+        // Clean up everything: Database, Local Mutex Map and invalidate cache Redis
+        const response = await request.post(`${BASE_URL}/api/seats/release`, {
+            headers: {
+                'Content-Type': 'application/json',
+                'X-App-Benchmark-Client': 'playwright-admin-sweeper-engine',
+                // Nếu API dọn rác của bạn bắt mã xác thực bảo mật JWT Token
+                'Authorization': `Bearer ${SECRET_TOKEN}`
+            },
+            data: {
+                forceEvictAll: true // Chỉ chỉ định cờ nếu API background sweeper của bạn yêu cầu
+            }
+        });
+
+        // Enforce payload transaction success assertion verification status code 200
+        expect(response.ok()).toBeTruthy();
+        expect(response.status()).toBe(200);
+
+        const responseBody = await response.json();
+        console.log('✅ Success Dynamic State Sync Summary:', responseBody.message);
+    });
+
+    test('2. Should block seat matrix for unauthenticated users, then log in and complete reservation loop', async ({ page }) => {
         // 🕵️ CASE 1: check un-authenticate
         // Show login form and not showing seats matrix
         await expect(page.locator('text=Identity Authentication')).toBeVisible();
@@ -22,13 +54,6 @@ test.describe('Seats Reservation Management - End-to-End Business Flow', () => {
 
         // wait for UI loaded
         await page.waitForLoadState('networkidle');
-
-        // const seatMapContainer = page.locator('.seat-map-container');
-        // await seatMapContainer.waitFor({ state: 'attached', timeout: 5000 }).catch(() => { });
-        // const seatMapHtml = await seatMapContainer.innerHTML();
-        // console.log("============== [DEBUG] HTML SEATS MAP: ==============");
-        // console.log(seatMapHtml);
-        // console.log("===============================================================");
 
         // check UI
         await expect(page.locator('text=Secured Operator:')).toBeVisible();
@@ -77,7 +102,7 @@ test.describe('Seats Reservation Management - End-to-End Business Flow', () => {
         await expect(seatA2).toBeDisabled();
     });
 
-    test('Should handle user unselecting a seat properly before payment timeout', async ({ page }) => {
+    test('3. Should handle user unselecting a seat properly before payment timeout', async ({ page }) => {
         // Login -> Select seat -> select it again to un-selecting (Unselect)
         await page.locator('input[placeholder*="hainguyenjc@gmail.com"]').fill('hainguyenjc@gmail.com');
         await page.locator('input[placeholder="••••••••"]').fill('password123');
@@ -85,13 +110,6 @@ test.describe('Seats Reservation Management - End-to-End Business Flow', () => {
 
         // wait for UI loaded
         await page.waitForLoadState('networkidle');
-
-        // const seatMapContainer = page.locator('.seat-map-container');
-        // await seatMapContainer.waitFor({ state: 'attached', timeout: 5000 }).catch(() => { });
-        // const seatMapHtml = await seatMapContainer.innerHTML();
-        // console.log("============== [DEBUG] HTML SEATS MAP: ==============");
-        // console.log(seatMapHtml);
-        // console.log("===============================================================");
 
         // locate seat A3
         const seatA3 = page.locator('button:has-text("A3")').first();

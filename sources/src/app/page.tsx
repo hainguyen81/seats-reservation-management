@@ -129,11 +129,11 @@ export default function Home() {
                 // 🔓 RELEASE
                 // ===================================================
                 setMessage('⏳ Releasing seat reservation...');
+                setSelectedSeats((prev) => prev.map(id => String(id).trim()).filter((id) => id !== targetSeatString));
                 const releaseSeat = (data, seatId) => {
                     if (!data?.success || (data?.error || '').length) {
                         setMessage(`❌ Failed to release seat: ${data?.error || 'Unknown Error'}`);
                     } else {
-                        setSelectedSeats((prev) => prev.map(id => String(id).trim()).filter((id) => id !== seatId));
                         setMessage('✅ Seat released successfully.');
                     }
                     processSeat(seatId, false);
@@ -173,11 +173,11 @@ export default function Home() {
                 // 🔒 HOLD: Reserve in expired minutes
                 // ===================================================
                 setMessage('⏳ Holding seat...');
+                setSelectedSeats((prev) => [...prev.map(id => String(id).trim()), targetSeatString]);
                 const holdSeat = (data, seatId) => {
                     if (!data?.success || (data?.error || '').length) {
                         setMessage(`❌ Failed to hold seat: ${data?.error || 'Unknown Error'}`);
                     } else {
-                        setSelectedSeats((prev) => [...prev.map(id => String(id).trim()), seatId]);
                         setMessage('✅ Seat held successfully.');
                         // reset expiry timer
                         const secondsLeft = Math.floor((new Date(data.expiresAt).getTime() - Date.now()) / 1000);
@@ -218,6 +218,11 @@ export default function Home() {
         } catch (e) {
             console.error('Transactional communication fracture:', e);
             setMessage('Transactional communication fracture.');
+            if (isCurrentlySelectedByMe) {
+                setSelectedSeats((prev) => [...prev.map(id => String(id).trim()), targetSeatString]);
+            } else {
+                setSelectedSeats((prev) => prev.map(id => String(id).trim()).filter((id) => id !== targetSeatString));
+            }
             processSeat(targetSeatString, false);
         }
     };
@@ -481,6 +486,7 @@ export default function Home() {
                                 bgStyle = '#858d93'; // DISABLED
                                 textStyle = '#ffffff';
                                 borderStyle = '2px solid #10b981';
+                                isCursorAllowed = 'not-allowed';
                             } else if (isSelected) {
                                 bgStyle = '#065f46'; // SELECTED
                                 textStyle = '#ffffff';
@@ -541,8 +547,8 @@ export default function Home() {
                                             textTransform: 'uppercase',
                                             letterSpacing: '0.05em'
                                         }}
-                                    >{`Processing: ${isTargetProcessing} | Selected: ${isSelected} | Status: ${seat.status}`}
-                                        {isTargetProcessing ? 'PROCESSING'
+                                    >
+                                        {isTargetProcessing ? 'RESERVING'
                                             : isSelected ? 'SELECTED' : seat.status === 'PENDING' ? 'Reserved' : seat.status.toLowerCase()}
                                     </span>
                                 </button>
@@ -567,10 +573,10 @@ export default function Home() {
 
                     {/* Selected seats */}
                     <p style={{ margin: '0 0 16px 0', fontSize: '0.875rem', color: '#9ca3af' }}>
-                        Staging Reservation Target: <strong style={{ color: '#10b981', fontSize: '1.125rem' }}>
+                        Reserved Seats: <strong style={{ color: '#10b981', fontSize: '1.125rem' }}>
                             {selectedSeats.map(id => seats.find(s => s.id === id)?.number).join(', ')}
-                        </strong>
-                        Processing Reservation Target: <strong style={{ color: '#10b981', fontSize: '1.125rem' }}>
+                        </strong><br/>
+                        Processing Seats: <strong style={{ color: '#10b981', fontSize: '1.125rem' }}>
                             {Array.from(processingSeats).map(id => seats.find(s => s.id === id)?.number).join(', ')}
                         </strong>
                     </p>
