@@ -116,18 +116,18 @@ export class SeatService {
         userId: string;
         email: any;
     }): Promise<{
+        status: number;
         data?: any;
-        status?: number;
     } | {
+        status: number;
         error?: string;
-        status?: number;
     }> {
         try {
             // 🕵️ CACHE READ: check from Redis Cache
             try {
                 const cachedSeats = await redis.get(SEATS_CACHE_KEY);
                 if (cachedSeats) {
-                    return JSON.parse(cachedSeats);
+                    return { data: JSON.parse(cachedSeats), status: 200 };
                 }
             } catch (err) {
                 console.warn(`📊 [Cache Miss - Redis Down | User: ${session?.userId}]: Fetching directly from database`);
@@ -189,12 +189,12 @@ export class SeatService {
         },
         req: Request
     ): Promise<{
+        status: number;
         success?: boolean;
         expiresAt?: string;
-        status?: number;
     } | {
+        status: number;
         error?: string;
-        status?: number;
     }> {
         const { seatId } = await req.json();
         const mutexLockStatus = 'PENDING';
@@ -342,12 +342,12 @@ export class SeatService {
         },
         req: Request
     ): Promise<{
+        status: number;
         success?: boolean;
         expiresAt?: string;
-        status?: number;
     } | {
+        status: number;
         error?: string;
-        status?: number;
     }> {
         const { seatId } = await req.json();
         const mutexLockStatus = 'PENDING';
@@ -448,12 +448,12 @@ export class SeatService {
         },
         req: Request
     ): Promise<{
+        status: number;
         success?: boolean;
         expiresAt?: string;
-        status?: number;
     } | {
+        status: number;
         error?: string;
-        status?: number;
     }> {
         const { seatIds, mockPaymentSuccess } = await req.json();
         const mutexLockPendingStatus = 'PENDING';
@@ -639,14 +639,14 @@ export class SeatService {
         },
         req: Request
     ): Promise<{
+        status: number;
         success?: boolean;
         releasedCount?: number;
         releasedSeats?: string | string[];
         message?: string;
-        status?: number;
     } | {
+        status: number;
         error?: string;
-        status?: number;
     }> {
         const { seatIds, mockPaymentSuccess } = await req.json();
         const mutexLockPendingStatus = 'PENDING';

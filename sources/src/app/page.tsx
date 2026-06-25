@@ -23,7 +23,7 @@ export default function Home() {
     const fetchSeats = () => {
         fetch('/api/seats')
             .then((res) => res.json())
-            .then((data) => setSeats(data));
+            .then((data) => setSeats(data.data));
     };
     useEffect(() => {
         // check session status
@@ -157,7 +157,7 @@ export default function Home() {
                         }
                         return res.json();
                     }).then(seats => {
-                        setSeats(seats);
+                        setSeats(seats.data);
                         releaseSeat(data, targetSeatString);
 
                     }).catch(error2 => {
@@ -204,7 +204,7 @@ export default function Home() {
                             }
                             return res.json();
                         }).then(seats => {
-                            setSeats(seats);
+                            setSeats(seats.data);
                             holdSeat(data, targetSeatString);
 
                         }).catch(error2 => {
