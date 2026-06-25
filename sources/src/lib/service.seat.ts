@@ -29,6 +29,7 @@ export class SeatService {
                 return mutexLockInRamFn(); // lock seat as example `PENDING` in 10 seconds
             });
             if (!ramLockAcquired) {
+                console.warn(`[ MUTEX ${lockStatus} ] Present Mutex: ${seatMutexLock.dataKey(MUTEX_GROUP_KEY, seatId)}`);
                 // if RAM already locked (`PENDING`) before, fail-fast
                 throw new Error(errorConflictCode);
             }
@@ -74,6 +75,7 @@ export class SeatService {
             });
             if (!ramLockAcquired) {
                 // if RAM already wasn't locked (`PENDING`) before, fail-fast
+                console.warn(`[ MUTEX | OLD: ${oldLockStatus} | NEW: ${newLockStatus} ] Present Mutex: ${seatMutexLock.dataKey(MUTEX_GROUP_KEY, seatId)}`);
                 throw new Error(errorConflictCode);
             }
             isLockedInRam = true;

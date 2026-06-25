@@ -90,6 +90,12 @@ export class LocalSeatMutexManager {
         }).forEach((v, k) => results[k.toString().replace(prefix, '')] = v);
         return results;
     }
+    public dataKey(uniqueId: string, key: string): any {
+        const mutexKey = this.generateSeatKey(uniqueId, key);
+        return [...this.mutex.data()].find(([key, value]) => {
+            return (key || '').toString() === mutexKey;
+        }).map(v => v);
+    }
 
     /**
      * 🔍 SEATS ACTION: Check whether seat has been locked in mutex with specified status
