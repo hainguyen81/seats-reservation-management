@@ -20,7 +20,8 @@ test.describe('🧱 Core Infrastructure Administrative Housekeeping Suite', () =
                 'X-App-Benchmark-Client': 'playwright-admin-sweeper-engine',
                 // Optional security token boundary signature mapping
                 'Authorization': `Bearer ${JWT_SECRET}`
-            }
+            },
+            data: {}
         });
 
         // Enforce transaction validation checking patterns [3.2]
