@@ -19,7 +19,7 @@ export default defineConfig({
 
     /* 💡 Package server: auto start/stop application */
     webServer: {
-        command: 'npx prisma db push && npm run dev',
+        command: 'npm run dev_seed',
         url: 'http://127.0.0.1:3000',
         reuseExistingServer: !process.env.CI,
         timeout: 120 * 1000,

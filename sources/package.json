@@ -12,16 +12,13 @@
     "prisma_push_generate": "npm run prisma_push && npm run prisma_generate",
     "prisma_push_generate_seed": "npm run prisma_push_generate && npm run prisma_seed",
     "prisma_push_generate_seed_docker": "npm run prisma_push_generate && npm run prisma_seed_docker",
-
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "build_start": "npm run build && npm run start",
-    
     "dev_prisma": "npm run prisma_push_generate && npm run dev",
     "dev_seed": "npm run prisma_push_generate_seed && npm run dev",
-    
     "prod_prisma_build_start": "npm run prisma_push_generate && npm run build_start",
     "prod_seed_build_start": "npm run prisma_push_generate_seed && npm run build_start",
     "prod_seed_build_start_docker": "npm run prisma_push_generate_seed_docker && npm run build_start",
@@ -44,7 +41,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.61.0",
-    "@types/node": "^20.11.19",
+    "@types/node": "^20.19.43",
     "@types/react": "18.3.31",
     "@types/react-dom": "^18.2.19",
     "autoprefixer": "^10.4.17",
