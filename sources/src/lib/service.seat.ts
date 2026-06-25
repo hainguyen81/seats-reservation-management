@@ -651,7 +651,6 @@ export class SeatService {
         const { seatIds, mockPaymentSuccess } = await req.json();
         const mutexLockPendingStatus = 'PENDING';
         const mutexLockBookedStatus = 'BOOKED';
-        let mutexLockError: any[];
         if (!seatIds || !Array.isArray(seatIds) || seatIds.length === 0) {
             return { error: 'Invalid or empty seat list', status: 400 };
         }

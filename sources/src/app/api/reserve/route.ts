@@ -10,5 +10,5 @@ export async function POST(req: Request) {
 
     // reserve seat as `BOOKED`
     const response = await seatService.reserve(session, req);
-    return NextResponse.json(response, , { status: response?.status || 500 });
+    return NextResponse.json(response, { status: response?.status || 500 });
 }
