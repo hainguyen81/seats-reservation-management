@@ -38,9 +38,20 @@ export default defineConfig({
     },
 
     projects: [
+        // 🧹 1. SETUP (DATA PREPARATION)
+        {
+            name: 'setup',
+            testMatch: /reset-seats\.spec\.ts/, // Chỉ định file quét sạch ghế về AVAILABLE
+        },
+
+        // 🎭 2. TEST RUN
         {
             name: 'chromium',
             use: { ...devices['Desktop Chrome'] },
+            testMatch: /.*\.spec\.ts/,
+            testIgnore: /reset-seats\.spec\.ts/, // ignore preparation file
+            // 🔥 wait for preparation step done
+            dependencies: ['setup'],
         },
     ],
 });
