@@ -34,7 +34,9 @@ export default defineConfig({
             TOTAL_SEATS: "15",
             SHOULD_SEED: "true",
             NODE_ENV: 'test'
-        }
+        },
+        stdout: "pipe",
+        stderr: "pipe"
     },
 
     projects: [

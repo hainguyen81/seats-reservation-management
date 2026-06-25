@@ -87,7 +87,7 @@ jobs:
         npm run prisma_esbuild
         # generate prisma and seed sample data
         cp prisma/schema.prisma prisma/dist/schema.prisma
-        npm run prisma_push_generate_seed && npm run build
+        npm run prisma_push_generate_seed
       env:
         DATABASE_PROVIDER: "postgres"
         AUTH_PROVIDER: "custom"
@@ -169,7 +169,7 @@ jobs:
         npm run prisma_esbuild
         # generate prisma and seed sample data
         cp prisma/schema.prisma prisma/dist/schema.prisma
-        npm run prisma_push_generate_seed && npm run build
+        npm run prisma_push_generate_seed
       env:
         DATABASE_PROVIDER: "sqlite"
         AUTH_PROVIDER: "custom"
