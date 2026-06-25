@@ -82,10 +82,12 @@ jobs:
       if: success()                 # if previous step is successful
       run: |
         cd sources
+        # build prisma
         cp prisma/schema.postgres.prisma prisma/schema.prisma
         npm run prisma_esbuild
+        # generate prisma and seed sample data
         cp prisma/schema.prisma prisma/dist/schema.prisma
-        npm run prisma_push_generate_seed
+        npm run prisma_push_generate_seed && npm run build
       env:
         DATABASE_PROVIDER: "postgres"
         AUTH_PROVIDER: "custom"
@@ -162,10 +164,12 @@ jobs:
       if: success()                 # if previous step is successful
       run: |
         cd sources
-        cp prisma/schema.sqlite.prisma prisma/schema.prisma
+        # build prisma
+        cp prisma/schema.postgres.prisma prisma/schema.prisma
         npm run prisma_esbuild
+        # generate prisma and seed sample data
         cp prisma/schema.prisma prisma/dist/schema.prisma
-        npm run prisma_push_generate_seed
+        npm run prisma_push_generate_seed && npm run build
       env:
         DATABASE_PROVIDER: "sqlite"
         AUTH_PROVIDER: "custom"
