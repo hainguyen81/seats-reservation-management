@@ -1,25 +1,66 @@
-import Redis from 'ioredis';
+import Redis, { RedisOptions } from 'ioredis';
+import { handleAll, circuitBreaker, ICircuitBreakerOptions, CircuitBreakerPolicy, SamplingBreaker } from 'cockatiel';
 
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+const retriesPerRequest = process.env.REDIS_RETIES_PER_REQUEST ? parseInt(process.env.REDIS_RETIES_PER_REQUEST) : 1;
+const connTimeout = process.env.REDIS_CONN_TIMEOUT ? parseInt(process.env.REDIS_CONN_TIMEOUT) : 2000;
+const redisOpts: RedisOptions = {
+    maxRetriesPerRequest: retriesPerRequest,
+    connectTimeout: connTimeout,   // connection expired in 2 seconds
+    enableReadyCheck: true,
+
+    // Pooling mechanics to optimize connection reuse under high concurrency
+    reconnectOnError: (err) => {
+        console.error && console.error('❌ [Redis Error] Reconnect on error', err);
+        const targetError = 'READONLY';
+        if (err.message.slice(0, targetError.length) === targetError) return 2;
+        return false;
+    }
+};
 
 // Singleton Redis
 const globalForRedis = globalThis as unknown as {
     redis: Redis | undefined;
+    circuitBreaker: CircuitBreakerPolicy | undefined;
 };
 
+// =========================================================================
+// 🧩 SINGLETON REDIS CONNECTION POOL WITH CONFIGURATION
+// =========================================================================
 // Graceful Error Interception
 if (!globalForRedis.redis) {
-    const instance = new Redis(redisUrl, {
-        maxRetriesPerRequest: 1,
-        connectTimeout: 2000,   // connection expired in 2 seconds
-    });
+    // INITIALIZE HIGH-PERFORMANCE REDIS CONNECTION POOL
+    const instance = new Redis(redisUrl, redisOpts);
 
     // 💡 HANDLE ERROR: 'Unhandled error event'
     instance.on('error', (err) => {
-        console.warn('⚠️ [Redis Warning] Connection refused or lost. System automatically bypassing to Database core layer.', err.message);
+        console.warn('⚠️ [Redis Warning] Connection refused or lost. '
+            + 'System automatically bypassing to Database core layer.', err.message);
     });
 
     globalForRedis.redis = instance;
 }
 
-export const redis = globalForRedis.redis;
+// =========================================================================
+// 🛡️ 2. PRODUCTION-GRADE CIRCUIT BREAKER CONFIGURATION (COCKATIEL NATIVE)
+// =========================================================================
+if (!globalForRedis.circuitBreaker) {
+    // Initialize breaker engine
+    const samplingBreakerEngine = new SamplingBreaker({
+        threshold: 0.5,   // error ratio (50%)
+        duration: 10000,  // duration
+        minimumRps: 1     // minimum request to initial
+    });
+
+    // Initialize circuit breaker with breaker engine
+    globalForRedis.circuitBreaker = circuitBreaker(handleAll, {
+        halfOpenAfter: 15000,
+        breaker: samplingBreakerEngine
+    });
+}
+
+// =========================================================================
+// EXPORT MODULE
+// =========================================================================;
+export const redis: Redis = globalForRedis.redis;
+export const redisBreaker: CircuitBreakerPolicy = globalForRedis.circuitBreaker;

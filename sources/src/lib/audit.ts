@@ -2,7 +2,7 @@ import { prisma } from './db';
 
 interface AuditLogPayload {
     userId?: string | null;
-    action: 'HOLD' | 'RELEASE' | 'RELEASE_EXPIRED' | 'PAYMENT_SUCCESS' | 'PAYMENT_FAILED';
+    action: 'HOLD' | 'SINGLE_RELEASE' | 'RESERVED' | 'RELEASE' | 'RELEASE_EXPIRED' | 'PAYMENT_SUCCESS' | 'PAYMENT_FAILED';
     target: string;
     status: 'SUCCESS' | 'FAILED';
     details?: any;
