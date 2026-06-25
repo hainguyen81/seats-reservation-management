@@ -37,6 +37,8 @@ permissions:
 
 # enviroment
 env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   LANG: 'C.UTF-8'
   LC_ALL: 'C.UTF-8'
 
