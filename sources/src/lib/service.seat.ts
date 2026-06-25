@@ -196,11 +196,11 @@ export class SeatService {
         status: number;
         error?: string;
     }> {
+        const { seatId } = await req.json();
+        const mutexLockStatus = 'PENDING';
+        let mutexLockError;
+
         try {
-            const { seatId } = await req.json();
-            const mutexLockStatus = 'PENDING';
-            let mutexLockError;
-        
             // =========================================================================
             // STEP 1: MUTEX LOCK IN RAM VIA CIRCUIT BREAKER
             // =========================================================================
@@ -350,18 +350,18 @@ export class SeatService {
         status: number;
         error?: string;
     }> {
+        const { seatId } = await req.json();
+        const mutexLockStatus = 'PENDING';
+
+        // =========================================================================
+        // STEP 1: MUTEX LOCK IN RAM VIA CIRCUIT BREAKER
+        // =========================================================================
+        seatMutexLock.unlock(MUTEX_GROUP_KEY, seatId, mutexLockStatus);
+
+        // =========================================================================
+        // STEP 2: TRANSACTION VIA OCC
+        // =========================================================================
         try {
-            const { seatId } = await req.json();
-            const mutexLockStatus = 'PENDING';
-
-            // =========================================================================
-            // STEP 1: MUTEX LOCK IN RAM VIA CIRCUIT BREAKER
-            // =========================================================================
-            seatMutexLock.unlock(MUTEX_GROUP_KEY, seatId, mutexLockStatus);
-
-            // =========================================================================
-            // STEP 2: TRANSACTION VIA OCC
-            // =========================================================================
             await prisma.$transaction(async (tx) => this.singleReleaseTransaction(tx, seatId, session));
 
             // audit
@@ -455,15 +455,15 @@ export class SeatService {
         status: number;
         error?: string;
     }> {
-        try {
-            const { seatIds, mockPaymentSuccess } = await req.json();
-            const mutexLockPendingStatus = 'PENDING';
-            const mutexLockBookedStatus = 'BOOKED';
-            let mutexLockError: any[];
-            if (!seatIds || !Array.isArray(seatIds) || seatIds.length === 0) {
-                return { error: 'Invalid or empty seat list', status: 400 };
-            }
+        const { seatIds, mockPaymentSuccess } = await req.json();
+        const mutexLockPendingStatus = 'PENDING';
+        const mutexLockBookedStatus = 'BOOKED';
+        let mutexLockError: any[];
+        if (!seatIds || !Array.isArray(seatIds) || seatIds.length === 0) {
+            return { error: 'Invalid or empty seat list', status: 400 };
+        }
 
+        try {
             // =========================================================================
             // STEP 1: MUTEX LOCK IN RAM VIA CIRCUIT BREAKER
             // =========================================================================

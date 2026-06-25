@@ -7,12 +7,16 @@ import { seatService } from '@/lib/service.seat';
  */
 
 export async function POST(req: Request) {
-    const session = await verifyAccessToken();
-    if (!session) {
-        return NextResponse.json({ error: 'Unauthorized - Access Token Expired' }, { status: 401 });
-    }
+    try {
+        const session = await verifyAccessToken();
+        if (!session) {
+            return NextResponse.json({ error: 'Unauthorized - Access Token Expired' }, { status: 401 });
+        }
 
-    // release seat as `AVAILABLE`
-    const response = await seatService.singleRelease(session, req);
-    return NextResponse.json(response, { status: response?.status || 500 });
+        // release seat as `AVAILABLE`
+        const response = await seatService.singleRelease(session, req);
+        return NextResponse.json(response, { status: response?.status || 500 });
+    } catch (e) {
+        return NextResponse.json({ error: e }, { status: 500 });
+    }
 }

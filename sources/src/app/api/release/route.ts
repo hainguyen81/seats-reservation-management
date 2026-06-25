@@ -9,7 +9,11 @@ import { seatService } from '@/lib/service.seat';
  */
 
 export async function POST(req: Request) {
-    const session = await verifyAccessToken();
-    const response = await seatService.release(session, req);
-    return NextResponse.json(response, { status: response?.status || 500 });
+    try {
+        const session = await verifyAccessToken();
+        const response = await seatService.release(session, req);
+        return NextResponse.json(response, { status: response?.status || 500 });
+    } catch (e) {
+        return NextResponse.json({ error: e }, { status: 500 });
+    }
 }
