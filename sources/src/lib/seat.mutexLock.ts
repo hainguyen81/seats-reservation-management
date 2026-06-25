@@ -64,8 +64,8 @@ export class LocalSeatMutexManager {
         const targetKey = this.generateSeatKey(uniqueId, seatId);
         const rawMap = this.mutex.data();
 
-        if (rawMap.get(targetKey) === oldSeatStatus) {
-            return this.mutex.updateLock(targetKey, newSeatStatus);
+        if ((newSeatStatus || '').length && String(rawMap.get(targetKey)).trim() === oldSeatStatus) {
+            return this.mutex.updateLock(targetKey, newSeatStatus.trim());
         }
         return false;
     }
