@@ -9,6 +9,6 @@ export async function POST(req: Request) {
     }
 
     // reserve seat as `BOOKED`
-    const result = await seatService.reserve(session, req);
-    return NextResponse.json(result);
+    const response = await seatService.reserve(session, req);
+    return NextResponse.json(response);
 }

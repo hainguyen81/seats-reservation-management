@@ -296,52 +296,54 @@ export default function Home() {
             {/* login block */}
             {!loading && !user ? (
                 <div className="panel-container" style={{ maxWidth: '100%', margin: '0 auto' }}>
-                    <div style={{ marginBottom: '20px' }}>
-                        <h3 className="font-semibold text-lg text-emerald-400" style={{ margin: 0, fontSize: '1.25rem', color: '#10b981' }}>
-                            Identity Authentication
-                        </h3>
-                        <p className="text-xs text-gray-400" style={{ margin: '4px 0 0 0', fontSize: '0.75rem', color: '#9ca3af' }}>
-                            Please authenticate to unblock the seat matrix mapping loop.
-                        </p>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '20px' }}>
-
-                        {/* username */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            <label style={{ fontSize: '0.75rem', color: '#9ca3af', fontWeight: 500, textAlign: 'left' }}>
-                                Username
-                            </label>
-                            <input
-                                type="text"
-                                className="form-input"
-                                placeholder="e.g. hainguyenjc@gmail.com"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                            />
+                    <form onSubmit={handleLogin}>
+                        <div style={{ marginBottom: '20px' }}>
+                            <h3 className="font-semibold text-lg text-emerald-400" style={{ margin: 0, fontSize: '1.25rem', color: '#10b981' }}>
+                                Identity Authentication
+                            </h3>
+                            <p className="text-xs text-gray-400" style={{ margin: '4px 0 0 0', fontSize: '0.75rem', color: '#9ca3af' }}>
+                                Please authenticate to unblock the seat matrix mapping loop.
+                            </p>
                         </div>
 
-                        {/* password */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            <label style={{ fontSize: '0.75rem', color: '#9ca3af', fontWeight: 500, textAlign: 'left' }}>
-                                Password
-                            </label>
-                            <input
-                                type="password"
-                                className="form-input"
-                                placeholder="••••••••"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                            />
-                        </div>
-                    </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '20px' }}>
 
-                    {/* login/register */}
-                    <div>
-                        <button className="btn-primary" onClick={handleLogin}>
-                            Login / Register
-                        </button>
-                    </div>
+                            {/* username */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <label style={{ fontSize: '0.75rem', color: '#9ca3af', fontWeight: 500, textAlign: 'left' }}>
+                                    Username
+                                </label>
+                                <input
+                                    type="text"
+                                    className="form-input"
+                                    placeholder="e.g. hainguyenjc@gmail.com"
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
+                                />
+                            </div>
+
+                            {/* password */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <label style={{ fontSize: '0.75rem', color: '#9ca3af', fontWeight: 500, textAlign: 'left' }}>
+                                    Password
+                                </label>
+                                <input
+                                    type="password"
+                                    className="form-input"
+                                    placeholder="••••••••"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                />
+                            </div>
+                        </div>
+
+                        {/* login/register */}
+                        <div>
+                            <button className="btn-primary" type="submit">
+                                Login / Register
+                            </button>
+                        </div>
+                    </form>
                 </div>
             ) : !loading && user && (
                 <div
@@ -419,7 +421,7 @@ export default function Home() {
                             gap: '12px'
                         }}
                     >
-                        {seats.map((seat) => {
+                        {(seats || []).map((seat) => {
                             let bgStyle = '#ffffff';
                             let textStyle = '#1f2937';
                             let borderStyle = '1px solid #e5e7eb';

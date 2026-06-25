@@ -14,7 +14,7 @@ fi
 
 if [ "$SHOULD_SEED" = "true" ]; then
   echo "🏃 Seeding sample data (with seeding)..."
-  npm run prisma_push_generate_seed
+  npm run prisma_push_generate_seed_docker
 else
   echo "🔄 Generate & Push Prisma (without seeding)..."
   npm run prisma_push_generate
@@ -22,7 +22,7 @@ fi
 
 echo "▶ Executing core standalone server..."
 if [ "$SHOULD_SEED" = "true" ]; then
-	npm run prod_seed_start
+	npm run prod_seed_start_docker
 else
 	npm run prod_prisma_start
 fi

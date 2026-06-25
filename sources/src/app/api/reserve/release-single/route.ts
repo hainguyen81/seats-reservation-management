@@ -13,6 +13,6 @@ export async function POST(req: Request) {
     }
 
     // release seat as `AVAILABLE`
-    const result = await seatService.singleRelease(session, req);
-    return NextResponse.json(result);
+    const response = await seatService.singleRelease(session, req);
+    return NextResponse.json(response);
 }

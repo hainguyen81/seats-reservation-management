@@ -23,6 +23,16 @@ export const options = {
     // ⏱️ Latency Tolerances: 95% of requests must respond under 1.5 seconds to maintain transaction integrity
     http_req_duration: ["p(95)<1500"],
   },
+
+  // =========================================================================
+  // 🔥 SYNC BLOCK: FORCE K6 SEND METRICS TO NATIVE OPENTELEMETRY GATEWAY
+  // =========================================================================
+  ext: {
+    loadimpact: {
+      project: 0,
+      name: "GKE Seats Reservation Benchmarking"
+    }
+  }
 };
 
 // =========================================================================

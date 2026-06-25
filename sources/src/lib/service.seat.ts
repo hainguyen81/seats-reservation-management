@@ -124,7 +124,7 @@ export class SeatService {
                     return JSON.parse(cachedSeats);
                 }
             } catch (err) {
-                console.error(`📊 [Cache Miss - Redis Down | User: ${session?.userId}]: Fetching directly from database`, err);
+                console.warn(`📊 [Cache Miss - Redis Down | User: ${session?.userId}]: Fetching directly from database`);
             }
 
             // fecth seats from DB
@@ -134,7 +134,7 @@ export class SeatService {
             try {
                 await redis.setex(SEATS_CACHE_KEY, SEATS_CACHE_TTL, JSON.stringify(freshSeats));
             } catch (err) {
-                console.error(`📊 [Cache Miss - Redis Down | User: ${session?.userId}]: Could not cache the fetched 'AVAILABLE' seats`, err);
+                console.warn(`📊 [Cache Miss - Redis Down | User: ${session?.userId}]: Could not cache the fetched 'AVAILABLE' seats`);
             }
 
             return freshSeats;
@@ -218,7 +218,7 @@ export class SeatService {
             try {
                 await redis.del(SEATS_CACHE_KEY);
             } catch (e) {
-                console.error('📊 [Cache Miss - Redis Down]: [ HOLD ] Could not clear seats cache', e);
+                console.warn('📊 [Cache Miss - Redis Down]: [ HOLD ] Could not clear seats cache');
             }
 
             // audit
@@ -313,7 +313,7 @@ export class SeatService {
         });
 
         // Create Booking PENDING
-        return await tx.booking.create({
+        return tx.booking.create({
             data: {
                 userId: session.userId,
                 seatId: seatId,

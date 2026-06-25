@@ -8,19 +8,26 @@
     "prisma_generate": "prisma generate",
     "prisma_migrate": "prisma migrate deploy",
     "prisma_seed": "prisma db seed",
+    "prisma_seed_docker": "node prisma/dist/seed.js",
     "prisma_push_generate": "npm run prisma_push && npm run prisma_generate",
     "prisma_push_generate_seed": "npm run prisma_push_generate && npm run prisma_seed",
+    "prisma_push_generate_seed_docker": "npm run prisma_push_generate && npm run prisma_seed_docker",
+
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "build_start": "npm run build && npm run start",
+    
     "dev_prisma": "npm run prisma_push_generate && npm run dev",
     "dev_seed": "npm run prisma_push_generate_seed && npm run dev",
+    
     "prod_prisma_build_start": "npm run prisma_push_generate && npm run build_start",
     "prod_seed_build_start": "npm run prisma_push_generate_seed && npm run build_start",
+    "prod_seed_build_start_docker": "npm run prisma_push_generate_seed_docker && npm run build_start",
     "prod_prisma_start": "npm run prisma_push_generate && npm run start",
-    "prod_seed_start": "npm run prisma_push_generate_seed && npm run start"
+    "prod_seed_start": "npm run prisma_push_generate_seed && npm run start",
+    "prod_seed_start_docker": "npm run prisma_push_generate_seed_docker && npm run start"
   },
   "dependencies": {
     "@prisma/client": "^5.10.0",
@@ -48,6 +55,6 @@
     "typescript": "5.9.3"
   },
   "prisma": {
-    "seed": "node prisma/dist/seed.js"
+    "seed": "npx tsx prisma/seed.ts"
   }
 }

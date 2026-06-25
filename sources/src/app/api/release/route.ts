@@ -10,5 +10,6 @@ import { seatService } from '@/lib/service.seat';
 
 export async function POST(req: Request) {
     const session = await verifyAccessToken();
-    return NextResponse.json(seatService.release(session, req));
+    const response = await seatService.release(session, req);
+    return NextResponse.json(response);
 }
