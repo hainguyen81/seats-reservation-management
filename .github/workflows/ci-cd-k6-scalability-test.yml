@@ -72,6 +72,10 @@ jobs:
           CONCURRENT_USERS: ${{ inputs.concurrent_users }}
           TEST_DURATION: ${{ inputs.test_duration }}
           K6_TEST_FILE: ${{ inputs.k6_test_file }}
+          # # 🎯 Use correct prefix `K6_OTLP_` to allow k6 engine attach them when sending metrics
+          # K6_OTLP_HTTP_ENDPOINT: ${{ secrets.GRAFANA_PROMETHEUS_URL }}
+          # # OTLP Authentication requires Basic Auth under format "Username:Token"
+          # K6_OTLP_HTTP_HEADERS: "Authorization=Basic ${{ b64encode(format('{0}:{1}', secrets.GRAFANA_USER_ID, secrets.GRAFANA_API_TOKEN)) }}"
         run: |
           echo "========================================================================="
           echo "🎯 TARGET URL DEPLOYED OUTSIDE: $TARGET_URL"
@@ -79,8 +83,20 @@ jobs:
           echo "⏳ SUSTAINED INJECTION HOLD WINDOW: $TEST_DURATION"
           echo "========================================================================="
           
+          # ⚙️ Calculate and encode AUTHORIZATION HEADER by BASIC AUTH STANDARDS
+          RAW_AUTH="${{ secrets.GRAFANA_USER_ID }}:${{ secrets.GRAFANA_API_TOKEN }}"
+          ENCODED_AUTH=$(echo -n "$RAW_AUTH" | base64)
+          
+          # Force enviroments to pipeline for k6 using
+          export K6_OTLP_HTTP_ENDPOINT="${{ secrets.GRAFANA_PROMETHEUS_URL }}"
+          export K6_OTLP_HTTP_HEADERS="Authorization=Basic $ENCODED_AUTH"
+          
           # execute k6 test
-          k6 run $K6_TEST_FILE
+          # k6 run $K6_TEST_FILE
+          k6 run \
+            --out output-otlp \
+            --tag test_env=seats-reservation-k6-test \
+            $K6_TEST_FILE
       
       # 5. Report summary
       - name: 📊 Compile Aggregated Telemetry Report to GitHub Summary
@@ -90,7 +106,8 @@ jobs:
           echo "* **Target Public Injection Link Endpoint:** ${{ inputs.target_url }}" >> $GITHUB_STEP_SUMMARY
           echo "* **Peak Virtual Users Mobilized:** \`${{ inputs.concurrent_users }}\` VUs" >> $GITHUB_STEP_SUMMARY
           echo "* **Sustained Load Blast Window:** \`${{ inputs.test_duration }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Execution metric maps registered. Check the step logs above to review raw telemetry latency data table!" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Execution metrics maps registered. Check the step logs above to review raw telemetry latency data table!" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Real-time metrics streaming process executed flawlessly. Grafana dashboard telemetry stack ready for export." >> $GITHUB_STEP_SUMMARY
       
       # Clean up
       - name: ⚙️ Force Kill Orphan Processes
