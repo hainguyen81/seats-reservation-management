@@ -14,5 +14,5 @@ export async function POST(req: Request) {
 
     // release seat as `AVAILABLE`
     const response = await seatService.singleRelease(session, req);
-    return NextResponse.json(response);
+    return NextResponse.json(response, { status: response?.status || 500 });
 }

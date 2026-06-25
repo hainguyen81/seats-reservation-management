@@ -5,5 +5,5 @@ import { seatService } from '@/lib/service.seat';
 export async function GET() {
     const session = await verifyAccessToken();
     const response = await seatService.fetch(session);
-    return NextResponse.json(response);
+    return NextResponse.json(response, { status: response?.status || 500 });
 }

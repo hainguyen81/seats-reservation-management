@@ -115,7 +115,13 @@ export class SeatService {
     } | {
         userId: string;
         email: any;
-    }) {
+    }): Promise<{
+        data?: any;
+        status?: number;
+    } | {
+        error?: string;
+        status?: number;
+    }> {
         try {
             // 🕵️ CACHE READ: check from Redis Cache
             try {
@@ -137,7 +143,7 @@ export class SeatService {
                 console.warn(`📊 [Cache Miss - Redis Down | User: ${session?.userId}]: Could not cache the fetched 'AVAILABLE' seats`);
             }
 
-            return freshSeats;
+            return { data: freshSeats, status: 200 };
         } catch (error: any) {
             return { error: error.message, status: 500 };
         }
@@ -185,6 +191,7 @@ export class SeatService {
     ): Promise<{
         success?: boolean;
         expiresAt?: string;
+        status?: number;
     } | {
         error?: string;
         status?: number;
@@ -229,7 +236,7 @@ export class SeatService {
                 status: 'SUCCESS',
                 req
             });
-            return { success: true, expiresAt: result.expiresAt.toISOString() };
+            return { success: true, expiresAt: result.expiresAt.toISOString(), status: 200 };
         } catch (error: any) {
             // 💡 CACHE CONCURRENCY VIOLATION:
             // if error is P2025, it means WHERE (id + old version) didn't exist;
@@ -337,6 +344,7 @@ export class SeatService {
     ): Promise<{
         success?: boolean;
         expiresAt?: string;
+        status?: number;
     } | {
         error?: string;
         status?: number;
@@ -364,7 +372,7 @@ export class SeatService {
                 status: 'SUCCESS',
                 req
             });
-            return { success: true };
+            return { success: true, status: 200 };
         } catch (error: any) {
             // 💡 CACHE CONCURRENCY VIOLATION:
             // if error is P2025, it means WHERE (id + old version) didn't exist;
@@ -442,6 +450,7 @@ export class SeatService {
     ): Promise<{
         success?: boolean;
         expiresAt?: string;
+        status?: number;
     } | {
         error?: string;
         status?: number;
@@ -503,7 +512,7 @@ export class SeatService {
                 details: { mockPaymentSuccess },
                 req
             });
-            return { success: true };
+            return { success: true, status: 200 };
         } catch (error: any) {
             // =========================================================================
             // 🔥 RESERVE MUTEX RAM (ATOMIC DYNAMIC COMPENSATING TRANSACTION)
@@ -634,6 +643,7 @@ export class SeatService {
         releasedCount?: number;
         releasedSeats?: string | string[];
         message?: string;
+        status?: number;
     } | {
         error?: string;
         status?: number;
@@ -687,6 +697,7 @@ export class SeatService {
                 releasedCount: result.count,
                 releasedSeats: result.seatIds,
                 message: `Successfully released ${result.count} expired seat reservations via global sweeper.`,
+                status: 200
             };
         } catch (error: any) {
             // audit

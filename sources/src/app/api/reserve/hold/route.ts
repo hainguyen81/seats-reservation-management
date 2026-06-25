@@ -10,5 +10,5 @@ export async function POST(req: Request) {
 
     // hold seat as `PENDING`
     const response = await seatService.hold(session, req);
-    return NextResponse.json(response);
+    return NextResponse.json(response, { status: response?.status || 500 });
 }
