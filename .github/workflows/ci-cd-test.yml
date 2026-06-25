@@ -165,7 +165,7 @@ jobs:
       run: |
         cd sources
         # build prisma
-        cp prisma/schema.postgres.prisma prisma/schema.prisma
+        cp prisma/schema.sqlite.prisma prisma/schema.prisma
         npm run prisma_esbuild
         # generate prisma and seed sample data
         cp prisma/schema.prisma prisma/dist/schema.prisma
