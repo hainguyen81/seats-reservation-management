@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { logEvent } from 'firebase/analytics';
 import { firebaseClientAnalytics } from '../lib/firebase-client';
 
@@ -176,7 +176,8 @@ export default function Home() {
     };
 
     // handle login
-    const handleLogin = async () => {
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
         if (!username.trim() || !password.trim()) {
             setMessage('⚠️ Please enter both username and password.');
             return;
