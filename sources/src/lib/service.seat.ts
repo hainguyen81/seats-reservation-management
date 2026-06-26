@@ -79,9 +79,9 @@ export class SeatService {
             });
             if (!lockedResult) {
                 // if RAM already wasn't locked (`PENDING`) before, fail-fast
-                console.warn(`- Could not update MUTEX from ${oldLockStatus} to ${newLockStatus}`);
+                console.warn(`- Could not update MUTEX from ${oldLockStatus} to ${newLockStatus} for seat ${seatId}`);
                 throw new Error(errorConflictCode, {
-                    cause: `- Could not update MUTEX from ${oldLockStatus} to ${newLockStatus}`
+                    cause: `- Could not update MUTEX from ${oldLockStatus} to ${newLockStatus} for seat ${seatId}`
                 });
             }
         } catch (breakerError: any) {
@@ -128,6 +128,7 @@ export class SeatService {
         data?: any;
     } | {
         status: number;
+        stack?: any,
         error?: string;
     }> {
         try {
@@ -138,7 +139,7 @@ export class SeatService {
                     return { data: JSON.parse(cachedSeats), status: 200 };
                 }
             } catch (err) {
-                // console.warn(`📊 [Cache Miss - Redis Down | User: ${session?.userId}]: Fetching directly from database`);
+                console.warn(`📊 [Cache Miss - Redis Down | User: ${session?.userId}]: Fetching directly from database`);
             }
 
             // fecth seats from DB
@@ -148,12 +149,12 @@ export class SeatService {
             try {
                 redis && await redis.setex(SEATS_CACHE_KEY, SEATS_CACHE_TTL, JSON.stringify(freshSeats));
             } catch (err) {
-                // console.warn(`📊 [Cache Miss - Redis Down | User: ${session?.userId}]: Could not cache the fetched 'AVAILABLE' seats`);
+                console.warn(`📊 [Cache Miss - Redis Down | User: ${session?.userId}]: Could not cache the fetched 'AVAILABLE' seats`);
             }
 
             return { data: freshSeats, status: 200 };
         } catch (error: any) {
-            return { error: error.message, status: 500 };
+            return { error: error.message, stack: error, status: 500 };
         }
     }
 
@@ -359,6 +360,7 @@ export class SeatService {
         expiresAt?: string;
     } | {
         status: number;
+        stack?: any;
         error?: string;
     }> {
         const { seatId } = await req.json();
@@ -400,6 +402,7 @@ export class SeatService {
                 });
                 return {
                     error: '[ P2025 ] Conflict: This seat state was modified. Refreshing dashboard.',
+                    stack: error,
                     status: 409
                 };
             }
@@ -413,7 +416,7 @@ export class SeatService {
                 details: { error: error.message },
                 req
             });
-            return { error: error.message, status: 500 };
+            return { error: error.message, stack: error, status: 500 };
         }
     }
 
@@ -464,6 +467,7 @@ export class SeatService {
         expiresAt?: string;
     } | {
         status: number;
+        stack?: any;
         error?: string;
     }> {
         const { seatIds, mockPaymentSuccess } = await req.json();
@@ -569,6 +573,7 @@ export class SeatService {
                 });
                 return {
                     error: '[ P2025 ] Conflict: This seat state was modified. Refreshing dashboard.',
+                    stack: error,
                     status: 409
                 };
             }
@@ -582,7 +587,7 @@ export class SeatService {
                 details: { error: error.message },
                 req
             });
-            return { error: error.message, status: 500 };
+            return { error: error.message, stack: error, status: 500 };
         }
     }
 
@@ -657,6 +662,7 @@ export class SeatService {
         message?: string;
     } | {
         status: number;
+        stack?: any;
         error?: string;
     }> {
         try {
@@ -712,7 +718,7 @@ export class SeatService {
                 details: { error: error.message },
                 req
             });
-            return { error: error.message, status: 500 };
+            return { error: error.message, stack: error, status: 500 };
         }
     }
 
