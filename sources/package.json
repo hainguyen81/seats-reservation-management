@@ -19,6 +19,8 @@
     "build_start": "npm run build && npm run start",
     "dev_prisma": "npm run prisma_push_generate && npm run dev",
     "dev_seed": "npm run prisma_push_generate_seed && npm run dev",
+    "dev_prisma_docker": "npm run prisma_push_generate && npm run build && npm run dev",
+    "dev_seed_docker": "npm run prisma_push_generate_seed_docker && npm run build && npm run dev",
     "prod_prisma_build_start": "npm run prisma_push_generate && npm run build_start",
     "prod_seed_build_start": "npm run prisma_push_generate_seed && npm run build_start",
     "prod_seed_build_start_docker": "npm run prisma_push_generate_seed_docker && npm run build_start",

@@ -51,13 +51,6 @@ jobs:
     steps:
     - name: 📥 Check out repository code
       uses: actions/checkout@v4
-      
-    # Change TS config to PROD
-    - name: ⚙️ Setup Typescript Config to PROD
-      if: success()                 # if previous step is successful
-      run: |
-        cd sources
-        cp tsconfig.prod.json tsconfig.json
 
     - name: ⚙️ Setup Node.js Environment
       if: success()                 # if previous step is successful
@@ -65,6 +58,20 @@ jobs:
       with:
         node-version: 22.14
         # cache: 'npm'
+    
+    - name: ⚙️ Configure Node for PROD Enviroment (Only Master)
+      if: success() && github.ref == 'refs/heads/master'      # if previous step is successful
+      run: |
+        cd sources
+        echo "NODE_ENV=production" >> $GITHUB_ENV
+        cp tsconfig.prod.json tsconfig.json
+        echo "🟢 Setup NODE_ENV=production for master branch"
+    
+    - name: ⚙️ Configure Node for Dev Enviroment (Except Master)
+      if: success() && github.ref != 'refs/heads/master'      # if previous step is successful
+      run: |
+        cd sources
+        cp tsconfig.dev.json tsconfig.json
 
     - name: 📦 Install Package Dependencies
       if: success()                 # if previous step is successful
