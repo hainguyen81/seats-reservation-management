@@ -24,8 +24,8 @@ services:
     container_name: seats-reservation-app
     image: seats-reservation-management:latest
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ${BUILD_CONTEXT:-.}
+      dockerfile: ${DOCKERFILE_PATH:-Dockerfile}
     ports:
       - "3000:3000"
     env_file:

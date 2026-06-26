@@ -5,30 +5,42 @@ set "DB=%~1"
 set "NO_CACHE=%~2"
 set "TAB=	"
 set DOCKER_COMPOSE_FOLDER=%~dp0
-set DOCKER_FILE_FOLDER=%DOCKER_COMPOSE_FOLDER%..
 
 set DOCKER_BUILDKIT=1
 set COMPOSE_DOCKER_CLI_BUILD=1
 
-REM go to root project folder to build image
-cd /d %DOCKER_FILE_FOLDER% > nul
+Rem Force using default context to apply the custom build context via environment, same as variables in compose file
+echo %TAB%- 🛡️ !!!IMPORTANT!!!: Force Docker using default context on local
+SET DOCKER_CONTEXT=default
+echo.
 
-echo %TAB%- Build and compose (%NO_CACHE%)
+Rem build enviroment - calculate the context path is the parent of current directory
+set BUILD_CONTEXT=./..
+set DOCKERFILE_PATH=Dockerfile
+echo %TAB%- ⚙️ Build Docker with context: %BUILD_CONTEXT_FOLDER% ^| Dockerfile^: %DOCKERFILE_PATH%
+echo.
+
+echo %TAB%- ⚙️ Build and compose (%NO_CACHE%)
 if /I "%DB%"=="postgres" (
+	REM --no-cache
 	if /I "%NO_CACHE%"=="--no-cache" (
-		docker compose -f %DOCKER_COMPOSE_FOLDER%\docker-compose-postgres.yml build --progress=plain --build-arg DATABASE_PROVIDER=postgres --no-cache && docker compose -f %DOCKER_COMPOSE_FOLDER%\docker-compose-postgres.yml up --force-recreate -d
+		docker compose --progress=plain -f docker-compose-postgres.yml build --build-arg DATABASE_PROVIDER=postgres --no-cache ^
+		&& docker compose -f docker-compose-postgres.yml up --force-recreate -d
 		goto :done
 	)
-	docker compose -f %DOCKER_COMPOSE_FOLDER%\docker-compose-postgres.yml build --progress=plain --build-arg DATABASE_PROVIDER=postgres && docker compose -f %DOCKER_COMPOSE_FOLDER%\docker-compose-postgres.yml up --force-recreate -d
+	docker compose --progress=plain -f docker-compose-postgres.yml build --build-arg DATABASE_PROVIDER=postgres ^
+	&& docker compose -f docker-compose-postgres.yml up --force-recreate -d
 	goto :done
 )
 
+REM --no-cache
 if /I "%NO_CACHE%"=="--no-cache" (
-	docker compose -f %DOCKER_COMPOSE_FOLDER%\docker-compose-sqlite.yml build --progress=plain --build-arg DATABASE_PROVIDER=sqlite --no-cache && docker compose -f %DOCKER_COMPOSE_FOLDER%\docker-compose-sqlite.yml up --force-recreate -d
+	docker compose --progress=plain -f docker-compose-sqlite.yml build --build-arg DATABASE_PROVIDER=sqlite --no-cache ^
+	&& docker compose -f docker-compose-sqlite.yml up --force-recreate -d
 	goto :done
 )
-docker compose -f %DOCKER_COMPOSE_FOLDER%\docker-compose-sqlite.yml build --progress=plain --build-arg DATABASE_PROVIDER=sqlite && docker compose -f %DOCKER_COMPOSE_FOLDER%\docker-compose-sqlite.yml up --force-recreate -d
+docker compose --progress=plain -f docker-compose-sqlite.yml build --build-arg DATABASE_PROVIDER=sqlite ^
+&& docker compose -f docker-compose-sqlite.yml up --force-recreate -d
 
 :done
-cd /d %DOCKER_COMPOSE_FOLDER% > nul
 pause
