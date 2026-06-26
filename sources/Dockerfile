@@ -25,6 +25,7 @@ RUN echo "-------------------------------------------------" && \
 
 # Copy package (from host folder to workdir)
 COPY package.json package-lock.json* ./
+COPY tsconfig*.json* ./
 
 # Copy Prisma (from host folder to workdir) to generate Client
 COPY /prisma ./prisma
@@ -120,7 +121,10 @@ RUN if [ "$NODE_ENV" = "production" ]; then \
 RUN echo "✅ Build verification..." && \
   test -f .next/standalone/server.js && echo "✅ server.js found" || echo "❌ server.js NOT found" && \
   test -f package.json && echo "✅ package.json found" || echo "❌ package.json NOT found" && \
-  test -f prisma/dist/seed.js && echo "✅ prisma/dist/seed.js found" || echo "❌ prisma/dist/seed.js NOT found"
+  test -f prisma/dist/seed.js && echo "✅ prisma/dist/seed.js found" || echo "❌ prisma/dist/seed.js NOT found" && \
+  test -f tsconfig.prod.json && echo "✅ tsconfig.prod.json found" || echo "❌ tsconfig.prod.json NOT found" && \
+  test -f tsconfig.dev.json && echo "✅ tsconfig.dev.json found" || echo "❌ tsconfig.dev.json NOT found" && \
+  test -f tsconfig.json && echo "✅ tsconfig.json found" || echo "❌ tsconfig.json NOT found"
 
 # ===================================================
 # STEP 3: Start application on Production (Image)
@@ -163,6 +167,7 @@ RUN addgroup --system --gid 1001 nodejs && \
 
 # Copy package.json from builder layer
 COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/tsconfig*.json ./
 
 # Copy next built standalone from builder layer
 COPY --from=builder /app/.next/standalone ./
@@ -195,7 +200,10 @@ USER nextjs
 RUN echo "✅ Run verification..." && \
   test -f .next/standalone/server.js && echo "✅ server.js found" || echo "❌ server.js NOT found" && \
   test -f package.json && echo "✅ package.json found" || echo "❌ package.json NOT found" && \
-  test -f prisma/dist/seed.js && echo "✅ prisma/dist/seed.js found" || echo "❌ prisma/dist/seed.js NOT found"
+  test -f prisma/dist/seed.js && echo "✅ prisma/dist/seed.js found" || echo "❌ prisma/dist/seed.js NOT found" && \
+  test -f tsconfig.prod.json && echo "✅ tsconfig.prod.json found" || echo "❌ tsconfig.prod.json NOT found" && \
+  test -f tsconfig.dev.json && echo "✅ tsconfig.dev.json found" || echo "❌ tsconfig.dev.json NOT found" && \
+  test -f tsconfig.json && echo "✅ tsconfig.json found" || echo "❌ tsconfig.json NOT found"
 
 # expose container port
 EXPOSE 3000

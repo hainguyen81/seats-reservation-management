@@ -12,4 +12,4 @@ echo.
 echo -------------------------------------------------
 echo ► Start server on Local (http://localhost:3000)
 echo -------------------------------------------------
-npm run prod
+npm run build_start

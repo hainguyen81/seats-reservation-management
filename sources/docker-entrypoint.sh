@@ -29,16 +29,8 @@ fi
 
 if [ "$NODE_ENV" = "production" ]; then
   echo "▶ [ PRODUCTION MODE ] Executing core standalone server..."
-  if [ "$SHOULD_SEED" = "true" ]; then
-    npm run prod_seed_start_docker
-  else
-    npm run prod_prisma_start
-  fi
+  npm run build_start
 else
   echo "▶ [ DEVELOPMENT MODE ] Executing core standalone server..."
-  if [ "$SHOULD_SEED" = "true" ]; then
-    npm run dev_seed_docker
-  else
-    npm run dev_prisma_docker
-  fi
+  npm run dev
 fi

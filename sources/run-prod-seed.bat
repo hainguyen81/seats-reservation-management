@@ -12,5 +12,5 @@ echo.
 echo -------------------------------------------------
 echo ► Start server on Local (http://localhost:3000)
 echo -------------------------------------------------
-npm run prod_seed
+npm run prisma_push_generate_seed && npm run build_start
 
