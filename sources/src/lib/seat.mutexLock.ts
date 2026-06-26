@@ -40,12 +40,13 @@ export class LocalSeatMutexManager {
     public unlock(uniqueId: string, seatId: string, seatStatus: string): boolean {
         const targetKey = this.generateSeatKey(uniqueId, seatId);
         const rawMap = this.mutex.data();
+        const presentLockStatus = rawMap.get(targetKey) ? String(rawMap.get(targetKey)).trim() : null;
 
         // Safety guard: Only allowed to unlock if the seat state is explicitly 'HELD'
-        if (rawMap.get(targetKey) === seatStatus) {
+        if ((presentLockStatus || '').length && presentLockStatus === seatStatus) {
             return this.mutex.unlock(targetKey);
         }
-        return false;
+        return !(presentLockStatus || '').length;
     }
 
     /**
@@ -60,12 +61,15 @@ export class LocalSeatMutexManager {
     /**
      * 🏆 RESERVE ACTION: Upgrade a temporary 'HELD' state to a permanent 'RESERVED' state
      */
-    public updateLock(uniqueId: string, seatId: string, oldSeatStatus: string, newSeatStatus: string): boolean {
+    public updateLock(uniqueId: string, seatId: string, oldSeatStatus: string, newSeatStatus: string, ttl: number = 10000): boolean {
         const targetKey = this.generateSeatKey(uniqueId, seatId);
         const rawMap = this.mutex.data();
+        const presentLockStatus = rawMap.get(targetKey) ? String(rawMap.get(targetKey)).trim() : null;
 
-        if ((newSeatStatus || '').length && String(rawMap.get(targetKey)).trim() === oldSeatStatus) {
+        if ((presentLockStatus || '').length && ((newSeatStatus || '').length && presentLockStatus === oldSeatStatus)) {
             return this.mutex.updateLock(targetKey, newSeatStatus.trim());
+        } else if (!(presentLockStatus || '').length && ((newSeatStatus || '').length)) {
+            return this.mutex.lock(targetKey, newSeatStatus, ttl);
         }
         return false;
     }
@@ -92,9 +96,10 @@ export class LocalSeatMutexManager {
     }
     public dataKey(uniqueId: string, key: string): any {
         const mutexKey = this.generateSeatKey(uniqueId, key);
-        return [...this.mutex.data()].find(([key, value]) => {
+        const dataByKey = [...this.mutex.data()].find(([key, value]) => {
             return (key || '').toString() === mutexKey;
         }).map(v => v);
+        return dataByKey.length ? dataByKey[0] : null;
     }
 
     /**

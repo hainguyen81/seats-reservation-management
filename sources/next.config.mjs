@@ -3,12 +3,14 @@ import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const productionMode = process.env.NODE_ENV === "production";
+console.warn('Next.js: PRODUCTION Mode ?.', productionMode);
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "standalone",
+  output: productionMode ? "standalone" : undefined,
   images: {
-    unoptimized: true,
+    unoptimized: !productionMode,
   },
   typescript: {
     ignoreBuildErrors: true,
@@ -16,10 +18,22 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // for hot-reload
+  productionBrowserSourceMaps: true,
+  // debugging
+  logging: {
+    fetches: {
+      fullUrl: !productionMode,
+    },
+  },
 
   // 💡 alias webpack because docker build for production
-  webpack: (config) => {
+  webpack: (config, { dev, isServer }) => {
     config.resolve.alias["@"] = path.resolve(__dirname, "src");
+    // if (dev) {
+    //   // map source correct in DEV enviroment
+    //   config.devtool = isServer ? "eval-source-map" : "cheap-module-source-map";
+    // }
     return config;
   },
 };

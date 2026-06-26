@@ -17,29 +17,31 @@ const REDIS_TTL_SECONDS = REDIS_TTL ? parseInt(REDIS_TTL, 10) : 3;
 const SEATS_CACHE_TTL = REDIS_TTL_SECONDS; // 💡 expired in 3 seconds
 const MUTEX_GROUP_KEY = 'default';
 const SEATS_CACHE_KEY = 'seat_matrix_layout';
+const MUTEX_LOCK_TTL = 10000;
 
 export class SeatService {
 
     private async lockSeatMutex(seatId: string, lockStatus: string) {
-        let isLockedInRam = false;
         const errorConflictCode = 'CONFLICT_SEAT_LOCKED_IN_RAM';
-        const mutexLockInRamFn: Function = (): boolean => seatMutexLock.lock(MUTEX_GROUP_KEY, seatId, lockStatus, 10000);
+        const mutexLockInRamFn: Function = (s: string, lockedValue: string): boolean => {
+            return seatMutexLock.lock(MUTEX_GROUP_KEY, s, lockedValue, MUTEX_LOCK_TTL);
+        };
         try {
-            const ramLockAcquired = await redisBreaker.execute(async () => {
-                return mutexLockInRamFn(); // lock seat as example `PENDING` in 10 seconds
+            const lockedResult = await redisBreaker.execute(async () => {
+                return mutexLockInRamFn(seatId, lockStatus); // lock seat as example `PENDING` in 10 seconds
             });
-            if (!ramLockAcquired) {
-                console.warn(`[ MUTEX ${lockStatus} ] Present Mutex: ${seatMutexLock.dataKey(MUTEX_GROUP_KEY, seatId)}`);
+            if (!lockedResult) {
                 // if RAM already locked (`PENDING`) before, fail-fast
-                throw new Error(errorConflictCode);
+                throw new Error(errorConflictCode, {
+                    cause: `- Could not lock MUTEX ${lockStatus} for seat ${seatId}`
+                });
             }
-            isLockedInRam = true;
         } catch (breakerError: any) {
             // if Circuit Breaker is OPEN (Redis broken), or seat was kept in RAM
-            if (breakerError.message === errorConflictCode || !isLockedInRam) {
+            if (breakerError.message === errorConflictCode) {
                 return {
-                    error: `[ MUTEX ${lockStatus} ] Race condition '${errorConflictCode}' mitigated: 
-                            This seat is concurrently locked at host memory tier!`,
+                    error: `[ MUTEX ${lockStatus} ] Race condition '${errorConflictCode}' mitigated: This seat is concurrently locked at host memory tier. Cause: ${breakerError?.cause}`,
+                    stack: breakerError,
                     status: 409
                 };
             }
@@ -49,41 +51,45 @@ export class SeatService {
             // So force calling RAM mutex directly, bypass Redis!
             console.warn(`[CIRCUIT BREAKER OPENED / REDIS DEAD] Initiating emergency local execution loop. Reason: ${breakerError.message}`);
             // Force calling mutex in Pod's RAM
-            const emergencyLockAcquired = mutexLockInRamFn();
-            if (!emergencyLockAcquired) {
+            const tryToLockedResult = mutexLockInRamFn(seatId, lockStatus);
+            if (!tryToLockedResult) {
                 // still be error
                 return {
-                    error: `[ MUTEX ${lockStatus} ] Fallback Gatekeeper: Seat is locked on this runtime container pod node!`,
+                    error: `[ MUTEX ${lockStatus} ] Fallback Gatekeeper: Seat is locked on this runtime container pod node. Present Mutex: ${tryToLockedResult?.present}`,
+                    stack: breakerError,
                     status: 409
                 };
             }
 
             // locked seat in RAM successful
-            isLockedInRam = true;
             console.log(`[ RESILIENCE MUTEX SUCCESS ${lockStatus} ] Seat ${seatId} successfully secured under degraded in-memory local state layout!`);
         }
         return null;
     }
 
     private async updateLockSeatMutex(seatId: string, oldLockStatus: string, newLockStatus: string) {
-        let isLockedInRam = false;
         const errorConflictCode = 'INVALID_SEAT_STATE_FOR_RESERVATION';
-        const mutexUpdateLockInRamFn: Function = (): boolean => seatMutexLock.updateLock(MUTEX_GROUP_KEY, seatId, oldLockStatus, newLockStatus);
+        const mutexUpdateLockInRamFn: Function = (s: string, o: string, n: string): boolean => {
+            return seatMutexLock.updateLock(MUTEX_GROUP_KEY, s, o, n, MUTEX_LOCK_TTL);
+        };
         try {
-            const ramLockAcquired = await redisBreaker.execute(async () => {
-                return mutexUpdateLockInRamFn(); // update lock seat as example `PENDING` --> `BOOKED` in 10 seconds
+            const lockedResult = await redisBreaker.execute(async () => {
+                // update lock seat as example `PENDING` --> `BOOKED` in 10 seconds
+                return mutexUpdateLockInRamFn(seatId, oldLockStatus, newLockStatus);
             });
-            if (!ramLockAcquired) {
+            if (!lockedResult) {
                 // if RAM already wasn't locked (`PENDING`) before, fail-fast
-                console.warn(`[ MUTEX | OLD: ${oldLockStatus} | NEW: ${newLockStatus} ] Present Mutex: ${seatMutexLock.dataKey(MUTEX_GROUP_KEY, seatId)}`);
-                throw new Error(errorConflictCode);
+                console.warn(`- Could not update MUTEX from ${oldLockStatus} to ${newLockStatus}`);
+                throw new Error(errorConflictCode, {
+                    cause: `- Could not update MUTEX from ${oldLockStatus} to ${newLockStatus}`
+                });
             }
-            isLockedInRam = true;
         } catch (breakerError: any) {
             // if Circuit Breaker is OPEN (Redis broken), or seat was kept in RAM
-            if (breakerError.message === errorConflictCode || !isLockedInRam) {
+            if (breakerError.message === errorConflictCode) {
                 return {
-                    error: `[ MUTEX | OLD: ${oldLockStatus} | NEW: ${newLockStatus} ] Invalid operation '${errorConflictCode}': This seat cannot be reserved because it is not currently held by any session!`,
+                    error: `[ MUTEX | OLD: ${oldLockStatus} | NEW: ${newLockStatus} ] Invalid operation '${errorConflictCode}': This seat cannot be reserved because it is not currently held by any session. Cause: ${breakerError?.cause}`,
+                    stack: breakerError,
                     status: 400
                 };
             }
@@ -93,17 +99,17 @@ export class SeatService {
             // So force calling RAM mutex directly, bypass Redis!
             console.warn(`[CIRCUIT BREAKER OPENED] Redis dead on Reserve. Forcing direct local emergency memory check. Reason: ${breakerError.message}`);
             // Force calling mutex in Pod's RAM
-            const emergencyLockAcquired = mutexUpdateLockInRamFn();
-            if (!emergencyLockAcquired) {
+            const lockedResult = mutexUpdateLockInRamFn(seatId, oldLockStatus, newLockStatus);
+            if (!lockedResult) {
                 // still be error
                 return {
-                    error: `[ MUTEX | OLD: ${oldLockStatus} | NEW: ${newLockStatus} ] Fallback Gatekeeper: Seat is locked on this runtime container pod node!`,
+                    error: `[ MUTEX | OLD: ${oldLockStatus} | NEW: ${newLockStatus} ] Fallback Gatekeeper: Seat is locked on this runtime container pod node. Present Mutex: ${lockedResult?.oldLocked}`,
+                    stack: breakerError,
                     status: 400
                 };
             }
 
             // locked seat in RAM successful
-            isLockedInRam = true;
             console.log(`[ RESILIENCE MUTEX SUCCESS | OLD: ${oldLockStatus} | NEW: ${newLockStatus} ] Seat ${seatId} successfully secured under degraded in-memory local state layout!`);
         }
         return null;
@@ -127,12 +133,12 @@ export class SeatService {
         try {
             // 🕵️ CACHE READ: check from Redis Cache
             try {
-                const cachedSeats = await redis.get(SEATS_CACHE_KEY);
+                const cachedSeats = redis ? await redis.get(SEATS_CACHE_KEY) : null;
                 if (cachedSeats) {
                     return { data: JSON.parse(cachedSeats), status: 200 };
                 }
             } catch (err) {
-                console.warn(`📊 [Cache Miss - Redis Down | User: ${session?.userId}]: Fetching directly from database`);
+                // console.warn(`📊 [Cache Miss - Redis Down | User: ${session?.userId}]: Fetching directly from database`);
             }
 
             // fecth seats from DB
@@ -140,9 +146,9 @@ export class SeatService {
 
             // 💡 CACHE WRITE: cache AVAILABLE seats expired in 3 seconds
             try {
-                await redis.setex(SEATS_CACHE_KEY, SEATS_CACHE_TTL, JSON.stringify(freshSeats));
+                redis && await redis.setex(SEATS_CACHE_KEY, SEATS_CACHE_TTL, JSON.stringify(freshSeats));
             } catch (err) {
-                console.warn(`📊 [Cache Miss - Redis Down | User: ${session?.userId}]: Could not cache the fetched 'AVAILABLE' seats`);
+                // console.warn(`📊 [Cache Miss - Redis Down | User: ${session?.userId}]: Could not cache the fetched 'AVAILABLE' seats`);
             }
 
             return { data: freshSeats, status: 200 };
@@ -196,6 +202,7 @@ export class SeatService {
         expiresAt?: string;
     } | {
         status: number;
+        stack?: any;
         error?: string;
     }> {
         const { seatId } = await req.json();
@@ -241,6 +248,7 @@ export class SeatService {
             });
             return { success: true, expiresAt: result.expiresAt.toISOString(), status: 200 };
         } catch (error: any) {
+            debugger;
             // 💡 CACHE CONCURRENCY VIOLATION:
             // if error is P2025, it means WHERE (id + old version) didn't exist;
             // because other Pod/Request already changed version.
@@ -256,6 +264,7 @@ export class SeatService {
                 });
                 return {
                     error: '[ P2025 ] Race condition detected: This seat was captured by another user at the same millisecond!',
+                    stack: error,
                     status: 409
                 };
             }
@@ -269,7 +278,7 @@ export class SeatService {
                 details: { error: error.message },
                 req
             });
-            return { error: error.message, status: 500 };
+            return { error: error.message, stack: error, status: 500 };
         } finally {
             // unlock mutex in RAM
             if (!mutexLockError || !(mutexLockError?.error || '').length) {

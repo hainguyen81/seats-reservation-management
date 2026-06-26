@@ -1,7 +1,9 @@
 import Redis, { RedisOptions } from 'ioredis';
-import { handleAll, circuitBreaker, ICircuitBreakerOptions, CircuitBreakerPolicy, SamplingBreaker } from 'cockatiel';
+import { handleAll, circuitBreaker, CircuitBreakerPolicy, SamplingBreaker } from 'cockatiel';
 
-const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+// Redis URL. Ex: redis://localhost:6379
+// const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+const redisUrl = process.env.REDIS_URL;
 const retriesPerRequest = process.env.REDIS_RETIES_PER_REQUEST ? parseInt(process.env.REDIS_RETIES_PER_REQUEST) : 1;
 const connTimeout = process.env.REDIS_CONN_TIMEOUT ? parseInt(process.env.REDIS_CONN_TIMEOUT) : 2000;
 const redisOpts: RedisOptions = {
@@ -28,7 +30,7 @@ const globalForRedis = globalThis as unknown as {
 // 🧩 SINGLETON REDIS CONNECTION POOL WITH CONFIGURATION
 // =========================================================================
 // Graceful Error Interception
-if (!globalForRedis.redis) {
+if ((redisUrl || '').length && !globalForRedis.redis) {
     // INITIALIZE HIGH-PERFORMANCE REDIS CONNECTION POOL
     const instance = new Redis(redisUrl, redisOpts);
 

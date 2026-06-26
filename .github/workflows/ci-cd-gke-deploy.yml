@@ -132,6 +132,13 @@ jobs:
         if: success()                 # if previous step is successful
         uses: actions/checkout@v4
       
+      # 2.1 - change TS config to PROD
+      - name: ⚙️ Setup Typescript Config to PROD
+        if: success()                 # if previous step is successful
+        run: |
+          cd sources
+          cp tsconfig.prod.json tsconfig.json
+      
       # 3. Login to Google Cloud by Google OAuth2 ADC
       - name: 🔑 Authenticate to Google Cloud via Google OAuth2 ADC
         if: success()                 # if previous step is successful

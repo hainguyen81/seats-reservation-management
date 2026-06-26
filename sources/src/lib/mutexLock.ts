@@ -19,6 +19,7 @@ export class LocalMutexManager {
      * Core execution thread to acquire a clean in-memory lock
      */
     public lock(key: any, value: any, ttl: number = 10000): boolean {
+        debugger;
         if (this.activeLocks.has(key)) {
             return false; // Collision detected, lock is currently busy
         }
@@ -46,9 +47,8 @@ export class LocalMutexManager {
                 this.timeouts.delete(key);
             }
             this.activeLocks.delete(key);
-            return true;
         }
-        return false;
+        return true;
     }
 
     /**

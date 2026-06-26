@@ -73,6 +73,13 @@ jobs:
       - name: ⬇️ Checkout Source Code
         if: success()                 # if previous step is successful
         uses: actions/checkout@v4
+      
+      # Change TS config to PROD
+      - name: ⚙️ Setup Typescript Config to PROD
+        if: success()                 # if previous step is successful
+        run: |
+          cd sources
+          cp tsconfig.prod.json tsconfig.json
 
       # Login docker
       - name: 🔓 Log in to Docker Hub

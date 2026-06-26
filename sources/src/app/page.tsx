@@ -123,21 +123,36 @@ export default function Home() {
         // 🔥 IMMUTABLE STATE MUTATION: Instantly lock down the button on the UI layer
         const isCurrentlySelectedByMe = currentSelectedStrings.includes(targetSeatString);
         processSeat(targetSeatString, true);
+
+        const unselectSeat = (seatId) => {
+            setSelectedSeats((prev) => prev.map(id => String(id).trim()).filter((id) => id !== seatId));
+        };
+        const selectSeat = (seatId) => {
+            setSelectedSeats((prev) => [...prev.map(id => String(id).trim()), seatId]);
+        };
+        const revertSeatSelection = (seatId, hold: boolean) => {
+            hold && unselectSeat(seatId);
+            !hold && selectSeat(seatId);
+        };
+        const handleProcessSeat = (data, seatId, hold: boolean) => {
+            if (!data?.success || (data?.error || '').length) {
+                // revert seat selection status
+                revertSeatSelection(seatId, hold);
+                setMessage(hold ? `❌ Failed to reserve seat: ${data?.error || 'Unknown Error'}`
+                    : `❌ Failed to release seat: ${data?.error || 'Unknown Error'}`);
+            } else {
+                setMessage(hold ? '✅ Seat reserved successfully.' : '✅ Seat released successfully.');
+            }
+            processSeat(seatId, false);
+        };
+
         try {
             if (isCurrentlySelectedByMe) {
                 // ===================================================
                 // 🔓 RELEASE
                 // ===================================================
                 setMessage('⏳ Releasing seat reservation...');
-                setSelectedSeats((prev) => prev.map(id => String(id).trim()).filter((id) => id !== targetSeatString));
-                const releaseSeat = (data, seatId) => {
-                    if (!data?.success || (data?.error || '').length) {
-                        setMessage(`❌ Failed to release seat: ${data?.error || 'Unknown Error'}`);
-                    } else {
-                        setMessage('✅ Seat released successfully.');
-                    }
-                    processSeat(seatId, false);
-                };
+                unselectSeat(targetSeatString);
                 await fetch('/api/reserve/release-single', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -158,14 +173,14 @@ export default function Home() {
                         return res.json();
                     }).then(seats => {
                         setSeats(seats.data);
-                        releaseSeat(data, targetSeatString);
+                        handleProcessSeat(data, targetSeatString, false);
 
                     }).catch(error2 => {
-                        releaseSeat({ error: error2 }, targetSeatString);
+                        handleProcessSeat({ error: error2 }, targetSeatString, false);
                     });
 
                 }).catch(error => {
-                    releaseSeat({ error: error }, targetSeatString);
+                    handleProcessSeat({ error: error }, targetSeatString, false);
                 });
 
             } else {
@@ -173,18 +188,7 @@ export default function Home() {
                 // 🔒 HOLD: Reserve in expired minutes
                 // ===================================================
                 setMessage('⏳ Holding seat...');
-                setSelectedSeats((prev) => [...prev.map(id => String(id).trim()), targetSeatString]);
-                const holdSeat = (data, seatId) => {
-                    if (!data?.success || (data?.error || '').length) {
-                        setMessage(`❌ Failed to hold seat: ${data?.error || 'Unknown Error'}`);
-                    } else {
-                        setMessage('✅ Seat held successfully.');
-                        // reset expiry timer
-                        const secondsLeft = Math.floor((new Date(data.expiresAt).getTime() - Date.now()) / 1000);
-                        setTimeLeft(secondsLeft > 0 ? secondsLeft : 300);
-                    }
-                    processSeat(seatId, false);
-                };
+                selectSeat(targetSeatString);
                 await fetch('/api/reserve/hold', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -205,25 +209,20 @@ export default function Home() {
                             return res.json();
                         }).then(seats => {
                             setSeats(seats.data);
-                            holdSeat(data, targetSeatString);
+                            handleProcessSeat(data, targetSeatString, true);
 
                         }).catch(error2 => {
-                            holdSeat({ error: error2 }, targetSeatString);
+                            handleProcessSeat({ error: error2 }, targetSeatString, true);
                         });
                 
                 }).catch(error => {
-                    holdSeat({ error: error }, targetSeatString);
+                    handleProcessSeat({ error: error }, targetSeatString, true);
                 });
             }
         } catch (e) {
             console.error('Transactional communication fracture:', e);
             setMessage('Transactional communication fracture.');
-            if (isCurrentlySelectedByMe) {
-                setSelectedSeats((prev) => [...prev.map(id => String(id).trim()), targetSeatString]);
-            } else {
-                setSelectedSeats((prev) => prev.map(id => String(id).trim()).filter((id) => id !== targetSeatString));
-            }
-            processSeat(targetSeatString, false);
+            revertSeatSelection(targetSeatString, !isCurrentlySelectedByMe);
         }
     };
 

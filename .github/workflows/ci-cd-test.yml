@@ -51,6 +51,13 @@ jobs:
     steps:
     - name: 📥 Check out repository code
       uses: actions/checkout@v4
+      
+    # Change TS config to PROD
+    - name: ⚙️ Setup Typescript Config to PROD
+      if: success()                 # if previous step is successful
+      run: |
+        cd sources
+        cp tsconfig.prod.json tsconfig.json
 
     - name: ⚙️ Setup Node.js Environment
       if: success()                 # if previous step is successful
@@ -144,6 +151,12 @@ jobs:
     steps:
     - name: 📥 Check out repository code
       uses: actions/checkout@v4
+      
+    - name: ⚙️ Setup TS config for PROD
+      if: success()                 # if previous step is successful
+      run: |
+        cd sources
+        cp tsconfig.prod.json tsconfig.json
 
     - name: ⚙️ Setup Node.js Environment
       if: success()                 # if previous step is successful
@@ -157,6 +170,7 @@ jobs:
       # run: npm ci
       run: |
         cd sources
+        cp tsconfig.prod.json tsconfig.json
         npm install
         npm ci
 
