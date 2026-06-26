@@ -4,11 +4,12 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const productionMode = process.env.NODE_ENV === "production";
+const buildStandalone = process.env.BUILD_STANDALONE === "true";
 console.warn('Next.js: PRODUCTION Mode ?.', productionMode);
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: productionMode ? "standalone" : undefined,
+  output: productionMode || buildStandalone ? "standalone" : undefined,
   images: {
     unoptimized: !productionMode,
   },

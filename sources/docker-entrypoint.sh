@@ -14,23 +14,47 @@ fi
 
 # Check if schema files exist, copy if missing
 if [ "$DATABASE_PROVIDER" = "postgres" ]; then
-	[ -f prisma/schema.postgres.prisma ] && cp prisma/schema.postgres.prisma prisma/schema.prisma && cp prisma/schema.postgres.prisma prisma/dist/schema.prisma || echo "⚠️ schema.postgres.prisma not found"
+  if [ "$NODE_ENV" = "production" ]; then
+	  [ -f prisma/schema.postgres.prisma ] && cp prisma/schema.postgres.prisma prisma/schema.prisma && cp prisma/schema.postgres.prisma prisma/dist/schema.prisma || echo "⚠️ schema.postgres.prisma not found"
+  else
+    [ -f prisma/schema.postgres.prisma ] && cp prisma/schema.postgres.prisma prisma/schema.prisma || echo "⚠️ schema.postgres.prisma not found"
+  fi
 else
-	[ -f prisma/schema.sqlite.prisma ] && cp prisma/schema.sqlite.prisma prisma/schema.prisma && cp prisma/schema.sqlite.prisma prisma/dist/schema.prisma || echo "⚠️ schema.sqlite.prisma not found"
+  if [ "$NODE_ENV" = "production" ]; then
+	  [ -f prisma/schema.sqlite.prisma ] && cp prisma/schema.sqlite.prisma prisma/schema.prisma && cp prisma/schema.sqlite.prisma prisma/dist/schema.prisma || echo "⚠️ schema.sqlite.prisma not found"
+  else
+    [ -f prisma/schema.sqlite.prisma ] && cp prisma/schema.sqlite.prisma prisma/schema.prisma || echo "⚠️ schema.sqlite.prisma not found"
+  fi
 fi
 
+echo
 if [ "$SHOULD_SEED" = "true" ]; then
+  echo "-------------------------------------------------"
   echo "🏃 Seeding sample data (with seeding)..."
-  npm run prisma_push_generate_seed_docker
+  echo "-------------------------------------------------"
+  if [ "$NODE_ENV" = "production" ]; then
+    npm run prisma_push_generate_seed_docker
+  else
+    npm run prisma_push_generate_seed
+  fi
 else
+  echo "-------------------------------------------------"
   echo "🔄 Generate & Push Prisma (without seeding)..."
+  echo "-------------------------------------------------"
   npm run prisma_push_generate
 fi
 
+echo
 if [ "$NODE_ENV" = "production" ]; then
-  echo "▶ [ PRODUCTION MODE ] Executing core standalone server..."
-  npm run build_start
+  echo "-------------------------------------------------"
+  echo " 🚀 PRODUCTION MODE ACTIVE"
+  echo " ⚡ Optimizing performance & security..."
+  echo "-------------------------------------------------"
+  npm run start
 else
-  echo "▶ [ DEVELOPMENT MODE ] Executing core standalone server..."
+  echo "-------------------------------------------------"
+  echo " 🛠️  DEVELOPMENT MODE ACTIVE"
+  echo " 🐛 Debugging features enabled..."
+  echo "-------------------------------------------------"
   npm run dev
 fi

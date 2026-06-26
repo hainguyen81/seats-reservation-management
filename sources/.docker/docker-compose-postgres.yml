@@ -48,6 +48,9 @@ services:
     build:
       context: ${BUILD_CONTEXT:-.}
       dockerfile: ${DOCKERFILE_PATH:-Dockerfile}
+      args:
+          - BUILD_MODE=${BUILD_MODE:-production}
+          - DATABASE_PROVIDER=${DATABASE_PROVIDER:-postgres}
     ports:
       - "3000:3000"
     env_file:
