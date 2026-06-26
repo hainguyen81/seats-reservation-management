@@ -68,6 +68,7 @@ on:
             {
                 "name":     "seats-reservation-sqlite",
                 "env_vars": {
+                    "K8S_DEPLOYMENT_DB_PROVIDER": "sqlite",
                     "K8S_DEPLOYMENT_NAMESPACE":   "gke-seats-reservation-sqlite",
                     "K8S_DEPLOYMENT_NAME":        "seats-reservation-deployment",
                     "K8S_DEPLOYMENT_SERVICE":     "seats-reservation-service-lb",
@@ -78,6 +79,7 @@ on:
             {
                 "name":     "seats-reservation-postgres",
                 "env_vars": {
+                    "K8S_DEPLOYMENT_DB_PROVIDER": "postgres",
                     "K8S_DEPLOYMENT_NAMESPACE":   "gke-seats-reservation-postgres",
                     "K8S_DEPLOYMENT_NAME":        "seats-reservation-deployment",
                     "K8S_DEPLOYMENT_SERVICE":     "seats-reservation-service-lb",
@@ -341,9 +343,19 @@ jobs:
           context: ./sources
           file: ./sources/Dockerfile
           push: true
+          build-args: |
+            SERVICE_NAME=${{ matrix.service.name }}
+            DATABASE_PROVIDER=${{ matrix.service.env_vars.K8S_DEPLOYMENT_DB_PROVIDER }}
+            BUILD_MODE=${{ github.ref == 'refs/heads/master' && 'production' || 'dev' }}
           # tag image name must follow Google Artifact Registry Standards.
           # Ex: <region>-docker.pkg.dev/<GCP_PROJECT_ID>/<GCP Repository Name>/<Immutable K8s Image Name>:<unique SHA>
           tags: ${{ inputs.region }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ github.event.repository.name }}/${{ matrix.service.name }}:${{ github.sha }}
+          labels: |
+            org.opencontainers.image.title="Seats Reservation Management - ${{ matrix.service.name }} image"
+            org.opencontainers.image.description="Production-grade web application for seats reservation platform management."
+            org.opencontainers.image.vendor="hainguyenjc@gmail.com"
+            org.opencontainers.image.authors="${{ secrets.DOCKERHUB_USERNAME }}"
+            org.opencontainers.image.source="https://github.com{{ github.repository }}"
           cache-from: type=gha
           cache-to: type=gha,mode=max
       

@@ -170,6 +170,7 @@ jobs:
           build-args: |
             SERVICE_NAME=${{ matrix.service.name }}
             DATABASE_PROVIDER=${{ matrix.service.env_vars.DATABASE_PROVIDER }}
+            BUILD_MODE=${{ github.ref == 'refs/heads/master' && 'production' || 'dev' }}
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service.name }}:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service.name }}:${{ github.sha }}
