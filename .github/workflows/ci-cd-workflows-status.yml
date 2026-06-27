@@ -1,5 +1,7 @@
 name: ℹ️ [ GitHub CI/CD ] Update Workflows Latest Status
 
+run-name: "🚀 [${{ github.ref_name }}] Commit: ${{ github.event.head_commit.message || github.event.pull_request.title }}"
+
 on:
   workflow_run:
     # workflow names
@@ -119,7 +121,7 @@ jobs:
               if [ -n "$RUN_ID" ] && [ "$RUN_ID" != "null" ]; then
                 update_title "$RUN_ID" "$CONCLUSION" "$COMMIT_MSG"
               else
-                echo "---> ⚠️ Not found any running time of workflow '$TARGET_WF'."
+                echo "---> ⚠️ Not found any running time of workflow '$TARGET_WF' in history."
               fi
             done
           fi
