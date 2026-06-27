@@ -45,8 +45,11 @@ jobs:
           # -------------------------------------------------------------
           # Extract workflows list by SED/AWK
           # -------------------------------------------------------------
-          CLEAN_PATH=$(echo "${{ github.workflow_ref }}" | cut -d'@' -f1)
-          LOCAL_WF_PATH=".github/$(echo "$CLEAN_PATH" | awk -F'/.github/' '{print $2}')"
+          LOCAL_WF_PATH=".github/workflows/$(echo "${{ github.workflow }}" | sed 's/ /-/g').yml"
+          if [ ! -f "$LOCAL_WF_PATH" ]; then
+             CLEAN_PATH=$(echo "${{ github.workflow_ref }}" | cut -d'@' -f1)
+             LOCAL_WF_PATH=".github/workflows/$(basename "$CLEAN_PATH")"
+          fi
           echo "- 👷 Request Workflows to update from $LOCAL_WF_PATH"
           if [ ! -f "$LOCAL_WF_PATH" ]; then
              echo "-> ❌ Not found the workflows list from: $LOCAL_WF_PATH"
@@ -100,7 +103,10 @@ jobs:
               -H "Accept: application/vnd.github+json" \
               "https://github.com")
             # loop via workflows to update
-            for TARGET_WF in "${WORKFLOW_LIST[@]}"; do
+            IFS=$'\n'
+            for TARGET_WF in $RAW_LIST; do
+              unset IFS
+              TARGET_WF=$(echo "$TARGET_WF" | xargs)
               echo "-> 👷 Finding the latest running time: '$TARGET_WF'..."
               
               RUN_ID=$(echo "$RUN_DATA" | jq -r --arg name "$TARGET_WF" '.workflow_runs | map(select(.name == $name)) | .[0].id')
