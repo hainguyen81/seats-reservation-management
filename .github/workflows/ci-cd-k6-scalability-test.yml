@@ -1,4 +1,4 @@
-name: 📈 [ TEST ] Concurrency Stress Testing Loop (Pure k6 Load Injector)
+name: 📈 [ TEST ] Scalability k6 Stress Testing (Pure k6 Load Injector)
 
 on:
   # Allows manual triggering of this workflow directly from the GitHub Actions UI
