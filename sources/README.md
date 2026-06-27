@@ -1,6 +1,6 @@
 # Seats Reservation Platform
 
-| Workflow | Latest Running Status |
+| GitHubCI/CD Workflows | Latest Running Status(es) |
 | :--- | :--- |
 | **🚢 Seats Reservation Platform CI/CD Pipeline** | ![CI/CD Pipeline Status](https://github.com/hainguyen81/seats-reservation-management/actions/workflows/ci-cd-platform.yml/badge.svg) |
 | **🚀 [ TEST ] Seats Reservation Platform CI/CD Pipeline** | ![Automated End-to-End (E2E) Testing Status](https://github.com/hainguyen81/seats-reservation-management/actions/workflows/ci-cd-test.yml/badge.svg) |

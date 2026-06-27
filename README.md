@@ -1,6 +1,6 @@
 # Seats Reservation Platform
 
-| Workflow | Latest Running Status |
+| GitHubCI/CD Workflows | Latest Running Status(es) |
 | :--- | :--- |
 | **🚢 Seats Reservation Platform CI/CD Pipeline** | ![CI/CD Pipeline Status](https://github.com/hainguyen81/seats-reservation-management/actions/workflows/ci-cd-platform.yml/badge.svg) |
 
@@ -266,7 +266,7 @@ If a webhook payload contains malformed data or fails processing after maximum m
 
 The platform packages a production-ready **Playwright** automation suite to perform end-to-end regression testing on the core distributed business state machine.
 
-| Workflow | Latest Running Status |
+| GitHubCI/CD Workflows | Latest Running Status(es) |
 | :--- | :--- |
 | **🚀 [ TEST ] Seats Reservation Platform CI/CD Pipeline** | ![Automated End-to-End (E2E) Testing Status](https://github.com/hainguyen81/seats-reservation-management/actions/workflows/ci-cd-test.yml/badge.svg) |
 
@@ -305,7 +305,7 @@ npx playwright show-report
 
 This section documents the continuous integration and deployment pipeline configured via GitHub Actions. The workflow handles isolated unit/E2E testing, automated image compilation, safe registry pushes, and deployment rollback controls on Google Cloud Platform (GCP).
 
-| Workflow | Latest Running Status |
+| GitHubCI/CD Workflows | Latest Running Status(es) |
 | :--- | :--- |
 | **🐳 [ DOCKER IMAGE ] Seats Reservation Platform CI/CD Pipeline** | ![Docker Deployment Status](https://github.com/hainguyen81/seats-reservation-management/actions/workflows/ci-cd-docker-image.yml/badge.svg) |
 | **☁️ [ GCP Deployment ] Seats Reservation Platform CI/CD Pipeline** | ![GCP Deployment Status](https://github.com/hainguyen81/seats-reservation-management/actions/workflows/ci-cd-gcp-deploy.yml/badge.svg) |
@@ -398,7 +398,7 @@ To operate this automation workflow smoothly, you must configure the following k
 
 This section outlines the automated multi-environment cloud orchestration matrix designed to deploy, scale, and monitor the Next.js/Node 22 standalone application on a managed Google Kubernetes Engine (GKE) cluster.
 
-| Workflow | Latest Running Status |
+| GitHubCI/CD Workflows | Latest Running Status(es) |
 | :--- | :--- |
 | **☁️ [ GKE Deployment ] Seats Reservation Platform CI/CD Pipeline** | ![GKE Deployment Status](https://github.com/hainguyen81/seats-reservation-management/actions/workflows/ci-cd-gke-deploy.yml/badge.svg) |
 
@@ -440,7 +440,7 @@ To authenticate the pipeline against Google Cloud Platform (GCP) and safely prov
 
 This framework isolates and stresses the high-concurrency capability of the Kubernetes-deployed Next.js application, validating that data mutations remain transactionally safe under parallel read/write spikes.
 
-| Workflow | Latest Running Status |
+| GitHubCI/CD Workflows | Latest Running Status(es) |
 | :--- | :--- |
 | **📈 [ TEST ] Scalability k6 Stress Testing (Pure k6 Load Injector)** | ![Scalability k6 Stress Testing Status](https://github.com/hainguyen81/seats-reservation-management/actions/workflows/ci-cd-k6-scalability-test.yml/badge.svg) |
 
