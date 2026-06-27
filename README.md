@@ -4,11 +4,11 @@
 
 | Demo Versions | Demo Link(s) |
 | :--- | :--- |
-| **GCP SQLite Demo** | <!-- START-gcp-seats-reservation-sqlite --><span style="color: orange; font-style: italic;">In comming soon<span><!-- END-gcp-seats-reservation-sqlite --> |
-| **GCP Postgres Demo** | <!-- START-gcp-seats-reservation-sqlite --><span style="color: orange; font-style: italic;">In comming soon<span><!-- END-gcp-seats-reservation-sqlite --> |
+| **GCP SQLite Demo** | <!-- START-gcp-seats-reservation-sqlite --><span style="color: orange; font-style: italic;">Comming soon</span><!-- END-gcp-seats-reservation-sqlite --> |
+| **GCP Postgres Demo** | <!-- START-gcp-seats-reservation-sqlite --><span style="color: orange; font-style: italic;">Comming soon</span><!-- END-gcp-seats-reservation-sqlite --> |
 | --- | --- |
-| **GKE SQLite Demo** | <!-- START-gke-seats-reservation-sqlite --><span style="color: orange; font-style: italic;">In comming soon<span><!-- END-gke-seats-reservation-sqlite --> |
-| **GKE Postgres Demo** | <!-- START-gke-seats-reservation-sqlite --><span style="color: orange; font-style: italic;">In comming soon<span><!-- END-gke-seats-reservation-sqlite --> |
+| **GKE SQLite Demo** | <!-- START-gke-seats-reservation-sqlite --><span style="color: orange; font-style: italic;">Comming soon</span><!-- END-gke-seats-reservation-sqlite --> |
+| **GKE Postgres Demo** | <!-- START-gke-seats-reservation-sqlite --><span style="color: orange; font-style: italic;">Comming soon</span><!-- END-gke-seats-reservation-sqlite --> |
 
 ## 🌐 GitHub CI/CD Main Workflow
 

@@ -239,26 +239,19 @@ jobs:
           PUBLIC_URL=${{ steps.gcp_cloud_run_deployment_check.outputs.gcp_cloud_run_url }}
           
           # 2. Create the Markdown to update README
-          LINK_MARKDOWN="[$PUBLIC_URL]($PUBLIC_URL)<br>*Last updated: $(date -u) UTC*"
+          MARKDOWN_LINK="[$PUBLIC_URL]($PUBLIC_URL)"
+          LINK_MARKDOWN="${MARKDOWN_LINK} <br> *(Last updated: $(date -u))*"
           
           # 3. Use sed to replace everything between the anchor text blocks
           # This syntax targets the lines between the START and END markers
           PLACEHOLDER_START="START-gcp-${{ matrix.service.name }}"
           PLACEHOLDER_END="END-gcp-${{ matrix.service.name }}"
-          sed -i "/<!-- $PLACEHOLDER_START -->/,/<!-- $PLACEHOLDER_END -->/ {
-            /<!-- $PLACEHOLDER_START -->/b
-            /<!-- $PLACEHOLDER_END -->/b
-            d
-          }" README.md
+          sed -i "/<!-- $PLACEHOLDER_START -->/,/<!-- $PLACEHOLDER_END -->/{//!d;}" README.md
           # Insert the new text right after the START marker
           sed -i "/<!-- $PLACEHOLDER_START -->/a $LINK_MARKDOWN" README.md
           
           # This syntax targets the lines between the START and END markers
-          sed -i "/<!-- $PLACEHOLDER_START -->/,/<!-- $PLACEHOLDER_END -->/ {
-            /<!-- $PLACEHOLDER_START -->/b
-            /<!-- $PLACEHOLDER_END -->/b
-            d
-          }" ./sources/README.md
+          sed -i "/<!-- $PLACEHOLDER_START -->/,/<!-- $PLACEHOLDER_END -->/{//!d;}" ./sources/README.md
           # Insert the new text right after the START marker
           sed -i "/<!-- $PLACEHOLDER_START -->/a $LINK_MARKDOWN" ./sources/README.md
       
