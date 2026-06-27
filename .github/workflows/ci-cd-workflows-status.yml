@@ -28,9 +28,10 @@ env:
 # jobs
 jobs:
   rename-run:
+    name: 🏃 Update Latest Workflows Status
     runs-on: ubuntu-latest
     steps:
-      - name: 🖲️ Update Workflow Run Name via GitHub API
+      - name: ⚙️ Update Workflow Run Name via GitHub API
         run: |
           # request workflows status (success, failure, v.v.) and ID of previous running time
           CONCLUSION="${{ github.event.workflow_run.conclusion }}"
@@ -47,6 +48,6 @@ jobs:
           curl -X PATCH \
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github+json" \
-            https://github.com{{ github.repository }}/actions/runs/$RUN_ID \
+            https://github.com${{ github.repository }}/actions/runs/$RUN_ID \
             -d "{\"run_name\":\"[$EMOJI $CONCLUSION] Commit: ${{ github.event.workflow_run.head_commit.message }}\"}"
 
