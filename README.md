@@ -2,7 +2,7 @@
 
 | Workflow | Latest Running Status |
 | :--- | :--- |
-| **🚢 Seats Reservation Platform CI/CD Pipeline** | `![CI/CD Pipeline Status](https://github.com/hainguyen81/seats-reservation-management/ci-cd-platform.yml)` |
+| **🚢 Seats Reservation Platform CI/CD Pipeline** | `![CI/CD Pipeline Status](https://github.com/hainguyen81/seats-reservation-management/actions/workflows/ci-cd-platform.yml/badge.svg)` |
 
 ## 🏛️ 1. Technical Decisions & Architecture
 - **Concurrency Control**: DB level transactional isolation to completely eliminate double-booking at the exact same millisecond.
@@ -268,7 +268,7 @@ The platform packages a production-ready **Playwright** automation suite to perf
 
 | Workflow | Latest Running Status |
 | :--- | :--- |
-| **🚀 [ TEST ] Seats Reservation Platform CI/CD Pipeline** | `![Automated End-to-End (E2E) Testing Status](https://github.com/hainguyen81/seats-reservation-management/ci-cd-test.yml)` |
+| **🚀 [ TEST ] Seats Reservation Platform CI/CD Pipeline** | `![Automated End-to-End (E2E) Testing Status](https://github.com/hainguyen81/seats-reservation-management/actions/workflows/ci-cd-test.yml/badge.svg)` |
 
 ### 7.1. Test Coverage Blueprint
 The automated matrix simulates headless user actors to validate non-deterministic edge scenarios:
@@ -307,8 +307,8 @@ This section documents the continuous integration and deployment pipeline config
 
 | Workflow | Latest Running Status |
 | :--- | :--- |
-| **🐳 [ DOCKER IMAGE ] Seats Reservation Platform CI/CD Pipeline** | `![Docker Deployment Status](https://github.com/hainguyen81/seats-reservation-management/ci-cd-docker-image.yml)` |
-| **☁️ [ GCP Deployment ] Seats Reservation Platform CI/CD Pipeline** | `![GCP Deployment Status](https://github.com/hainguyen81/seats-reservation-management/ci-cd-gcp-deploy.yml)` |
+| **🐳 [ DOCKER IMAGE ] Seats Reservation Platform CI/CD Pipeline** | `![Docker Deployment Status](https://github.com/hainguyen81/seats-reservation-management/actions/workflows/ci-cd-docker-image.yml/badge.svg)` |
+| **☁️ [ GCP Deployment ] Seats Reservation Platform CI/CD Pipeline** | `![GCP Deployment Status](https://github.com/hainguyen81/seats-reservation-management/actions/workflows/ci-cd-gcp-deploy.yml/badge.svg)` |
 
 ---
 
@@ -400,7 +400,7 @@ This section outlines the automated multi-environment cloud orchestration matrix
 
 | Workflow | Latest Running Status |
 | :--- | :--- |
-| **☁️ [ GKE Deployment ] Seats Reservation Platform CI/CD Pipeline** | `![GKE Deployment Status](https://github.com/hainguyen81/seats-reservation-management/ci-cd-gke-deploy.yml)` |
+| **☁️ [ GKE Deployment ] Seats Reservation Platform CI/CD Pipeline** | `![GKE Deployment Status](https://github.com/hainguyen81/seats-reservation-management/actions/workflows/ci-cd-gke-deploy.yml/badge.svg)` |
 
 ---
 
@@ -442,7 +442,7 @@ This framework isolates and stresses the high-concurrency capability of the Kube
 
 | Workflow | Latest Running Status |
 | :--- | :--- |
-| **📈 [ TEST ] Scalability k6 Stress Testing (Pure k6 Load Injector)** | `![Concurrency Stress Testing Status](https://github.com/hainguyen81/seats-reservation-management/ci-cd-k6-scalability-test.yml)` |
+| **📈 [ TEST ] Scalability k6 Stress Testing (Pure k6 Load Injector)** | `![Concurrency Stress Testing Status](https://github.com/hainguyen81/seats-reservation-management/actions/workflows/ci-cd-k6-scalability-test.yml/badge.svg)` |
 
 ---
 
