@@ -1,5 +1,8 @@
 name: 🐳 [ DOCKER IMAGE ] Seats Reservation Platform CI/CD Pipeline
 
+# to show the latest running status
+run-name: "${{ github.event.workflow_run.conclusion == 'success' && '✅ ' || '❌ ' }}${{ github.ref_name }}"
+
 on:
   # auto trigger workflow
   # push:
