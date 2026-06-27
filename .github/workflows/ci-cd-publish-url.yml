@@ -64,6 +64,16 @@ jobs:
         service: ${{ fromJson(inputs.env_data) }}
 
     steps:
+      # Check whether allow for running workflow
+      - name: 🛡️ Gatekeeper - Validate Administrative Access
+        env:
+          ALLOW_PUBLISH_README: ${{ secrets.ALLOW_PUBLISH_README }}
+        if: ${{ env.ALLOW_PUBLISH_README != 'true' }}
+        run: |
+          echo "❌ Deployment is administratively DISABLED via GitHub Secrets (secrets.ALLOW_PUBLISH_README is not true)."
+          echo "Terminating pipeline execution immediately to protect production infrastructure."
+          exit 1 # Require Admin Rights
+      
       # 1. Check whether allow for running workflow
       - name: 🛡️ Gatekeeper - Validate Published Service
         run: |
