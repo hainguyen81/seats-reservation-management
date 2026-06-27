@@ -4,8 +4,11 @@ on:
   # auto trigger workflow
   push:
     branches: [ "master" ] # active when merge code into master
+    # only triggered when pushing *.js/*.ts/*.tsx
+    paths: [ "**/*.js", "**/*.ts", "**/*.tsx" ]
   pull_request:
-    branches: [ "master" ]
+    # only triggered when pushing *.js/*.ts/*.tsx
+    paths: [ "**/*.js", "**/*.ts", "**/*.tsx" ]
   # manual trigger workflow
   workflow_dispatch:
 
