@@ -1,4 +1,4 @@
-name: ℹ️ Update Latest Workflows Status
+name: ℹ️ [ GitHub CI/CD ] Update Latest Workflows Status
 
 on:
   workflow_run:
@@ -12,6 +12,8 @@ on:
       "🚢 Seats Reservation Platform CI/CD Pipeline",                                  # Main workflow
     ]
     types: [ completed ]
+  # manual trigger workflow
+  workflow_dispatch:
 
 # permissions for GitHub Actions READ/WRITE
 permissions:
