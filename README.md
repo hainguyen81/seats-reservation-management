@@ -1,5 +1,12 @@
 # Seats Reservation Platform
 
+## 🌐 Public GCP & GKE Demostration
+
+<!-- GCP_LINK_START --><!-- GCP_LINK_END -->
+<!-- GKE_LINK_START --><!-- GKE_LINK_END -->
+
+## 🌐 GitHub CI/CD Main Workflow
+
 | GitHubCI/CD Workflows | Latest Running Status(es) |
 | :--- | :--- |
 | **🚢 Seats Reservation Platform CI/CD Pipeline** | ![CI/CD Pipeline Status](https://github.com/hainguyen81/seats-reservation-management/actions/workflows/ci-cd-platform.yml/badge.svg) |

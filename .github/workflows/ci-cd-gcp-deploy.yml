@@ -224,6 +224,44 @@ jobs:
             echo "❌ Service Error on GCP! Status: $STATUS"
             exit 1
           fi
+      
+      # 5. Export the GCP public URL to README
+      - name: 🔗 Generate and Export GCP Links to README
+        if: always() && github.event_name != 'pull_request'
+        run: |
+          # 1. Define your deployment variables
+          PUBLIC_URL=${{ steps.gcp_cloud_run_deployment_check.outputs.gcp_cloud_run_url }}
+          
+          # 2. Create the Markdown to update README
+          LINK_MARKDOWN="* **[ GCP ] Latest Deployment Info:**\n  * $PUBLIC_URL\n  * _Last updated: $(date -u) UTC_"
+          
+          # 3. Use sed to replace everything between the anchor text blocks
+          # This syntax targets the lines between the START and END markers
+          sed -i "/<!-- GCP_LINK_START -->/,/<!-- GCP_LINK_END -->/ {
+            /<!-- GCP_LINK_START -->/b
+            /<!-- GCP_LINK_END -->/b
+            d
+          }" README.md
+          # Insert the new text right after the START marker
+          sed -i "/<!-- GCP_LINK_START -->/a $LINK_MARKDOWN" README.md
+          
+          # This syntax targets the lines between the START and END markers
+          sed -i "/<!-- GCP_LINK_START -->/,/<!-- GCP_LINK_END -->/ {
+            /<!-- GCP_LINK_START -->/b
+            /<!-- GCP_LINK_END -->/b
+            d
+          }" ./sources/README.md
+          # Insert the new text right after the START marker
+          sed -i "/<!-- GCP_LINK_START -->/a $LINK_MARKDOWN" ./sources/README.md
+          
+          # 4. Commit and push the modified README back to GitHub
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          
+          # Only commit if the README actually changed to avoid workflow loops
+          git diff-index --quiet HEAD || git commit -m "docs: automated update of deployment links [skip ci]"
+          git push
           
       # Optional: Post the URL as a comment on your Pull Request (great for debugging)
       - name: Comment PR with URL
