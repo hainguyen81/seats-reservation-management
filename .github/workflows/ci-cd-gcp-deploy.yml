@@ -239,7 +239,7 @@ jobs:
           PUBLIC_URL=${{ steps.gcp_cloud_run_deployment_check.outputs.gcp_cloud_run_url }}
           
           # 2. Create the Markdown to update README
-          LINK_MARKDOWN="* **[ GCP ] Latest Deployment Info:**\n  * $PUBLIC_URL\n  * _Last updated: $(date -u) UTC_"
+          LINK_MARKDOWN=" $PUBLIC_URL (Last updated: $(date -u) UTC)"
           
           # 3. Use sed to replace everything between the anchor text blocks
           # This syntax targets the lines between the START and END markers
