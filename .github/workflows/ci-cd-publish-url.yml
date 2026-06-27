@@ -83,15 +83,17 @@ jobs:
         if: success()                 # if previous step is successful
         run: |
           # 1. Define your deployment variables
+          SERVICE_NAME=${{ matrix.service.name }}
           PUBLIC_URL=${{ matrix.service.published_url }}
+          TIME_STAMP="*(Last updated: $(date -u))*"
           
           # 2. Create the Markdown to update README
-          MARKDOWN_LINK="[$PUBLIC_URL]($PUBLIC_URL)"
-          LINK_MARKDOWN="${MARKDOWN_LINK} <br> *(Last updated: $(date -u))*"
+          PLACEHOLDER_START="<!-- START-${SERVICE_NAME} -->"
+          PLACEHOLDER_END="<!-- END-${SERVICE_NAME} -->"
+          LINK_MARKDOWN="[$PUBLIC_URL]($PUBLIC_URL)"
+          REPLACEMENT_MARKDOWN="${LINK_MARKDOWN}<br> ${TIME_STAMP}"
           
           # 3. Build README
-          PLACEHOLDER_START="START-${{ matrix.service.name }}"
-          PLACEHOLDER_END="END-${{ matrix.service.name }}"
           update_readme_file() {
             local file_path="$1"
             if [ ! -f "$file_path" ]; then
@@ -102,7 +104,7 @@ jobs:
             # 🚀 Use sed:
             # - Find START and END tags on same line, 
             # - Clear everything inside tags and replace $LINK_MARKDOWN into.
-            sed -i "s|$PLACEHOLDER_START.*$PLACEHOLDER_END|$PLACEHOLDER_START $LINK_MARKDOWN $P_END|g" "$file_path"
+            sed -i "s|${PLACEHOLDER_START}.*${PLACEHOLDER_END}|${PLACEHOLDER_START} ${REPLACEMENT_MARKDOWN} ${PLACEHOLDER_END}|g" "$file_path"
             echo "✔️ Updated $file_path successfully"
           }
           
