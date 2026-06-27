@@ -120,7 +120,7 @@ jobs:
     
     # output for next job
     outputs:
-      published-url: ${{ steps.gcp_cloud_run_deployment_check.outputs.gcp_cloud_run_url }}
+      published-services: ${{ steps.save-matrix-output.outputs.published-services }}
     
     steps:
       # Check whether allow for running workflow
@@ -241,6 +241,13 @@ jobs:
             exit 1
           fi
       
+      # 5. Collect published URL(s) by service into one output object for next job
+      - name: 💾 Map Published URL to Matrix Service Key
+        id: save-matrix-output
+        run: |
+          # Force GitHub put URL into JSON map structure of present running service
+          echo "published-services=${{ steps.gcp_cloud_run_deployment_check.outputs.gcp_cloud_run_url }}" >> $GITHUB_OUTPUT
+      
       # Optional: Post the URL as a comment on your Pull Request (great for debugging)
       - name: Comment PR with URL
         if: always() && github.event_name == 'pull_request'    # if previous step is successful
@@ -260,17 +267,17 @@ jobs:
     
     # output for next job
     outputs:
-      published-services: ${{ steps.build_published_services.outputs.published_services }}
+      published-services: ${{ steps.build_published_services.outputs.published-services }}
     
     steps:
       - name: 🛠️ Combine Published URL(s) to Enviroment JSON Variables
         id: build_published_services
         env:
-          GCP_PUBLISHED_URL: ${{ needs.deploy-to-gcp.outputs.published-url }}
+          GCP_PUBLISHED_SERVICES: ${{ needs.deploy-to-gcp.outputs.published-services }}
         run: |
           echo "1. Receive GitHub Actions Published URL(s):"
-          echo "$GCP_PUBLISHED_URL"
-          if [ -z "$GCP_PUBLISHED_URL" ] || [ "$GCP_PUBLISHED_URL" = "null" ] || [ "$GCP_PUBLISHED_URL" = "{}" ]; then
+          echo "$GCP_PUBLISHED_SERVICES"
+          if [ -z "$GCP_PUBLISHED_SERVICES" ] || [ "$GCP_PUBLISHED_SERVICES" = "null" ] || [ "$GCP_PUBLISHED_SERVICES" = "{}" ]; then
             echo "❌ Not found valid published service URL(s)"
             exit 1
           fi
@@ -279,10 +286,10 @@ jobs:
           echo "2. Combine to Enviroment Published URL(s) [{name, published_url}]:"
           
           # Use jq to convert published services JSON
-          FINAL_ARRAY=$(echo '$GCP_PUBLISHED_URL' | jq -c 'to_entries | map({name: (.key | fromjson).name, published_url: .value})')
+          FINAL_ARRAY=$(echo '$GCP_PUBLISHED_SERVICES' | jq -c 'to_entries | map({name: (.key | fromjson).name, published_url: .value})')
           
-          echo "🏃 Published Services:"
-          echo "published_services=$FINAL_ARRAY" >> $GITHUB_OUTPUT
+          echo "🏃 Published Services - Done"
+          echo "published-services=$FINAL_ARRAY" >> $GITHUB_OUTPUT
   
   # ==============================================================================
   # ⚡ PUBLISH URL TO README
