@@ -1,0 +1,50 @@
+name: ℹ️ Update Latest Workflows Status
+
+on:
+  workflow_run:
+    # workflow names
+    workflows: [
+      "🚀 [ TEST ] Seats Reservation Platform CI/CD Pipeline",                         # E2E-Test workflow
+      "📈 [ TEST ] Concurrency Stress Testing Loop (Pure k6 Load Injector)",           # K6-Test workflow
+      "🐳 [ DOCKER IMAGE ] Seats Reservation Platform CI/CD Pipeline",                 # DockerHub workflow
+      "☁️ [ GCP Deployment ] Seats Reservation Platform CI/CD Pipeline",               # GCP workflow
+      "☁️ [ GKE Deployment ] Seats Reservation Platform CI/CD Pipeline",               # GKE workflow
+      "🚢 Seats Reservation Platform CI/CD Pipeline",                                  # Main workflow
+    ]
+    types: [ completed ]
+
+# permissions for GitHub Actions READ/WRITE
+permissions:
+  contents: read
+  packages: write
+
+# enviroment
+env:
+  LANG: 'C.UTF-8'
+  LC_ALL: 'C.UTF-8'
+
+# jobs
+jobs:
+  rename-run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🖲️ Update Workflow Run Name via GitHub API
+        run: |
+          # request workflows status (success, failure, v.v.) and ID of previous running time
+          CONCLUSION="${{ github.event.workflow_run.conclusion }}"
+          RUN_ID="${{ github.event.workflow_run.id }}"
+          
+          # setup icon for showing
+          if [ "$CONCLUSION" = "success" ]; then
+            EMOJI="✅ "
+          else
+            EMOJI="❌ "
+          fi
+          
+          # call GitHub API to update (run name)
+          curl -X PATCH \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            https://github.com{{ github.repository }}/actions/runs/$RUN_ID \
+            -d "{\"run_name\":\"[$EMOJI $CONCLUSION] Commit: ${{ github.event.workflow_run.head_commit.message }}\"}"
+

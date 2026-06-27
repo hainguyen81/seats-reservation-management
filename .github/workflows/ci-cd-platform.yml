@@ -157,7 +157,7 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
 
   # ===================================================
-  # 📋 REGRESSION & AUTOMATION E2E TEST (CI) - POSTGRES
+  # 📋 REGRESSION & AUTOMATION E2E TEST (CI)
   # ===================================================
   phase-test:
     uses: ./.github/workflows/ci-cd-test.yml
