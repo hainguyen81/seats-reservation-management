@@ -225,7 +225,12 @@ jobs:
             exit 1
           fi
       
-      # 5. Export the GCP public URL to README
+      # 5. Check out source code to update README
+      - name: ⬇️ Checkout Source Code to update Public GCP Deployment Links
+        if: success()                 # if previous step is successful
+        uses: actions/checkout@v4
+      
+      # 5.1. Export the GCP public URL to README
       - name: 🔗 Generate and Export GCP Links to README
         if: always() && github.event_name != 'pull_request'
         run: |
