@@ -120,7 +120,7 @@ jobs:
     
     # output for next job
     outputs:
-      published-services: ${{ steps.save-matrix-output.outputs.published-services }}
+      ${{ toJSON(matrix.service) }}: ${{ steps.gcp_cloud_run_deployment_check.outputs.gcp_cloud_run_url }}
     
     steps:
       # Check whether allow for running workflow
@@ -241,13 +241,6 @@ jobs:
             exit 1
           fi
       
-      # 5. Collect published URL(s) by service into one output object for next job
-      - name: 💾 Map Published URL to Matrix Service Key
-        id: save-matrix-output
-        run: |
-          # Force GitHub put URL into JSON map structure of present running service
-          echo "published-services=${{ steps.gcp_cloud_run_deployment_check.outputs.gcp_cloud_run_url }}" >> $GITHUB_OUTPUT
-      
       # Optional: Post the URL as a comment on your Pull Request (great for debugging)
       - name: Comment PR with URL
         if: always() && github.event_name == 'pull_request'    # if previous step is successful
@@ -273,7 +266,7 @@ jobs:
       - name: 🛠️ Combine Published URL(s) to Enviroment JSON Variables
         id: build_published_services
         env:
-          GCP_PUBLISHED_SERVICES: ${{ needs.deploy-to-gcp.outputs.published-services }}
+          GCP_PUBLISHED_SERVICES: ${{ toJSON(needs.deploy-to-gcp.outputs) }}
         run: |
           echo "1. Receive GitHub Actions Published URL(s):"
           echo "$GCP_PUBLISHED_SERVICES"
