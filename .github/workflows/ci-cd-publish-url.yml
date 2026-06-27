@@ -4,7 +4,7 @@ on:
   # manual trigger workflow
   workflow_dispatch:
     inputs:
-     env_data:
+      env_data:
         description: "🔧 Public URL(s)"
         required: false   # not require, due to be triggered standalone
         type: string      # receive enviroment from parent workflow under JSON string
