@@ -594,7 +594,7 @@ jobs:
           K8S_DEPLOYMENT_NAME: ${{ matrix.service.env_vars.K8S_DEPLOYMENT_NAME }}
           K8S_DEPLOYMENT_SERVICE: ${{ matrix.service.env_vars.K8S_DEPLOYMENT_SERVICE }}
         run: |
-          TIMEOUT="180s" # 3 minutes
+          TIMEOUT="300s" # 5 minutes
           
           echo "========================================================================="
           echo "🚀 1. MONITORING KUBERNETES ROLLING UPDATE STATUS"
