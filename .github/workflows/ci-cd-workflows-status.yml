@@ -59,6 +59,7 @@ jobs:
              echo "❌ Could not extract 'workflows:'. Please re-check the $LOCAL_WF_PATH file structure."
              exit 1
           fi
+          IFS=$'\n' read -rd '' -a WORKFLOW_LIST <<< "$RAW_LIST"
           echo "-> ❌ Workflows list to update: ${WORKFLOW_LIST[*]}"
           
           # to update workflow title via API
