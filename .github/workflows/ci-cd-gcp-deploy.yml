@@ -79,7 +79,7 @@ on:
 
 # permissions for GitHub Actions READ/WRITE
 permissions:
-  contents: read
+  contents: write
   packages: write
   id-token: write
 
@@ -259,15 +259,14 @@ jobs:
           }" ./sources/README.md
           # Insert the new text right after the START marker
           sed -i "/<!-- GCP_LINK_START -->/a $LINK_MARKDOWN" ./sources/README.md
-          
-          # 4. Commit and push the modified README back to GitHub
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add README.md
-          
-          # Only commit if the README actually changed to avoid workflow loops
-          git diff-index --quiet HEAD || git commit -m "docs: automated update of deployment links [skip ci]"
-          git push
+      
+      # Optional: Commit/Push modified README
+      - name: 🚀 Auto Commit and Push README changes
+        if: success() && github.event_name != 'pull_request'
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs: automated update of deployment links to README.md [skip ci]"
+          file_pattern: "README.md"
           
       # Optional: Post the URL as a comment on your Pull Request (great for debugging)
       - name: Comment PR with URL
