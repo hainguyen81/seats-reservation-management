@@ -76,6 +76,7 @@ jobs:
       
       # 1. Check whether allow for running workflow
       - name: 🛡️ Gatekeeper - Validate Published Service
+        if: success()                 # if previous step is successful
         run: |
           if [ "${{ github.event_name }}" == "pull_request" ] || [ -z "${{ matrix.service.published_url }}" ]; then
             echo "❌ Ignore: ${{ matrix.service.name }} has invalid published URL."
