@@ -133,22 +133,6 @@ jobs:
       - name: ⬇️ Checkout Source Code
         if: success()                 # if previous step is successful
         uses: actions/checkout@v4
-    
-      # 2.1 - change TS config to PROD
-      - name: ⚙️ Configure Node for PROD Enviroment (Only Master)
-        if: success() && github.ref == 'refs/heads/master'      # if previous step is successful
-        run: |
-          cd sources
-          echo "NODE_ENV=production" >> $GITHUB_ENV
-          cp tsconfig.prod.json tsconfig.json
-          echo "🟢 Setup NODE_ENV=production for master branch"
-      
-      # 2.2 - change TS config to DEV
-      - name: ⚙️ Configure Node for Dev Enviroment (Except Master)
-        if: success() && github.ref != 'refs/heads/master'      # if previous step is successful
-        run: |
-          cd sources
-          cp tsconfig.dev.json tsconfig.json
       
       # 3. Login to Google Cloud by Google OAuth2 ADC
       - name: 🔑 Authenticate to Google Cloud via Google OAuth2 ADC
@@ -346,7 +330,7 @@ jobs:
           build-args: |
             SERVICE_NAME=${{ matrix.service.name }}
             DATABASE_PROVIDER=${{ matrix.service.env_vars.K8S_DEPLOYMENT_DB_PROVIDER }}
-            BUILD_MODE=${{ github.ref == 'refs/heads/master' && 'production' || 'dev' }}
+            BUILD_MODE=production
           # tag image name must follow Google Artifact Registry Standards.
           # Ex: <region>-docker.pkg.dev/<GCP_PROJECT_ID>/<GCP Repository Name>/<Immutable K8s Image Name>:<unique SHA>
           tags: ${{ inputs.region }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ github.event.repository.name }}/${{ matrix.service.name }}:${{ github.sha }}

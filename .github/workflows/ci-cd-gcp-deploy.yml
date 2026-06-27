@@ -142,7 +142,6 @@ jobs:
           # Load all GitHub secret to parse
           ALL_GITHUB_SECRETS: ${{ toJSON(secrets) }}
           GCP_ADC_JSON: ${{ secrets.GCP_ADC_JSON }}
-          GITHUB_BRANCH: ${{ github.ref }}
         run: |
           # Use Node.js to read file JSON and find "client_email"
           GCP_SA_EMAIL=$(node -e "const data = JSON.parse(process.env.GCP_ADC_JSON); console.log(data.client_email);")
@@ -164,10 +163,6 @@ jobs:
                 const secretObject = typeof secretRaw === "object" ? secretRaw : JSON.parse(secretRaw);
                 envObj = { ...envObj, ...secretObject };
               }
-            }
-            // production for master branch
-            if (process.env.GITHUB_BRANCH == "refs/heads/master") {
-              envObj = { ...envObj, ...{ "NODE_ENV": "production" } };
             }
             
             // 2. convert to array key=value
