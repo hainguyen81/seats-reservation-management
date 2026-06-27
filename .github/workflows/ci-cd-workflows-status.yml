@@ -49,14 +49,14 @@ jobs:
           LOCAL_WF_PATH=".github/$(echo "$CLEAN_PATH" | awk -F'/.github/' '{print $2}')"
           echo "- 👷 Request Workflows to update from $LOCAL_WF_PATH"
           if [ ! -f "$LOCAL_WF_PATH" ]; then
-             echo "❌ Not found the workflows list from: $LOCAL_WF_PATH"
+             echo "-> ❌ Not found the workflows list from: $LOCAL_WF_PATH"
              exit 1
           fi
           
           echo "- 👷 Extract the workflows list to update..."
-          RAW_LIST=$(sed -n '/workflows:/,/types:/p' "$LOCAL_WF_PATH" | grep '-' | sed 's/^[[:space:]]*-//g' | tr -d '"' | tr -d "'")
-          if [ -z "$RAW_LIST" ]; then
-             echo "❌ Could not extract 'workflows:'. Please re-check the $LOCAL_WF_PATH file structure."
+          RAW_LIST=$(yq '.on.workflow_run.workflows[]' "$LOCAL_WF_PATH")
+          if [ -z "$RAW_LIST" ] || [ "$RAW_LIST" = "null" ]; then
+             echo "-> ❌ Could not extract 'workflows:'. Please re-check the $LOCAL_WF_PATH file structure."
              exit 1
           fi
           IFS=$'\n' read -rd '' -a WORKFLOW_LIST <<< "$RAW_LIST"
