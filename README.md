@@ -442,7 +442,7 @@ This framework isolates and stresses the high-concurrency capability of the Kube
 
 | Workflow | Latest Running Status |
 | :--- | :--- |
-| **📈 [ TEST ] Scalability k6 Stress Testing (Pure k6 Load Injector)** | ![Concurrency Stress Testing Status](https://github.com/hainguyen81/seats-reservation-management/actions/workflows/ci-cd-k6-scalability-test.yml/badge.svg) |
+| **📈 [ TEST ] Scalability k6 Stress Testing (Pure k6 Load Injector)** | ![Scalability k6 Stress Testing Status](https://github.com/hainguyen81/seats-reservation-management/actions/workflows/ci-cd-k6-scalability-test.yml/badge.svg) |
 
 ---
 
