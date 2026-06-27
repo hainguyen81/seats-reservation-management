@@ -58,6 +58,7 @@ jobs:
     
     # load services configuraion
     strategy:
+      max-parallel: 1       # run only one service once to avoid conflicts when pushing
       fail-fast: false
       matrix:
         # run parallel threads for services
@@ -119,5 +120,4 @@ jobs:
         with:
           commit_message: "Docs: Automated update of published link ${{ matrix.service.publish_url }} for ${{ matrix.service.name }} to README.md [skip ci]"
           file_pattern: "**/README.md"
-          push_options: "--force-with-lease"
 
