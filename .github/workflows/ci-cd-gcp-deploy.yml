@@ -228,7 +228,7 @@ jobs:
             echo "❌ Service Error on GCP! Status: $STATUS"
             exit 1
           fi
-          
+      
       # Optional: Post the URL as a comment on your Pull Request (great for debugging)
       - name: Comment PR with URL
         if: always() && github.event_name == 'pull_request'    # if previous step is successful
