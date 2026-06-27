@@ -105,6 +105,10 @@ jobs:
       matrix:
         # run parallel threads for services
         service: ${{ fromJson(inputs.env_data) }}
+    
+    # output for next job
+    outputs:
+      published-url: ${{ steps.gcp_cloud_run_deployment_check.outputs.gcp_cloud_run_url }}
 
     steps:
       # Check whether allow for running workflow
@@ -222,71 +226,7 @@ jobs:
             echo "gcp_cloud_run_url=$URL" >> $GITHUB_OUTPUT
           else
             echo "❌ Service Error on GCP! Status: $STATUS"
-            exit 1
           fi
-      
-      # Optional: Check out source code to update README
-      - name: ⬇️ Checkout Source Code to update Public GCP Deployment Links
-        if: success() && github.event_name != 'pull_request'
-        uses: actions/checkout@v4
-      
-      # Optional: Export the GCP public URL to README
-      - name: 🔗 Generate and Export GCP Links to README
-        if: success() && github.event_name != 'pull_request'
-        continue-on-error: true
-        run: |
-          # 1. Define your deployment variables
-          PUBLIC_URL=${{ steps.gcp_cloud_run_deployment_check.outputs.gcp_cloud_run_url }}
-          
-          # 2. Create the Markdown to update README
-          MARKDOWN_LINK="[$PUBLIC_URL]($PUBLIC_URL)"
-          LINK_MARKDOWN="${MARKDOWN_LINK} <br> *(Last updated: $(date -u))*"
-          
-          # 3. Build README
-          PLACEHOLDER_START="START-gcp-${{ matrix.service.name }}"
-          PLACEHOLDER_END="END-gcp-${{ matrix.service.name }}"
-          update_readme_file() {
-            local file_path="$1"
-            local tmp_path="${file_path}.tmp"
-            
-            if [ ! -f "$file_path" ]; then
-              echo "⚠️ Ignore: Not found $file_path"
-              return
-            fi
-            
-            # use awk to replace placeholder with public URL
-            awk -v new_txt="$LINK_MARKDOWN" -v start_tag="<!-- $PLACEHOLDER_START -->" -v end_tag="<!-- $PLACEHOLDER_END -->" '
-              $0 ~ start_tag {
-                print $0; 
-                print new_txt; 
-                skip=1; 
-                next
-              }
-              $0 ~ end_tag {
-                skip=0
-              }
-              !skip {
-                print $0
-              }
-            ' "$file_path" > "$tmp_path"
-            
-            # update new file
-            mv "$tmp_path" "$file_path"
-            echo "👷 Updated README: $file_path"
-          }
-          
-          update_readme_file "README.md"
-          update_readme_file "./sources/README.md"
-          echo "✅ Done 👷"
-      
-      # Optional: Commit/Push modified README
-      - name: 🚀 Auto Commit and Push README changes
-        if: success() && github.event_name != 'pull_request'
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "docs: automated update of deployment links to README.md [skip ci]"
-          file_pattern: "README.md"
-          push_options: '--force-with-lease'
           
       # Optional: Post the URL as a comment on your Pull Request (great for debugging)
       - name: Comment PR with URL
@@ -296,7 +236,53 @@ jobs:
           message: |
             🚀 Deployment successful!
             🔍 GCP Cloud Run Public URL: ${{ steps.gcp_cloud_run_deployment_check.outputs.gcp_cloud_run_url }}
-      
+  
+  # ==============================================================================
+  # 🛠️ COMBINE PUBLISHED URL(s) BY SERVICE
+  # ==============================================================================
+  combine-published-urls-by-service:
+    name: 🌐 Combine Published URL(s) to update README.md
+    runs-on: ubuntu-latest
+    needs: [ deploy-to-gcp ]                        # wait for deployment
+    
+    # output for next job
+    outputs:
+      published-services: ${{ steps.build_published_services.outputs.published_services }}
+    
+    steps:
+      - name: 🛠️ Combine Published URL(s) to Enviroment JSON Variables
+        id: build_published_services
+        env:
+          GCP_PUBLISHED_URL: ${{ needs.deploy-to-gcp.outputs.published-url }}
+        run: |
+          echo "1. Receive GitHub Actions Published URL(s):"
+          echo "$RAW_OBJECT"
+          
+          echo "----------------------------------------"
+          echo "2. Combine to Enviroment Published URL(s) [{name, published_url}]:"
+          
+          # Sử dụng jq để chuyển đổi cấu trúc Object sang Array
+          FINAL_ARRAY=$(echo '$RAW_OBJECT' | jq -c 'to_entries | map({name: .key, published_url: .value})')
+          
+          echo "🏃 Published Services:"
+          echo "published_services=$FINAL_ARRAY" >> $GITHUB_OUTPUT
+  
+  # ==============================================================================
+  # ⚡ PUBLISH URL TO README
+  # ==============================================================================
+  publish-url-to-readme:
+    needs: [ deploy-to-gcp, combine-published-urls-by-service ]           # wait for deployment, combine enviroment
+    uses: ./.github/workflows/ci-cd-publish-url.yml
+    with:
+      env_data: ${{ needs.combine-published-urls-by-service.outputs.published-services }}
+  
+  # ==============================================================================
+  # ⚙️ CLEAN UP
+  # ==============================================================================
+  clean-up:
+    needs: [ deploy-to-gcp, publish-url-to-readme ]           # wait for deployment, combine enviroment
+    
+    steps:
       # Clean up
       - name: ⚙️ Force Kill Orphan Processes
         if: always()    # Always run to clean up

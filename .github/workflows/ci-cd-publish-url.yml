@@ -1,0 +1,113 @@
+name: ⚡ Generate and Export GCP/GKE Links to README
+
+on:
+  # manual trigger workflow
+  workflow_dispatch:
+    inputs:
+     env_data:
+        description: "🔧 Public URL(s)"
+        required: false   # not require, due to be triggered standalone
+        type: string      # receive enviroment from parent workflow under JSON string
+        default: |
+          [
+            {
+                "name":           "gcp-seats-reservation-sqlite",
+                "published_url":  ""
+            },
+            {
+                "name":           "gcp-seats-reservation-postgres",
+                "published_url":  ""
+            },
+            {
+                "name":           "gke-seats-reservation-sqlite",
+                "published_url":  ""
+            },
+            {
+                "name":           "gke-seats-reservation-postgres",
+                "published_url":  ""
+            }
+          ]
+
+# permissions for GitHub Actions READ/WRITE
+permissions:
+  contents: write
+  packages: write
+
+# enviroment
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  LANG: 'C.UTF-8'
+  LC_ALL: 'C.UTF-8'
+
+jobs:
+  # ==============================================================================
+  # 🏃 Publish URL to project README.md
+  # ==============================================================================
+  publish-url-readme:
+    name: 🏃 Publish URL to project README.md
+    runs-on: ubuntu-latest
+    
+    # load services configuraion
+    strategy:
+      fail-fast: false
+      matrix:
+        # run parallel threads for services
+        service: ${{ fromJson(inputs.env_data) }}
+
+    steps:
+      # 1. Check whether allow for running workflow
+      - name: 🛡️ Gatekeeper - Validate Administrative Access
+        if: |
+          github.event_name != 'pull_request'
+          && (matrix.service.published_url == null || matrix.service.published_url == '')
+        run: |
+          echo "❌ ${{ matrix.service.name }} requires provisioning the published URL. Skipping remaining logic safely."
+          exit 0
+
+      # 1. Check out source code to update README
+      - name: ⬇️ Checkout Source Code to update Public GCP Deployment Links
+        if: success()                 # if previous step is successful
+        uses: actions/checkout@v4
+      
+      # 2. Export the GCP public URL to README
+      - name: 🔗 Generate and Export GCP Links to README
+        if: success()                 # if previous step is successful
+        run: |
+          # 1. Define your deployment variables
+          PUBLIC_URL=${{ matrix.service.published_url }}
+          
+          # 2. Create the Markdown to update README
+          MARKDOWN_LINK="[$PUBLIC_URL]($PUBLIC_URL)"
+          LINK_MARKDOWN="${MARKDOWN_LINK} <br> *(Last updated: $(date -u))*"
+          
+          # 3. Build README
+          PLACEHOLDER_START="START-${{ matrix.service.name }}"
+          PLACEHOLDER_END="END-${{ matrix.service.name }}"
+          update_readme_file() {
+            local file_path="$1"
+            if [ ! -f "$file_path" ]; then
+              echo "⚠️ Ignore: Not found $file_path"
+              return
+            fi
+            
+            # 🚀 Use sed:
+            # - Find START and END tags on same line, 
+            # - Clear everything inside tags and replace $LINK_MARKDOWN into.
+            sed -i "s|$PLACEHOLDER_START.*$PLACEHOLDER_END|$PLACEHOLDER_START $LINK_MARKDOWN $P_END|g" "$file_path"
+            echo "✔️ Updated $file_path successfully"
+          }
+          
+          update_readme_file "README.md"
+          update_readme_file "./sources/README.md"
+          echo "✅ Done 👷"
+      
+      # 3. Commit/Push modified README
+      - name: 🚀 Auto Commit and Push README changes
+        if: success()                 # if previous step is successful
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Docs: Automated update of published link ${{ matrix.service.publish_url }} for ${{ matrix.service.name }} to README.md [skip ci]"
+          file_pattern: "README.md"
+          push_options: "--force-with-lease"
+
