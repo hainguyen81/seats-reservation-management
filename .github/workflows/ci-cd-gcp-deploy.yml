@@ -118,10 +118,6 @@ jobs:
         # run parallel threads for services
         service: ${{ fromJson(inputs.env_data) }}
     
-    # output for next job
-    outputs:
-      ${{ toJSON(matrix.service) }}: ${{ steps.gcp_cloud_run_deployment_check.outputs.gcp_cloud_run_url }}
-    
     steps:
       # Check whether allow for running workflow
       - name: 🛡️ Gatekeeper - Validate Administrative Access
@@ -241,6 +237,22 @@ jobs:
             exit 1
           fi
       
+      # 5. Save service published information to an temporary artifact for next step
+      - name: 💾 Save Service URL to Temp File
+        if: success()                 # if previous step is successful
+        run: |
+          # create a JSON file to keep the published information
+          echo '{"name": "gcp-${{ matrix.service.name }}", "published_url": "${{ steps.gcp_cloud_run_deployment_check.outputs.gcp_cloud_run_url }}"}' > "${{ matrix.service.name }}.json"
+      
+      # 5.1. Upload published service JSON to an temporary artifact
+      - name: 📦 Upload Published Service Information Artifact
+        if: success()                 # if previous step is successful
+        uses: actions/upload-artifact@v4
+        with:
+          # Unique artifact name by service to avoid conflicted/overwritten
+          name: gcp-url-${{ matrix.service.name }}
+          path: "${{ matrix.service.name }}.json"
+      
       # Optional: Post the URL as a comment on your Pull Request (great for debugging)
       - name: Comment PR with URL
         if: always() && github.event_name == 'pull_request'    # if previous step is successful
@@ -263,26 +275,35 @@ jobs:
       published-services: ${{ steps.build_published_services.outputs.published-services }}
     
     steps:
+      # 1. Download Published Service Information Artifact from previous job to combine
+      - name: 📥 Download All Service Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          # Use pattern (*) to download all artifacts with prefix `gcp-url-` to same folder
+          pattern: gcp-url-*
+          path: temp-urls
+          merge-multiple: true # Merge all files `.json` to temp-urls folder
+      
+      # 2. Read artifact folder to combine published information
       - name: 🛠️ Combine Published URL(s) to Enviroment JSON Variables
         id: build_published_services
-        env:
-          GCP_PUBLISHED_SERVICES: ${{ toJSON(needs.deploy-to-gcp.outputs) }}
         run: |
-          echo "1. Receive GitHub Actions Published URL(s):"
-          echo "$GCP_PUBLISHED_SERVICES"
-          if [ -z "$GCP_PUBLISHED_SERVICES" ] || [ "$GCP_PUBLISHED_SERVICES" = "null" ] || [ "$GCP_PUBLISHED_SERVICES" = "{}" ]; then
-            echo "❌ Not found valid published service URL(s)"
+          echo "1. Artifact JSON files:"
+          ls -la temp-urls/
+          
+          echo "----------------------------------------"
+          echo "2. Combine all JSON files..."
+          # Check if not found any json file
+          if [ ! -d "temp-urls" ] || [ -z "$(ls -A temp-urls/*.json 2>/dev/null)" ]; then
+            echo "❌ Not found any published information `.json` file."
             exit 1
           fi
           
-          echo "----------------------------------------"
-          echo "2. Combine to Enviroment Published URL(s) [{name, published_url}]:"
-          
-          # Use jq to convert published services JSON
-          FINAL_ARRAY=$(echo '$GCP_PUBLISHED_SERVICES' | jq -c 'to_entries | map({name: ("gcp-" + (.key | fromjson).name), published_url: .value})')
-          
-          echo "🏃 Published Services - Done"
-          echo "published-services=$FINAL_ARRAY" >> $GITHUB_OUTPUT
+          # Use `jq` to read all `.json` file and collect to JSON array
+          PUBLISHED_SERVICES=$(jq -s -c '.' temp-urls/*.json)
+          echo "🏃 Published Services:"
+          echo "$PUBLISHED_SERVICES"
+          echo "published-services=$PUBLISHED_SERVICES" >> $GITHUB_OUTPUT
   
   # ==============================================================================
   # ⚡ PUBLISH URL TO README
