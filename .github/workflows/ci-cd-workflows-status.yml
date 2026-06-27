@@ -62,8 +62,8 @@ jobs:
              echo "-> ❌ Could not extract 'workflows:'. Please re-check the $LOCAL_WF_PATH file structure."
              exit 1
           fi
-          IFS=$'\n' read -rd '' -a WORKFLOW_LIST <<< "$RAW_LIST"
-          echo "-> ❌ Workflows list to update: ${WORKFLOW_LIST[*]}"
+          mapfile -t WORKFLOW_LIST <<< "$RAW_LIST"
+          echo "-> 💡 Workflows list to update: ${WORKFLOW_LIST[*]}"
           
           # to update workflow title via API
           update_title() {
@@ -102,11 +102,11 @@ jobs:
             RUN_DATA=$(curl -s -H "Authorization: token $TOKEN" \
               -H "Accept: application/vnd.github+json" \
               "https://github.com")
+            
             # loop via workflows to update
-            IFS=$'\n'
-            for TARGET_WF in $RAW_LIST; do
-              unset IFS
+            for TARGET_WF in "${WORKFLOW_LIST[@]}"; do
               TARGET_WF=$(echo "$TARGET_WF" | xargs)
+              if [ -z "$TARGET_WF" ]; then continue; fi
               echo "-> 👷 Finding the latest running time: '$TARGET_WF'..."
               
               RUN_ID=$(echo "$RUN_DATA" | jq -r --arg name "$TARGET_WF" '.workflow_runs | map(select(.name == $name)) | .[0].id')
