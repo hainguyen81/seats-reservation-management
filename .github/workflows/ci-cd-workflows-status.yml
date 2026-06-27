@@ -31,7 +31,13 @@ jobs:
     name: 🏃 Update Latest Workflows Status
     runs-on: ubuntu-latest
     steps:
+      # check-out source to read workflows list from .github/workflows folder
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      # update workflows latest status
       - name: ⚙️ Update Workflow Run Name via GitHub API
+        if: success()                 # if previous step is successful
         run: |
           REPO="${{ github.repository }}"
           TOKEN="${{ secrets.GITHUB_TOKEN }}"
