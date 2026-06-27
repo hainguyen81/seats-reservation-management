@@ -275,6 +275,7 @@ jobs:
   # ⚡ PUBLISH URL TO README
   # ==============================================================================
   publish-url-to-readme:
+    name: ⚡ Generate and Export GCP/GKE Links to README
     needs: [ deploy-to-gcp, combine-published-urls-by-service ]           # wait for deployment, combine enviroment
     uses: ./.github/workflows/ci-cd-publish-url.yml
     with:

@@ -107,7 +107,7 @@ jobs:
   # ⚙️ SETUP CONFIGURATION JOB (Giải pháp sửa lỗi truyền biến env)
   # ==============================================================================
   setup-env:
-    name: ⚙️ Setup enviroments for child CI/CD workflow
+    name: ⚙️ Setup enviroments for child CI/CD workflow(s)
     runs-on: ubuntu-latest
     outputs:
       env_docker_image: ${{ steps.config.outputs.env_docker_image }}
@@ -160,12 +160,14 @@ jobs:
   # 📋 REGRESSION & AUTOMATION E2E TEST (CI)
   # ===================================================
   phase-test:
+    name: 🚀 [ TEST ] Seats Reservation Platform CI/CD Pipeline
     uses: ./.github/workflows/ci-cd-test.yml
   
   # ==============================================================================
   # 🏗️ COMPILE DOCKER IMAGE
   # ==============================================================================
   phase-docker-image:
+    name: 🐳 [ DOCKER ] Seats Reservation Platform CI/CD Pipeline
     uses: ./.github/workflows/ci-cd-docker-image.yml
     needs: [ setup-env, phase-test ]                        # wait for enviroment and test running successfully
     secrets: inherit # bypass secrets to child workflow
@@ -176,6 +178,7 @@ jobs:
   # 🌐 GCP DEPLOYMENT
   # ==============================================================================
   phase-gcp-deploy:
+    name: ☁️ [ GCP Deployment ] Seats Reservation Platform CI/CD Pipeline
     uses: ./.github/workflows/ci-cd-gcp-deploy.yml
     needs: [ setup-env, phase-test, phase-docker-image ]    # wait for enviroment, test, docker image running successfully
     secrets: inherit # bypass secrets to child workflow
@@ -192,6 +195,7 @@ jobs:
   # 🌐 GKE DEPLOYMENT
   # ==============================================================================
   phase-gke-deploy:
+    name: ☁️ [ GKE Deployment ] Seats Reservation Platform CI/CD Pipeline
     uses: ./.github/workflows/ci-cd-gke-deploy.yml
     needs: [ setup-env, phase-test ]    # wait for enviroment, test running successfully
     secrets: inherit # bypass secrets to child workflow
