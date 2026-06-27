@@ -226,6 +226,7 @@ jobs:
             echo "gcp_cloud_run_url=$URL" >> $GITHUB_OUTPUT
           else
             echo "❌ Service Error on GCP! Status: $STATUS"
+            exit 1
           fi
           
       # Optional: Post the URL as a comment on your Pull Request (great for debugging)
@@ -281,6 +282,7 @@ jobs:
   # ==============================================================================
   clean-up:
     needs: [ deploy-to-gcp, publish-url-to-readme ]           # wait for deployment, combine enviroment
+    if: !cancelled()                                          # always run although other jobs are success or failure
     
     steps:
       # Clean up
