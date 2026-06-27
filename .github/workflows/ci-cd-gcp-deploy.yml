@@ -225,12 +225,12 @@ jobs:
             exit 1
           fi
       
-      # 5. Check out source code to update README
+      # Optional: Check out source code to update README
       - name: ⬇️ Checkout Source Code to update Public GCP Deployment Links
         if: success() && github.event_name != 'pull_request'
         uses: actions/checkout@v4
       
-      # 5.1. Export the GCP public URL to README
+      # Optional: Export the GCP public URL to README
       - name: 🔗 Generate and Export GCP Links to README
         if: success() && github.event_name != 'pull_request'
         continue-on-error: true
