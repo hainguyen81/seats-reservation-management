@@ -4,13 +4,11 @@
 
 | Demo Versions | Demo Link(s) |
 | :--- | :--- |
-| **GCP SQLite Demo** | <!-- START-gcp-seats-reservation-sqlite --><!-- END-gcp-seats-reservation-sqlite -->
-https://seats-reservation-sqlite-2omkqplgya-uc.a.run.app (Last updated: Sat Jun 27 07:57:12 UTC 2026 UTC) |
-| **GCP Postgres Demo** | <!-- START-gcp-seats-reservation-sqlite --><!-- END-gcp-seats-reservation-sqlite -->
-https://seats-reservation-sqlite-2omkqplgya-uc.a.run.app (Last updated: Sat Jun 27 07:57:12 UTC 2026 UTC) |
-| :--- | :--- |
-| **GKE SQLite Demo** | <!-- START-gke-seats-reservation-sqlite --><!-- END-gke-seats-reservation-sqlite --> |
-| **GKE Postgres Demo** | <!-- START-gke-seats-reservation-sqlite --><!-- END-gke-seats-reservation-sqlite --> |
+| **GCP SQLite Demo** | <!-- START-gcp-seats-reservation-sqlite -->* In comming soon *<!-- END-gcp-seats-reservation-sqlite --> |
+| **GCP Postgres Demo** | <!-- START-gcp-seats-reservation-sqlite -->* In comming soon *<!-- END-gcp-seats-reservation-sqlite --> |
+| --- | --- |
+| **GKE SQLite Demo** | <!-- START-gke-seats-reservation-sqlite -->* In comming soon *<!-- END-gke-seats-reservation-sqlite --> |
+| **GKE Postgres Demo** | <!-- START-gke-seats-reservation-sqlite -->* In comming soon *<!-- END-gke-seats-reservation-sqlite --> |
 
 ## 🌐 GitHub CI/CD Main Workflow
 
