@@ -4,11 +4,11 @@
 
 | Demo Versions | Demo Link(s) |
 | :--- | :--- |
-| **GCP SQLite Demo** | <!-- START-gcp-seats-reservation-sqlite -->![🏃 Comming soon](https://img.shields.io/badge/%F0%9F%8F%83%20Comming%20soon-orange)<!-- END-gcp-seats-reservation-sqlite --> |
-| **GCP Postgres Demo** | <!-- START-gcp-seats-reservation-postgres -->![🏃 Comming soon](https://img.shields.io/badge/%F0%9F%8F%83%20Comming%20soon-orange)<!-- END-gcp-seats-reservation-postgres --> |
+| **GCP SQLite** | <!-- START-gcp-seats-reservation-sqlite -->![🏃 Comming soon](https://img.shields.io/badge/%F0%9F%8F%83%20Comming%20soon-orange)<!-- END-gcp-seats-reservation-sqlite --> |
+| **GCP Postgres** | <!-- START-gcp-seats-reservation-postgres -->![🏃 Comming soon](https://img.shields.io/badge/%F0%9F%8F%83%20Comming%20soon-orange)<!-- END-gcp-seats-reservation-postgres --> |
 | &nbsp; | &nbsp; |
-| **GKE SQLite Demo** | <!-- START-gke-seats-reservation-sqlite -->![🏃 Comming soon](https://img.shields.io/badge/%F0%9F%8F%83%20Comming%20soon-orange)<!-- END-gke-seats-reservation-sqlite --> |
-| **GKE Postgres Demo** | <!-- START-gke-seats-reservation-postgres -->![🏃 Comming soon](https://img.shields.io/badge/%F0%9F%8F%83%20Comming%20soon-orange)<!-- END-gke-seats-reservation-postgres --> |
+| **GKE SQLite** | <!-- START-gke-seats-reservation-sqlite -->![🏃 Comming soon](https://img.shields.io/badge/%F0%9F%8F%83%20Comming%20soon-orange)<!-- END-gke-seats-reservation-sqlite --> |
+| **GKE Postgres** | <!-- START-gke-seats-reservation-postgres -->![🏃 Comming soon](https://img.shields.io/badge/%F0%9F%8F%83%20Comming%20soon-orange)<!-- END-gke-seats-reservation-postgres --> |
 
 ## 🌐 GitHub CI/CD Main Workflow
 
