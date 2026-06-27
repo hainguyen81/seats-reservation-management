@@ -269,13 +269,17 @@ jobs:
           GCP_PUBLISHED_URL: ${{ needs.deploy-to-gcp.outputs.published-url }}
         run: |
           echo "1. Receive GitHub Actions Published URL(s):"
-          echo "$RAW_OBJECT"
+          echo "$GCP_PUBLISHED_URL"
+          if [ -z "$GCP_PUBLISHED_URL" ] || [ "$GCP_PUBLISHED_URL" = "null" ] || [ "$GCP_PUBLISHED_URL" = "{}" ]; then
+            echo "❌ Not found valid published service URL(s)"
+            exit 1
+          fi
           
           echo "----------------------------------------"
           echo "2. Combine to Enviroment Published URL(s) [{name, published_url}]:"
           
-          # Sử dụng jq để chuyển đổi cấu trúc Object sang Array
-          FINAL_ARRAY=$(echo '$RAW_OBJECT' | jq -c 'to_entries | map({name: .key, published_url: .value})')
+          # Use jq to convert published services JSON
+          FINAL_ARRAY=$(echo '$GCP_PUBLISHED_URL' | jq -c 'to_entries | map({name: (.key | fromjson).name, published_url: .value})')
           
           echo "🏃 Published Services:"
           echo "published_services=$FINAL_ARRAY" >> $GITHUB_OUTPUT
