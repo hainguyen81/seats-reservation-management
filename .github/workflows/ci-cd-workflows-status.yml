@@ -42,11 +42,24 @@ jobs:
           REPO="${{ github.repository }}"
           TOKEN="${{ secrets.GITHUB_TOKEN }}"
           
+          # -------------------------------------------------------------
+          # Extract workflows list by SED/AWK
+          # -------------------------------------------------------------
           CLEAN_PATH=$(echo "${{ github.workflow_ref }}" | cut -d'@' -f1)
           LOCAL_WF_PATH=".github/$(echo "$CLEAN_PATH" | awk -F'/.github/' '{print $2}')"
           echo "- 👷 Request Workflows to update from $LOCAL_WF_PATH"
-          IFS=$'\n' read -rd '' -a WORKFLOW_LIST <<< "$(yq eval '.on.workflow_run.workflows[]' "$LOCAL_WF_PATH")"
-          echo "-> Workflows list to update: ${WORKFLOW_LIST[*]}"
+          if [ ! -f "$LOCAL_WF_PATH" ]; then
+             echo "❌ Not found the workflows list from: $LOCAL_WF_PATH"
+             exit 1
+          fi
+          
+          echo "- 👷 Extract the workflows list to update..."
+          RAW_LIST=$(sed -n '/workflows:/,/types:/p' "$LOCAL_WF_PATH" | grep '-' | sed 's/^[[:space:]]*-//g' | tr -d '"' | tr -d "'")
+          if [ -z "$RAW_LIST" ]; then
+             echo "❌ Could not extract 'workflows:'. Please re-check the $LOCAL_WF_PATH file structure."
+             exit 1
+          fi
+          echo "-> ❌ Workflows list to update: ${WORKFLOW_LIST[*]}"
           
           # to update workflow title via API
           update_title() {
