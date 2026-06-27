@@ -170,8 +170,8 @@ jobs:
               echo "✔️ Updated $file_path successfully"
             }
             
-            update_readme_file "README.md"
-            update_readme_file "./sources/README.md"
+            update_readme_file "$GITHUB_WORKSPACE/README.md"
+            update_readme_file "$GITHUB_WORKSPACE/sources/README.md"
           
           done
           echo "✅ Done 👷"
