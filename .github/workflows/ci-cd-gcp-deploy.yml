@@ -286,7 +286,7 @@ jobs:
           echo "2. Combine to Enviroment Published URL(s) [{name, published_url}]:"
           
           # Use jq to convert published services JSON
-          FINAL_ARRAY=$(echo '$GCP_PUBLISHED_SERVICES' | jq -c 'to_entries | map({name: (.key | fromjson).name, published_url: .value})')
+          FINAL_ARRAY=$(echo '$GCP_PUBLISHED_SERVICES' | jq -c 'to_entries | map({name: ("gcp-" + (.key | fromjson).name), published_url: .value})')
           
           echo "🏃 Published Services - Done"
           echo "published-services=$FINAL_ARRAY" >> $GITHUB_OUTPUT
