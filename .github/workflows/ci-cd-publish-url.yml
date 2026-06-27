@@ -181,7 +181,7 @@ jobs:
         if: success()                 # if previous step is successful
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "Docs: Automated update of published link ${{ matrix.service.publish_url }} for ${{ matrix.service.name }} to README.md [skip ci]"
+          commit_message: "Docs: Automated update of published links for README.md [skip ci]"
           file_pattern: "README.md sources/README.md"
       
       # Clean up temporary artifact
