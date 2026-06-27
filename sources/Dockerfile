@@ -7,8 +7,11 @@ ARG DATABASE_PROVIDER=sqlite
 # use node >= 22 for firebase 14
 FROM node:22.14-alpine AS deps
 
-# To make docker console show utf8 while composing
-# alpine
+# re-declare to require global arguments
+ARG BUILD_MODE
+ARG DATABASE_PROVIDER
+
+# To make docker console show utf8 while composing alpine
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 # # ubuntu/debian
@@ -18,6 +21,11 @@ ENV LC_ALL=C.UTF-8
 
 # install required Prisma dependencies
 RUN apk add --no-cache openssl libc6-compat gcompat
+
+# Debug
+RUN echo "-------------------------------------------------" && \
+  ([ "$BUILD_MODE" = "production" ] && echo "🗜️ Build Mode: PRODUCTION" || echo "🛠️ Build Mode: DEVELOPMENT") && \
+  echo "-------------------------------------------------"
 
 WORKDIR /app
 
@@ -45,8 +53,11 @@ RUN npm install @esbuild/linux-x64 --save-optional
 # use node >= 22 for firebase 14
 FROM node:22.14-alpine AS builder
 
-# To make docker console show utf8 while composing
-# alpine
+# re-declare to require global arguments
+ARG BUILD_MODE
+ARG DATABASE_PROVIDER
+
+# To make docker console show utf8 while composing alpine
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 # # ubuntu/debian
@@ -72,8 +83,7 @@ COPY . .
 
 # Setup Enviroment Variables to build
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV NODE_ENV=$BUILD_MODE
-RUN if [ "$NODE_ENV" = "production" ]; then \
+RUN if [ "$BUILD_MODE" = "production" ]; then \
   echo "🗜️ BUILD PRODUCTION MODE..."; \
   echo "-------------------------------------------------"; \
   cp tsconfig.prod.json tsconfig.json; \
@@ -109,7 +119,8 @@ RUN if [ "$DATABASE_PROVIDER" = "postgres" ]; then \
   DATABASE_URL="postgresql://user:password@localhost:5432/seats_reservation" \
   DIRECT_DATABASE_URL="postgresql://user:password@localhost:5432/seats_reservation" \
   npx prisma generate; \
-  if [ "$NODE_ENV" = "production" ]; then \
+  if [ "$BUILD_MODE" = "production" ]; then \
+    NODE_ENV=production \
     BUILD_STANDALONE=true \
     DATABASE_URL="postgresql://user:password@localhost:5432/seats_reservation" \
     DIRECT_DATABASE_URL="postgresql://user:password@localhost:5432/seats_reservation" \
@@ -121,7 +132,8 @@ RUN if [ "$DATABASE_PROVIDER" = "postgres" ]; then \
   cp prisma/schema.sqlite.prisma prisma/schema.prisma; \
   DATABASE_URL="file:./mock.db" \
   npx prisma generate; \
-  if [ "$NODE_ENV" = "production" ]; then \
+  if [ "$BUILD_MODE" = "production" ]; then \
+    NODE_ENV=production \
     BUILD_STANDALONE=true \
     DATABASE_URL="file:./mock.db" \
     npm run build; \
@@ -129,7 +141,7 @@ RUN if [ "$DATABASE_PROVIDER" = "postgres" ]; then \
   fi
 
 # Build done, prune production to make container smaller
-RUN if [ "$NODE_ENV" = "production" ]; then \
+RUN if [ "$BUILD_MODE" = "production" ]; then \
   echo "✂️ Prune PRODUCTION..."; \
   npm prune --omit=dev; \
   fi
@@ -145,9 +157,22 @@ RUN echo "✅ Build verification..." && \
 
 # ==========================================
 # STAGE 3A: Dummy Stage for Development Mode
-# Empty Stage: app-runner-${NODE_ENV:dev}
+# Empty Stage: app-runner-${BUILD_MODE:-dev}
 # ==========================================
 FROM node:22.14-alpine AS app-runner-dev
+
+# re-declare to require global arguments
+ARG BUILD_MODE
+ARG DATABASE_PROVIDER
+
+# To make docker console show utf8 while composing alpine
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+# # ubuntu/debian
+# ENV LANG=en_US.UTF-8
+# ENV LANGUAGE=en_US:en
+# ENV LC_ALL=en_US.UTF-8
+
 WORKDIR /app
 
 # Debug
@@ -175,10 +200,23 @@ RUN echo "✅ [ Development Mode ] Run verification..." && \
 
 # ===================================================
 # STEP 3B: Runner Stage for Production Mode
-# Production Stage: app-runner-${NODE_ENV:production}
+# Production Stage: app-runner-${BUILD_MODE:-production}
 # ===================================================
 # use node >= 22 for firebase 14
 FROM node:22.14-alpine AS app-runner-production
+
+# re-declare to require global arguments
+ARG BUILD_MODE
+ARG DATABASE_PROVIDER
+
+# To make docker console show utf8 while composing alpine
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+# # ubuntu/debian
+# ENV LANG=en_US.UTF-8
+# ENV LANGUAGE=en_US:en
+# ENV LC_ALL=en_US.UTF-8
+
 WORKDIR /app
 
 # Debug
@@ -219,8 +257,11 @@ RUN echo "✅ [ Production Mode ] Run verification..." && \
 # ==========================================
 FROM app-runner-$BUILD_MODE AS app-runner
 
-# To make docker console show utf8 while composing
-# alpine
+# re-declare to require global arguments
+ARG BUILD_MODE
+ARG DATABASE_PROVIDER
+
+# To make docker console show utf8 while composing alpine
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 # # ubuntu/debian
@@ -256,6 +297,8 @@ USER nextjs
 
 # expose container port
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=$BUILD_MODE
+ENV DATABASE_PROVIDER=$DATABASE_PROVIDER
 ENV SHOULD_SEED=false
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0

@@ -3,16 +3,16 @@ chcp 65001 > nul 2>&1
 
 set "DB=%~1"
 set "NO_CACHE=%~2"
-set "DEV_MODE=%~3"
+set "BUILD_MODE=%~3"
 set "TAB=	"
 set DOCKER_COMPOSE_FOLDER=%~dp0
 if /I "%DB%"=="dev" (
 	set "DB=sqlite"
-	set "DEV_MODE=dev"
+	set "BUILD_MODE=dev"
 )
 if /I "%NO_CACHE%"=="dev" (
 	set "NO_CACHE="
-	set "DEV_MODE=dev"
+	set "BUILD_MODE=dev"
 )
 if /I "%NO_CACHE%"=="" set NO_CACHE=CACHED
 
@@ -27,7 +27,12 @@ echo.
 Rem build enviroment - calculate the context path is the parent of current directory
 set BUILD_CONTEXT=./..
 set DOCKERFILE_PATH=Dockerfile
-echo %TAB%- ⚙️ Build Docker with context: %BUILD_CONTEXT_FOLDER% ^| Dockerfile^: %DOCKERFILE_PATH% ^| Build Mode: %DEV_MODE%
+if /I "%BUILD_MODE%"=="dev" (
+	echo %TAB%- ⚙️ Build Docker with context: %BUILD_CONTEXT_FOLDER% ^| Dockerfile^: %DOCKERFILE_PATH% ^| Build Mode: Development
+) else (
+	set BUILD_MODE=production
+	echo %TAB%- ⚙️ Build Docker with context: %BUILD_CONTEXT_FOLDER% ^| Dockerfile^: %DOCKERFILE_PATH% ^| Build Mode: Production
+)
 echo BUILD_CONTEXT=%BUILD_CONTEXT% > .env
 echo DOCKERFILE_PATH=%DOCKERFILE_PATH% >> .env
 if /I "%DB%"=="postgres" (
@@ -35,7 +40,7 @@ if /I "%DB%"=="postgres" (
 ) else (
 	echo DATABASE_PROVIDER=sqlite >> .env
 )
-if /I "%DEV_MODE%"=="dev" (
+if /I "%BUILD_MODE%"=="dev" (
 	echo BUILD_MODE=dev >> .env
 ) else (
 	echo BUILD_MODE=production >> .env
@@ -47,42 +52,22 @@ echo %TAB%- ⚙️ Build and compose (%NO_CACHE%)
 if /I "%DB%"=="postgres" (
 	REM --no-cache
 	if /I "%NO_CACHE%"=="--no-cache" (
-		if /I "%DEV_MODE%"=="dev" (
-			docker compose --progress=plain -f docker-compose-postgres.yml build --build-arg DATABASE_PROVIDER=postgres --build-arg BUILD_MODE=dev --no-cache ^
-				&& docker compose -f docker-compose-postgres.yml up --force-recreate -d
-			goto :done
-		)
-		docker compose --progress=plain -f docker-compose-postgres.yml build --build-arg DATABASE_PROVIDER=postgres --build-arg BUILD_MODE=production --no-cache ^
+		docker compose --progress=plain -f docker-compose-postgres.yml build --build-arg DATABASE_PROVIDER=postgres --build-arg BUILD_MODE=%BUILD_MODE% --no-cache ^
 			&& docker compose -f docker-compose-postgres.yml up --force-recreate -d
 		goto :done
 	)
-	if /I "%DEV_MODE%"=="dev" (
-		docker compose --progress=plain -f docker-compose-postgres.yml build --build-arg DATABASE_PROVIDER=postgres --build-arg BUILD_MODE=dev ^
-			&& docker compose -f docker-compose-postgres.yml up --force-recreate -d
-		goto :done
-	)
-	docker compose --progress=plain -f docker-compose-postgres.yml build --build-arg DATABASE_PROVIDER=postgres --build-arg BUILD_MODE=production ^
+	docker compose --progress=plain -f docker-compose-postgres.yml build --build-arg DATABASE_PROVIDER=postgres --build-arg BUILD_MODE=%BUILD_MODE% ^
 		&& docker compose -f docker-compose-postgres.yml up --force-recreate -d
 	goto :done
 )
 
 REM --no-cache
 if /I "%NO_CACHE%"=="--no-cache" (
-	if /I "%DEV_MODE%"=="dev" (
-		docker compose --progress=plain -f docker-compose-sqlite.yml build --build-arg DATABASE_PROVIDER=sqlite --build-arg BUILD_MODE=dev --no-cache ^
-			&& docker compose -f docker-compose-sqlite.yml up --force-recreate -d
-		goto :done
-	)
-	docker compose --progress=plain -f docker-compose-sqlite.yml build --build-arg DATABASE_PROVIDER=sqlite --build-arg BUILD_MODE=production --no-cache ^
+	docker compose --progress=plain -f docker-compose-sqlite.yml build --build-arg DATABASE_PROVIDER=sqlite --build-arg BUILD_MODE=%BUILD_MODE% --no-cache ^
 		&& docker compose -f docker-compose-sqlite.yml up --force-recreate -d
 	goto :done
 )
-if /I "%DEV_MODE%"=="dev" (
-	docker compose --progress=plain -f docker-compose-sqlite.yml build --build-arg DATABASE_PROVIDER=sqlite --build-arg BUILD_MODE=dev ^
-		&& docker compose -f docker-compose-sqlite.yml up --force-recreate -d
-	goto :done
-)
-docker compose --progress=plain -f docker-compose-sqlite.yml build --build-arg DATABASE_PROVIDER=sqlite --build-arg BUILD_MODE=production ^
+docker compose --progress=plain -f docker-compose-sqlite.yml build --build-arg DATABASE_PROVIDER=sqlite --build-arg BUILD_MODE=%BUILD_MODE% ^
 	&& docker compose -f docker-compose-sqlite.yml up --force-recreate -d
 
 :done
