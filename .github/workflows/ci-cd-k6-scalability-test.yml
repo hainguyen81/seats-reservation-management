@@ -1,6 +1,9 @@
 name: 📈 [ TEST ] Scalability k6 Stress Testing (Pure k6 Load Injector)
 
 on:
+  # allow other workflow call into
+  workflow_call:
+  
   # Allows manual triggering of this workflow directly from the GitHub Actions UI
   workflow_dispatch:
     inputs:

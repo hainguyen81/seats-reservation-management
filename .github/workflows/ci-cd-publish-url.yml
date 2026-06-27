@@ -1,6 +1,9 @@
 name: ⚡ Generate and Export GCP/GKE Links to README
 
 on:
+  # allow other workflow call into
+  workflow_call:
+  
   # manual trigger workflow
   workflow_dispatch:
     inputs:

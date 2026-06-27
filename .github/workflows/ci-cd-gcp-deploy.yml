@@ -37,7 +37,10 @@ on:
   #   branches: [ "master" ] # active when merge code into master
   # pull_request:
   #   branches: [ "master" ]
-
+  
+  # allow other workflow call into
+  workflow_call:
+  
   # manual trigger workflow
   workflow_dispatch:
     inputs:

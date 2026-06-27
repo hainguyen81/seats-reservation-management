@@ -6,11 +6,17 @@ on:
     branches: [ "master" ] # active when merge code into master
     # only triggered when pushing *.js/*.ts/*.tsx
     paths: [ "**/*.js", "**/*.ts", "**/*.tsx" ]
+  
   pull_request:
     # only triggered when pushing *.js/*.ts/*.tsx
     paths: [ "**/*.js", "**/*.ts", "**/*.tsx" ]
+  
+  # allow other workflow call into
+  workflow_call:
+  
   # manual trigger workflow
   workflow_dispatch:
+  
 
 # enviroment
 env:
