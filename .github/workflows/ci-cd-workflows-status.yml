@@ -48,6 +48,6 @@ jobs:
           curl -X PATCH \
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github+json" \
-            https://github.com${{ github.repository }}/actions/runs/$RUN_ID \
+            https://github.com/${{ github.repository }}/actions/runs/$RUN_ID \
             -d "{\"run_name\":\"[$EMOJI $CONCLUSION] Commit: ${{ github.event.workflow_run.head_commit.message }}\"}"
 
