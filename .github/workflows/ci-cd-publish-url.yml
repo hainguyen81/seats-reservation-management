@@ -176,6 +176,22 @@ jobs:
           done
           echo "✅ Done 👷"
       
+      # debugging
+      - name: 📄 Debug - Show updated README content
+        if: success()                 # if previous step is successful
+        run: |
+          echo "===================================================="
+          echo "🔍 [ PROJECT ] README.MD:"
+          echo "===================================================="
+          cat "$GITHUB_WORKSPACE/README.md"
+          
+          echo ""
+          echo "===================================================="
+          echo "🔍 [ SOURCES ] README.MD:"
+          echo "===================================================="
+          cat "$GITHUB_WORKSPACE/sources/README.md"
+          echo "===================================================="
+      
       # 4. Commit/Push modified README
       - name: 🚀 Auto Commit and Push README changes
         if: success()                 # if previous step is successful
