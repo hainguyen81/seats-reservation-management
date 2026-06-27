@@ -4,7 +4,7 @@
 | :--- | :--- |
 | **🚢 Seats Reservation Platform CI/CD Pipeline** | ![CI/CD Pipeline Status](https://github.com/hainguyen81/seats-reservation-management/actions/workflows/ci-cd-platform.yml/badge.svg) |
 | **🚀 [ TEST ] Seats Reservation Platform CI/CD Pipeline** | ![Automated End-to-End (E2E) Testing Status](https://github.com/hainguyen81/seats-reservation-management/actions/workflows/ci-cd-test.yml/badge.svg) |
-| **🐳 [ DOCKER IMAGE ] Seats Reservation Platform CI/CD Pipeline** | ![Docker Deployment Status](https://github.com/hainguyen81/seats-reservation-management/actions/workflows/ci-cd-docker-image.yml/badge.svg) |
+| **🐳 [ DOCKER ] Seats Reservation Platform CI/CD Pipeline** | ![Docker Deployment Status](https://github.com/hainguyen81/seats-reservation-management/actions/workflows/ci-cd-docker-image.yml/badge.svg) |
 | **☁️ [ GCP Deployment ] Seats Reservation Platform CI/CD Pipeline** | ![GCP Deployment Status](https://github.com/hainguyen81/seats-reservation-management/actions/workflows/ci-cd-gcp-deploy.yml/badge.svg) |
 | **☁️ [ GKE Deployment ] Seats Reservation Platform CI/CD Pipeline** | ![GKE Deployment Status](https://github.com/hainguyen81/seats-reservation-management/actions/workflows/ci-cd-gke-deploy.yml/badge.svg) |
 | **📈 [ TEST ] Scalability k6 Stress Testing (Pure k6 Load Injector)** | ![Scalability k6 Stress Testing Status](https://github.com/hainguyen81/seats-reservation-management/actions/workflows/ci-cd-k6-scalability-test.yml/badge.svg) |

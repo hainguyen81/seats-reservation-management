@@ -1,4 +1,4 @@
-name: 🐳 [ DOCKER IMAGE ] Seats Reservation Platform CI/CD Pipeline
+name: 🐳 [ DOCKER ] Seats Reservation Platform CI/CD Pipeline
 
 on:
   # auto trigger workflow

@@ -307,7 +307,7 @@ This section documents the continuous integration and deployment pipeline config
 
 | GitHubCI/CD Workflows | Latest Running Status(es) |
 | :--- | :--- |
-| **🐳 [ DOCKER IMAGE ] Seats Reservation Platform CI/CD Pipeline** | ![Docker Deployment Status](https://github.com/hainguyen81/seats-reservation-management/actions/workflows/ci-cd-docker-image.yml/badge.svg) |
+| **🐳 [ DOCKER ] Seats Reservation Platform CI/CD Pipeline** | ![Docker Deployment Status](https://github.com/hainguyen81/seats-reservation-management/actions/workflows/ci-cd-docker-image.yml/badge.svg) |
 | **☁️ [ GCP Deployment ] Seats Reservation Platform CI/CD Pipeline** | ![GCP Deployment Status](https://github.com/hainguyen81/seats-reservation-management/actions/workflows/ci-cd-gcp-deploy.yml/badge.svg) |
 
 ---
