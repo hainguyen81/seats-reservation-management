@@ -326,6 +326,14 @@ jobs:
     if: ${{ !cancelled() }}
     
     steps:
+      # Clean up temporary artifact
+      - name: 🧹 Clean up Temp Artifacts from GitHub Storage
+        if: always()    # Always run to clean up
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          # Use pattern (*) to delete all artifacts with prefix `gcp-url-`
+          name: gcp-url-*
+      
       # Clean up
       - name: ⚙️ Force Kill Orphan Processes
         if: always()    # Always run to clean up

@@ -52,13 +52,12 @@ jobs:
   # ==============================================================================
   # 🏃 Publish URL to project README.md
   # ==============================================================================
-  publish-url-readme:
-    name: 🏃 Publish URL to project README.md
+  preparation-to-publish-url-readme:
+    name: 🔍 Validate and Save the Published Service Information
     runs-on: ubuntu-latest
     
     # load services configuraion
     strategy:
-      max-parallel: 1       # run only one service once to avoid conflicts when pushing
       fail-fast: false
       matrix:
         # run parallel threads for services
@@ -66,58 +65,119 @@ jobs:
 
     steps:
       # 1. Check whether allow for running workflow
-      - name: 🛡️ Gatekeeper - Validate Administrative Access
-        if: |
-          github.event_name != 'pull_request'
-          && (matrix.service.published_url == null || matrix.service.published_url == '')
+      - name: 🛡️ Gatekeeper - Validate Published Service
         run: |
-          echo "❌ ${{ matrix.service.name }} requires provisioning the published URL. Skipping remaining logic safely."
-          exit 0
-
-      # 1. Check out source code to update README
-      - name: ⬇️ Checkout Source Code to update Public GCP Deployment Links
-        if: success()                 # if previous step is successful
-        uses: actions/checkout@v4
+          if [ "${{ github.event_name }}" == "pull_request" ] || [ -z "${{ matrix.service.published_url }}" ]; then
+            echo "❌ Ignore: ${{ matrix.service.name }} has invalid published URL."
+            exit 1
+          fi
       
-      # 2. Export the GCP public URL to README
+      # 2. Save service published information to an temporary artifact for next step
+      - name: 💾 Save Service URL to Temp File
+        if: success()                 # if previous step is successful
+        run: |
+          # create JSON file contains the published information
+          echo '{"name": "${{ matrix.service.name }}", "published_url": "${{ matrix.service.published_url }}"}' > "${{ matrix.service.name }}.json"
+      
+      # 2.1. Upload published service JSON to an temporary artifact
+      - name: 📦 Upload Published Service Information Artifact
+        if: success()                 # if previous step is successful
+        uses: actions/upload-artifact@v4
+        with:
+          name: published-service-${{ matrix.service.name }}
+          path: "${{ matrix.service.name }}.json"
+  
+  # ==============================================================================
+  # 🏃 Publish URL to project README.md
+  # ==============================================================================
+  publish-url-readme:
+    name: 🏃 Publish URL to project README.md
+    runs-on: ubuntu-latest
+    needs: [ preparation-to-publish-url-readme ]
+    if: success()                 # if previous job is successful
+    
+    steps:
+      # 1. Check out source to publish README.md
+      - name: ⬇️ Checkout Source Code
+        uses: actions/checkout@v4
+
+      # 2. Download Published Service Information Artifact from previous job to combine
+      - name: 📥 Download All Service Artifacts
+        if: success()                 # if previous step is successful
+        uses: actions/download-artifact@v4
+        with:
+          # Use pattern (*) to download all artifacts with prefix `published-service-` to same folder
+          pattern: published-service-*
+          path: temp-urls
+          merge-multiple: true # Merge all files `.json` to temp-urls folder
+      
+      # 3. Export the GCP public URL to README
       - name: 🔗 Generate and Export GCP Links to README
         if: success()                 # if previous step is successful
         run: |
-          # 1. Define your deployment variables
-          SERVICE_NAME=${{ matrix.service.name }}
-          PUBLIC_URL=${{ matrix.service.published_url }}
-          TIME_STAMP="*(Last updated: $(date -u))*"
+          # 1. Check if not found any `.json` file from artifact
+          if [ ! -d "temp-urls" ] || [ -z "$(ls -A temp-urls/*.json 2>/dev/null)" ]; then
+            echo "⚠️ Not found any published service information JSON file."
+            exit 1
+          fi
           
-          # 2. Create the Markdown to update README
-          PLACEHOLDER_START="<!-- START-${SERVICE_NAME} -->"
-          PLACEHOLDER_END="<!-- END-${SERVICE_NAME} -->"
-          LINK_MARKDOWN="[$PUBLIC_URL]($PUBLIC_URL)"
-          REPLACEMENT_MARKDOWN="${LINK_MARKDOWN}<br> ${TIME_STAMP}"
+          # 2. Use jq to collect all JSON files to one JSON Object (-s)
+          # Ex: [{"name":"service-A","published_url":"url-A"},{"name":"service-B","published_url":"url-B"}]
+          JSON_ARRAY=$(jq -s -c '.' temp-urls/*.json)
           
-          # 3. Build README
-          update_readme_file() {
-            local file_path="$1"
-            if [ ! -f "$file_path" ]; then
-              echo "⚠️ Ignore: Not found $file_path"
-              return
-            fi
+          echo "🏃 Published Services Information from Artifacts:"
+          echo "$JSON_ARRAY"
+          echo "----------------------------------------"
+          
+          # 3. Use jq to extract information (text) and loop
+          # Line: tên_service|url_service
+          echo "$JSON_ARRAY" | jq -r '.[] | "\(.name)|\(.published_url)"' | while os_line_read= read -r line; do
+          
+            # 3.1. Define your deployment variables
+            SERVICE_NAME=${{ matrix.service.name }}
+            PUBLIC_URL=${{ matrix.service.published_url }}
+            TIME_STAMP="*(Last updated: $(date -u))*"
             
-            # 🚀 Use sed:
-            # - Find START and END tags on same line, 
-            # - Clear everything inside tags and replace $LINK_MARKDOWN into.
-            sed -i "s|${PLACEHOLDER_START}.*${PLACEHOLDER_END}|${PLACEHOLDER_START} ${REPLACEMENT_MARKDOWN} ${PLACEHOLDER_END}|g" "$file_path"
-            echo "✔️ Updated $file_path successfully"
-          }
+            # 2. Create the Markdown to update README
+            PLACEHOLDER_START="<!-- START-${SERVICE_NAME} -->"
+            PLACEHOLDER_END="<!-- END-${SERVICE_NAME} -->"
+            LINK_MARKDOWN="[$PUBLIC_URL]($PUBLIC_URL)"
+            REPLACEMENT_MARKDOWN="${LINK_MARKDOWN}<br> ${TIME_STAMP}"
+            
+            # 3. Build README
+            update_readme_file() {
+              local file_path="$1"
+              if [ ! -f "$file_path" ]; then
+                echo "⚠️ Ignore: Not found $file_path"
+                return
+              fi
+              
+              # 🚀 Use sed:
+              # - Find START and END tags on same line, 
+              # - Clear everything inside tags and replace $LINK_MARKDOWN into.
+              sed -i "s|${PLACEHOLDER_START}.*${PLACEHOLDER_END}|${PLACEHOLDER_START} ${REPLACEMENT_MARKDOWN} ${PLACEHOLDER_END}|g" "$file_path"
+              echo "✔️ Updated $file_path successfully"
+            }
+            
+            update_readme_file "README.md"
+            update_readme_file "./sources/README.md"
           
-          update_readme_file "README.md"
-          update_readme_file "./sources/README.md"
+          done
           echo "✅ Done 👷"
       
-      # 3. Commit/Push modified README
+      # 4. Commit/Push modified README
       - name: 🚀 Auto Commit and Push README changes
         if: success()                 # if previous step is successful
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "Docs: Automated update of published link ${{ matrix.service.publish_url }} for ${{ matrix.service.name }} to README.md [skip ci]"
-          file_pattern: "**/README.md"
+          file_pattern: "README.md sources/README.md"
+      
+      # Clean up temporary artifact
+      - name: 🧹 Clean up Temp Artifacts from GitHub Storage
+        if: always()    # Always run to clean up
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          # Use pattern (*) to delete all artifacts with prefix `published-service-`
+          name: published-service-*
 
