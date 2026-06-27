@@ -7,9 +7,6 @@ on:
   # pull_request:
   #  branches: [ "master" ]
   
-  # allow other workflow call into
-  workflow_call:
-  
   # manual trigger workflow
   workflow_dispatch:
     inputs:
@@ -32,6 +29,14 @@ on:
                 }
             }
           ]
+  
+  # allow other workflow call into (inputs same as workflow_dispatch but required)
+  workflow_call:
+    inputs:
+      env_data:
+        description: "🔧 Environment Variables (JSON)"
+        required: true    # not require, due to be triggered standalone
+        type: string      # receive enviroment from parent workflow under JSON string
 
 # permissions for GitHub Actions READ/WRITE
 permissions:

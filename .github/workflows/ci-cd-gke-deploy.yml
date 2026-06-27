@@ -36,9 +36,6 @@ on:
   # pull_request:
   #   branches: [ "master" ]
   
-  # allow other workflow call into
-  workflow_call:
-  
   # manual trigger workflow
   workflow_dispatch:
     inputs:
@@ -91,6 +88,30 @@ on:
                 }
             }
           ]
+  
+  # allow other workflow call into (inputs same as workflow_dispatch but required)
+  workflow_call:
+    inputs:
+      region:
+        description: "🌍 GCP Region (us-central1, us-east1, us-west1)"
+        required: true          # not require, due to be triggered standalone
+        type: string            # receive enviroment from parent workflow under JSON string
+      machine_type:
+        description: "⚙️ GKE Machine Type (e2-micro, e2-small, e2-medium)"
+        required: true          # not require, due to be triggered standalone
+        type: string            # receive enviroment from parent workflow under JSON string
+      nodes_number:
+        description: "⚙️ The number of GKE Machine Node"
+        required: true          # not require, due to be triggered standalone
+        type: number            # receive enviroment from parent workflow under JSON string
+      cluster_disk_size:
+        description: "⚙️ The disk size of GKE Cluster (Ex: 20GB)"
+        required: true          # not require, due to be triggered standalone
+        type: string            # receive enviroment from parent workflow under JSON string
+      env_data:
+        description: "🔧 Environment Variables (JSON)"
+        required: true          # not require, due to be triggered standalone
+        type: string            # receive enviroment from parent workflow under JSON string
 
 # permissions for GitHub Actions READ/WRITE
 permissions:

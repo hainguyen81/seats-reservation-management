@@ -38,9 +38,6 @@ on:
   # pull_request:
   #   branches: [ "master" ]
   
-  # allow other workflow call into
-  workflow_call:
-  
   # manual trigger workflow
   workflow_dispatch:
     inputs:
@@ -79,6 +76,18 @@ on:
                 "gcp_secrets":                    "GCP_SECRET_POSTGRES"
             }
           ]
+  
+  # allow other workflow call into (inputs same as workflow_dispatch but required)
+  workflow_call:
+    inputs:
+      region:
+        description: "🌍 GCP Region (us-central1, us-east1, us-west1)"
+        required: true          # not require, due to be triggered standalone
+        type: string            # receive enviroment from parent workflow under JSON string
+      env_data:
+        description: "🔧 Environment Variables (JSON)"
+        required: true          # not require, due to be triggered standalone
+        type: string            # receive enviroment from parent workflow under JSON string
 
 # permissions for GitHub Actions READ/WRITE
 permissions:

@@ -1,32 +1,52 @@
 name: 📈 [ TEST ] Scalability k6 Stress Testing (Pure k6 Load Injector)
 
 on:
-  # allow other workflow call into
-  workflow_call:
-  
   # Allows manual triggering of this workflow directly from the GitHub Actions UI
   workflow_dispatch:
     inputs:
       k6_test_file:
         description: "👷 Concurrency k6 Stress Testing File Path (Ex: ./sources/tests/scalability-test.js)"
         required: false
-        default: "./sources/tests/scalability-health-check-test.js"
         type: string
+        default: "./sources/tests/scalability-health-check-test.js"
       target_url:
         description: "🌐 Target Environment URL for Scalability Load Testing (LoadBalancer IP or Domain)"
-        required: true
+        required: false
         type: string
         default: "http://localhost:3000"
       concurrent_users:
         description: "👷 Maximum virtual users (VUs) to simulate simultaneously"
         required: false
-        default: 50
         type: number
+        default: 50
       test_duration:
         description: "✨ Execution boundary for the high stress testing injection loop (in seconds)"
         required: false
-        default: 30
         type: number
+        default: 30
+  
+  # allow other workflow call into (inputs same as workflow_dispatch but required)
+  workflow_call:
+    inputs:
+      k6_test_file:
+        description: "👷 Concurrency k6 Stress Testing File Path (Ex: ./sources/tests/scalability-test.js)"
+        required: false
+        type: string
+        default: "./sources/tests/scalability-health-check-test.js"
+      target_url:
+        description: "🌐 Target Environment URL for Scalability Load Testing (LoadBalancer IP or Domain)"
+        required: true
+        type: string
+      concurrent_users:
+        description: "👷 Maximum virtual users (VUs) to simulate simultaneously"
+        required: false
+        type: number
+        default: 50
+      test_duration:
+        description: "✨ Execution boundary for the high stress testing injection loop (in seconds)"
+        required: false
+        type: number
+        default: 30
 
 # permissions for GitHub Actions READ/WRITE
 permissions:
