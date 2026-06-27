@@ -4,6 +4,10 @@ chcp 65001 > nul
 set "TAB=	"
 set K8S_FOLDER=%~dp0
 set DOCKER_FOLDER=%K8S_FOLDER%..\.docker
+set "K8S_DEPLOYMENT_FILE=k8s-deployment-sqlite.yml"
+if /I "%~1"=="postgres" (
+	set "K8S_DEPLOYMENT_FILE=k8s-deployment-postgres.yml"
+)
 
 set DOCKER_BUILDKIT=1
 set COMPOSE_DOCKER_CLI_BUILD=1
@@ -18,28 +22,7 @@ echo -------------------------------------------------
 REM go to root project folder to build image
 cd /d %DOCKER_FOLDER%.. > nul
 REM Postgres
-if /I "%~1"=="postgres" (
-	if /I "%~2"=="--no-cache" (
-		call docker-build-postgres.bat --no-cache /wait
-		goto :deploy
-	)
-	call docker-build-postgres.bat /wait
-	goto :deploy
-)
-REM SQLite
-if /I "%~1"=="sqlite" (
-	if /I "%~2"=="--no-cache" (
-		call docker-build-sqlite.bat --no-cache /wait
-		goto :deploy
-	)
-	call docker-build-sqlite.bat /wait
-	goto :deploy
-)
-if /I "%~1"=="--no-cache" (
-	call docker-build-sqlite.bat --no-cache /wait
-	goto :deploy
-)
-call docker-build-sqlite.bat /wait
+call docker-build.bat %1 %2
 
 :deploy
 REM back to k8s folder to deploy
@@ -50,11 +33,7 @@ echo -------------------------------------------------
 echo ► 2. Deploy Built Docker Images to K8s
 echo -------------------------------------------------
 echo %TAB%- Deploy seats reservation service
-if /I "%~1"=="postgres" (
-	kubectl apply -f k8s-deployment-postgres.yml --force
-	goto :check
-)
-kubectl apply -f k8s-deployment-sqlite.yml --force
+kubectl apply -f %K8S_DEPLOYMENT_FILE% --force
 
 :check
 echo.

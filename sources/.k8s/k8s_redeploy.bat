@@ -2,20 +2,20 @@
 chcp 65001 > nul
 
 set "TAB=	"
+set "K8S_PVC_PATTERN=sqlite-"
+set "K8S_DEPLOYMENT_FILE=k8s-deployment-sqlite.yml"
+if /I "%~1"=="postgres" (
+	set "K8S_DEPLOYMENT_FILE=k8s-deployment-postgres.yml"
+	set "K8S_PVC_PATTERN=postgres-"
+)
 
 echo -------------------------------------------------
 echo ► 1. Redeploy services
 echo -------------------------------------------------
 echo %TAB%- Redeploy seats reservation service
-if /I "%~1"=="postgres" (
-	kubectl delete service seats-reservation-service-lb
-	call k4ce-delete-pvc-pattern.bat postgres- /wait
-	kubectl apply -f k8s-deployment-postgres.yml --force
-	goto :check
-)
 kubectl delete service seats-reservation-service-lb
-call k4ce-delete-pvc-pattern.bat sqlite- /wait
-kubectl apply -f k8s-deployment-sqlite.yml --force
+call k4ce-delete-pvc-pattern.bat %K8S_PVC_PATTERN%
+kubectl apply -f %K8S_DEPLOYMENT_FILE% --force
 
 :check
 echo.

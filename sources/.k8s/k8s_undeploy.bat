@@ -1,14 +1,17 @@
 @echo off
 chcp 65001 > nul
 
+set "K8S_PVC_PATTERN=sqlite-"
+set "K8S_DEPLOYMENT_FILE=k8s-deployment-sqlite.yml"
+if /I "%~1"=="postgres" (
+	set "K8S_DEPLOYMENT_FILE=k8s-deployment-postgres.yml"
+	set "K8S_PVC_PATTERN=postgres-"
+)
+
 echo -------------------------------------------------
 echo ► 1. Undeploy K8s
 echo -------------------------------------------------
-if /I "%~1"=="postgres" (
-	kubectl delete -f k8s-deployment-postgres.yml --grace-period=0 --force
-	goto :check
-)
-kubectl delete -f k8s-deployment-sqlite.yml --grace-period=0 --force
+kubectl delete -f %K8S_DEPLOYMENT_FILE% --grace-period=0 --force
 
 :check
 echo.
@@ -20,11 +23,7 @@ kubectl delete deployments --all --grace-period=0 --force
 REM delete all services (include all opened NodePort/ClusterIP)
 kubectl delete pvc --selector=seat-reservation --grace-period=0 --force
 kubectl delete pvc --all --grace-period=0 --force
-if /I "%~1"=="postgres" (
-	call k4ce-delete-pvc-pattern.bat postgres-
-	goto :done
-)
-call k4ce-delete-pvc-pattern.bat sqlite-
+call k4ce-delete-pvc-pattern.bat %K8S_PVC_PATTERN%
 
 :done
 pause

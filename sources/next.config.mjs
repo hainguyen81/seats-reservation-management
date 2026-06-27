@@ -20,7 +20,7 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   // for hot-reload
-  productionBrowserSourceMaps: true,
+  productionBrowserSourceMaps: !productionMode,
   // debugging
   logging: {
     fetches: {
@@ -32,12 +32,8 @@ const nextConfig = {
   },
 
   // 💡 alias webpack because docker build for production
-  webpack: (config, { dev, isServer }) => {
+  webpack: (config) => {
     config.resolve.alias["@"] = path.resolve(__dirname, "src");
-    // if (dev) {
-    //   // map source correct in DEV enviroment
-    //   config.devtool = isServer ? "eval-source-map" : "cheap-module-source-map";
-    // }
     return config;
   },
 };

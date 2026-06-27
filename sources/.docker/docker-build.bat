@@ -41,7 +41,7 @@ echo.
 Rem build enviroment - calculate the context path is the parent of current directory
 set BUILD_CONTEXT=./..
 set DOCKERFILE_PATH=Dockerfile
-echo %TAB%- ⚙️ Build Docker^: Compose-File^: %DOCKER_COMPOSE_FILE% ^| Dockerfile^: %DOCKERFILE_PATH% ^| Build Mode^: %DISP_BUILD_MODE% ^| %BUILD_CONTEXT_FOLDER%
+echo %TAB%- ⚙️ Build Docker^: Compose-File^: %DOCKER_COMPOSE_FILE% ^| Dockerfile^: %DOCKERFILE_PATH% ^| Build Mode: %DISP_BUILD_MODE% ^| %BUILD_CONTEXT_FOLDER%
 
 Rem export .env file to build
 echo BUILD_CONTEXT=%BUILD_CONTEXT% > .env
@@ -52,9 +52,8 @@ echo.
 
 REM NODE_ENV=dev|production --> Stage in Dockerfile
 echo %TAB%- ⚙️ Build and compose (%DISP_BUILD_MODE% ^| %DB% ^| %DISP_NO_CACHE% ^| %DOCKER_COMPOSE_FILE%)
-docker compose --progress=plain -f %DOCKER_COMPOSE_FILE% build --build-arg DATABASE_PROVIDER=%DB% --build-arg BUILD_MODE=%BUILD_MODE% %NO_CACHE% ^
-		&& docker compose -f %DOCKER_COMPOSE_FILE% up --force-recreate -d
+docker build --progress=plain --progress=plain -f %DOCKER_COMPOSE_FILE% --build-arg DATABASE_PROVIDER=%DB% --build-arg BUILD_MODE=%BUILD_MODE% %NO_CACHE%
 
 :done
 del /f /s /q .env >nul 2>&1
-pause
+exit /b 0
