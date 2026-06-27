@@ -2,7 +2,7 @@
 
 ## 🌐 Public GCP & GKE Demostration
 
-| Demo Versions | Demo Link(s) |
+| Demo Version(s) | Demo Link(s) |
 | :--- | :--- |
 | **GCP SQLite** | <!-- START-gcp-seats-reservation-sqlite --> [https://seats-reservation-sqlite-2omkqplgya-uc.a.run.app](https://seats-reservation-sqlite-2omkqplgya-uc.a.run.app)<br> *(Last updated: Sat Jun 27 15:41:52 UTC 2026)* <!-- END-gcp-seats-reservation-sqlite --> |
 | **GCP Postgres** | <!-- START-gcp-seats-reservation-postgres --> [https://seats-reservation-postgres-2omkqplgya-uc.a.run.app](https://seats-reservation-postgres-2omkqplgya-uc.a.run.app)<br> *(Last updated: Sat Jun 27 15:48:26 UTC 2026)* <!-- END-gcp-seats-reservation-postgres --> |

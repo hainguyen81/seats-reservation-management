@@ -2,7 +2,7 @@
 
 ## 🌐 Public GCP & GKE Demostration
 
-| Demo Versions | Demo Link(s) |
+| Demo Version(s) | Demo Link(s) |
 | :--- | :--- |
 | **GCP SQLite** | <!-- START-gcp-seats-reservation-sqlite -->![🏃 Comming soon](https://img.shields.io/badge/%F0%9F%8F%83%20Comming%20soon-orange)<!-- END-gcp-seats-reservation-sqlite --> |
 | **GCP Postgres** | <!-- START-gcp-seats-reservation-postgres -->![🏃 Comming soon](https://img.shields.io/badge/%F0%9F%8F%83%20Comming%20soon-orange)<!-- END-gcp-seats-reservation-postgres --> |
