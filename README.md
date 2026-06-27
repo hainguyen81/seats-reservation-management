@@ -4,8 +4,8 @@
 
 | Demo Versions | Demo Link(s) |
 | :--- | :--- |
-| **GCP SQLite Demo** | <!-- START-gcp-seats-reservation-sqlite -->![🏃 Comming soon](https://img.shields.io/badge/%F0%9F%8F%83%20Comming%20soon-orange)<!-- END-gcp-seats-reservation-sqlite --> |
-| **GCP Postgres Demo** | <!-- START-gcp-seats-reservation-sqlite -->![🏃 Comming soon](https://img.shields.io/badge/%F0%9F%8F%83%20Comming%20soon-orange)<!-- END-gcp-seats-reservation-sqlite --> |
+| **GCP SQLite Demo** | <!-- START-gcp-seats-reservation-sqlite [https://seats-reservation-sqlite-2omkqplgya-uc.a.run.app](https://seats-reservation-sqlite-2omkqplgya-uc.a.run.app) <br> *(Last updated: Sat Jun 27 15:25:39 UTC 2026)*  --> |
+| **GCP Postgres Demo** | <!-- START-gcp-seats-reservation-sqlite [https://seats-reservation-sqlite-2omkqplgya-uc.a.run.app](https://seats-reservation-sqlite-2omkqplgya-uc.a.run.app) <br> *(Last updated: Sat Jun 27 15:25:39 UTC 2026)*  --> |
 | &nbsp; | &nbsp; |
 | **GKE SQLite Demo** | <!-- START-gke-seats-reservation-sqlite -->![🏃 Comming soon](https://img.shields.io/badge/%F0%9F%8F%83%20Comming%20soon-orange)<!-- END-gke-seats-reservation-sqlite --> |
 | **GKE Postgres Demo** | <!-- START-gke-seats-reservation-sqlite -->![🏃 Comming soon](https://img.shields.io/badge/%F0%9F%8F%83%20Comming%20soon-orange)<!-- END-gke-seats-reservation-sqlite --> |
