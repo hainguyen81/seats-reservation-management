@@ -109,7 +109,7 @@ jobs:
     # output for next job
     outputs:
       published-url: ${{ steps.gcp_cloud_run_deployment_check.outputs.gcp_cloud_run_url }}
-
+    
     steps:
       # Check whether allow for running workflow
       - name: 🛡️ Gatekeeper - Validate Administrative Access
@@ -120,7 +120,7 @@ jobs:
           echo "❌ Deployment is administratively DISABLED via GitHub Secrets (secrets.ALLOW_GCP_DEPLOY is not true)."
           echo "Terminating pipeline execution immediately to protect production infrastructure."
           exit 1 # Require Admin Rights
-
+      
       # 1. Login to Google Cloud by Google OAuth2 ADC
       - name: 🔑 Authenticate to Google Cloud via Google OAuth2 ADC
         if: success()                 # if previous step is successful
