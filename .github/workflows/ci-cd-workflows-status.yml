@@ -1,4 +1,4 @@
-name: ℹ️ [ GitHub CI/CD ] Update Latest Workflows Status
+name: ℹ️ [ GitHub CI/CD ] Update Workflows Latest Status
 
 on:
   workflow_run:
@@ -22,6 +22,8 @@ permissions:
 
 # enviroment
 env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   LANG: 'C.UTF-8'
   LC_ALL: 'C.UTF-8'
 
@@ -114,7 +116,7 @@ jobs:
               COMMIT_MSG=$(echo "$RUN_DATA" | jq -r --arg name "$TARGET_WF" '.workflow_runs | map(select(.name == $name)) | .[0].head_commit.message')
               
               # update workflow status
-              if [ "$RUN_ID" != "null" ] && [ ! -z "$RUN_ID" ]; then
+              if [ -n "$RUN_ID" ] && [ "$RUN_ID" != "null" ]; then
                 update_title "$RUN_ID" "$CONCLUSION" "$COMMIT_MSG"
               else
                 echo "---> ⚠️ Not found any running time of workflow '$TARGET_WF'."
