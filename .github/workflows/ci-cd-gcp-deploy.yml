@@ -242,18 +242,42 @@ jobs:
           MARKDOWN_LINK="[$PUBLIC_URL]($PUBLIC_URL)"
           LINK_MARKDOWN="${MARKDOWN_LINK} <br> *(Last updated: $(date -u))*"
           
-          # 3. Use sed to replace everything between the anchor text blocks
-          # This syntax targets the lines between the START and END markers
+          # 3. Build README
           PLACEHOLDER_START="START-gcp-${{ matrix.service.name }}"
           PLACEHOLDER_END="END-gcp-${{ matrix.service.name }}"
-          sed -i "/<!-- $PLACEHOLDER_START -->/,/<!-- $PLACEHOLDER_END -->/{//!d;}" README.md
-          # Insert the new text right after the START marker
-          sed -i "/<!-- $PLACEHOLDER_START -->/a $LINK_MARKDOWN" README.md
+          update_readme_file() {
+            local file_path="$1"
+            local tmp_path="${file_path}.tmp"
+            
+            if [ ! -f "$file_path" ]; then
+              echo "⚠️ Ignore: Not found $file_path"
+              return
+            fi
+            
+            # use awk to replace placeholder with public URL
+            awk -v new_txt="$LINK_MARKDOWN" -v start_tag="<!-- $PLACEHOLDER_START -->" -v end_tag="<!-- $PLACEHOLDER_END -->" '
+              $0 ~ start_tag {
+                print $0; 
+                print new_txt; 
+                skip=1; 
+                next
+              }
+              $0 ~ end_tag {
+                skip=0
+              }
+              !skip {
+                print $0
+              }
+            ' "$file_path" > "$tmp_path"
+            
+            # update new file
+            mv "$tmp_path" "$file_path"
+            echo "👷 Updated README: $file_path"
+          }
           
-          # This syntax targets the lines between the START and END markers
-          sed -i "/<!-- $PLACEHOLDER_START -->/,/<!-- $PLACEHOLDER_END -->/{//!d;}" ./sources/README.md
-          # Insert the new text right after the START marker
-          sed -i "/<!-- $PLACEHOLDER_START -->/a $LINK_MARKDOWN" ./sources/README.md
+          update_readme_file "README.md"
+          update_readme_file "./sources/README.md"
+          echo "✅ Done 👷"
       
       # Optional: Commit/Push modified README
       - name: 🚀 Auto Commit and Push README changes
