@@ -282,7 +282,8 @@ jobs:
   # ==============================================================================
   clean-up:
     needs: [ deploy-to-gcp, publish-url-to-readme ]           # wait for deployment, combine enviroment
-    if: !cancelled()                                          # always run although other jobs are success or failure
+    # always run although other jobs are success or failure
+    if: ${{ !cancelled() }}
     
     steps:
       # Clean up
