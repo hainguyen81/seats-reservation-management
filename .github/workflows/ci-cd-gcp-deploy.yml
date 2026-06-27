@@ -227,12 +227,13 @@ jobs:
       
       # 5. Check out source code to update README
       - name: ⬇️ Checkout Source Code to update Public GCP Deployment Links
-        if: success()                 # if previous step is successful
+        if: success() && github.event_name != 'pull_request'
         uses: actions/checkout@v4
       
       # 5.1. Export the GCP public URL to README
       - name: 🔗 Generate and Export GCP Links to README
-        if: always() && github.event_name != 'pull_request'
+        if: success() && github.event_name != 'pull_request'
+        continue-on-error: true
         run: |
           # 1. Define your deployment variables
           PUBLIC_URL=${{ steps.gcp_cloud_run_deployment_check.outputs.gcp_cloud_run_url }}
@@ -270,7 +271,7 @@ jobs:
           
       # Optional: Post the URL as a comment on your Pull Request (great for debugging)
       - name: Comment PR with URL
-        if: success() && github.event_name == 'pull_request'    # if previous step is successful
+        if: always() && github.event_name == 'pull_request'    # if previous step is successful
         uses: thollander/actions-comment-pull-request@v2
         with:
           message: |
