@@ -155,11 +155,13 @@ RUN echo "✅ Build verification..." && \
   test -f tsconfig.dev.json && echo "✅ tsconfig.dev.json found" || echo "❌ tsconfig.dev.json NOT found" && \
   test -f tsconfig.json && echo "✅ tsconfig.json found" || echo "❌ tsconfig.json NOT found"
 
-# ==========================================
-# STAGE 3A: Dummy Stage for Development Mode
-# Empty Stage: app-runner-${BUILD_MODE:-dev}
-# ==========================================
-FROM node:22.14-alpine AS app-runner-dev
+# ===================================================
+# STEP 3: Runner Stage for Development/Production Mode
+# - Production Stage: app-runner-production}
+# - Development Stage: app-runner-dev
+# ===================================================
+# use node >= 22 for firebase 14
+FROM node:22.14-alpine AS app-runner-base
 
 # re-declare to require global arguments
 ARG BUILD_MODE
@@ -173,11 +175,30 @@ ENV LC_ALL=C.UTF-8
 # ENV LANGUAGE=en_US:en
 # ENV LC_ALL=en_US.UTF-8
 
+# install required Prisma dependencies
+RUN apk add --no-cache openssl libc6-compat gcompat
+
+WORKDIR /app
+
+# Create user, non-root to run container
+RUN addgroup --system --gid 1001 nodejs && \
+  adduser --system --uid 1001 nextjs
+
+# Debug
+RUN echo "-------------------------------------------------" && \
+  echo "🏃 STEP 3: [ Development/Production ] Setup to start application" && \
+  echo "-------------------------------------------------"
+
+# ==========================================
+# STAGE 3A: Dummy Stage for Development Mode
+# Empty Stage: app-runner-${BUILD_MODE:-dev}
+# ==========================================
+FROM app-runner-base AS app-runner-dev
 WORKDIR /app
 
 # Debug
 RUN echo "-------------------------------------------------" && \
-  echo "🏃 STEP 3: [ Runner: Development ] Setup to start application" && \
+  echo "🏃 STEP 3A: [ Runner: 🛠️ Development Mode ]" && \
   echo "-------------------------------------------------"
 
 # Copy package.json from builder layer
@@ -203,30 +224,13 @@ RUN echo "✅ [ Development Mode ] Run verification..." && \
 # Production Stage: app-runner-${BUILD_MODE:-production}
 # ===================================================
 # use node >= 22 for firebase 14
-FROM node:22.14-alpine AS app-runner-production
-
-# re-declare to require global arguments
-ARG BUILD_MODE
-ARG DATABASE_PROVIDER
-
-# To make docker console show utf8 while composing alpine
-ENV LANG=C.UTF-8
-ENV LC_ALL=C.UTF-8
-# # ubuntu/debian
-# ENV LANG=en_US.UTF-8
-# ENV LANGUAGE=en_US:en
-# ENV LC_ALL=en_US.UTF-8
-
+FROM app-runner-base AS app-runner-production
 WORKDIR /app
 
 # Debug
 RUN echo "-------------------------------------------------" && \
-  echo "🏃 STEP 3: [ Runner: Production ] Setup to start application" && \
+  echo "🏃 STEP 3B: [ Runner: 🗜️ Production Mode ]" && \
   echo "-------------------------------------------------"
-
-# Create user, non-root to run container
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
 
 # Copy package.json from builder layer
 COPY --from=builder /app/package*.json ./
@@ -252,31 +256,11 @@ RUN echo "✅ [ Production Mode ] Run verification..." && \
   test -f tsconfig.json && echo "✅ tsconfig.json found" || echo "❌ tsconfig.json NOT found"
 
 # ==========================================
-# Finally: Final Stage by BUILD_MODE (Runner)
+# Combine: Combination Stage by BUILD_MODE (Runner)
 # Choose Stage by BUILD_MODE ARG: `dev`|`production`
 # ==========================================
-FROM app-runner-$BUILD_MODE AS app-runner
-
-# re-declare to require global arguments
-ARG BUILD_MODE
-ARG DATABASE_PROVIDER
-
-# To make docker console show utf8 while composing alpine
-ENV LANG=C.UTF-8
-ENV LC_ALL=C.UTF-8
-# # ubuntu/debian
-# ENV LANG=en_US.UTF-8
-# ENV LANGUAGE=en_US:en
-# ENV LC_ALL=en_US.UTF-8
-
-# install required Prisma dependencies
-RUN apk add --no-cache openssl libc6-compat gcompat
-
+FROM app-runner-$BUILD_MODE AS app-runner-combine
 WORKDIR /app
-
-# Create user, non-root to run container
-RUN addgroup --system --gid 1001 nodejs && \
-  adduser --system --uid 1001 nextjs
 
 # -------------------------------------------------
 # ⚠️ !!!IMPORTANT!!!: Grant write permission for prisma folder
@@ -294,6 +278,13 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Switch to non-root user
 USER nextjs
+
+# ==========================================
+# Finally: Final Stage by BUILD_MODE (Runner)
+# Choose Stage by BUILD_MODE ARG: `dev`|`production`
+# ==========================================
+FROM app-runner-combine AS app-runner
+WORKDIR /app
 
 # expose container port
 ENV NEXT_TELEMETRY_DISABLED=1
