@@ -145,8 +145,8 @@ jobs:
           echo "$JSON_ARRAY" | jq -r '.[] | "\(.name)|\(.published_url)"' | while os_line_read= read -r line; do
           
             # 3.1. Define your deployment variables
-            SERVICE_NAME=${{ matrix.service.name }}
-            PUBLIC_URL=${{ matrix.service.published_url }}
+            SERVICE_NAME=$(echo "$line" | cut -d'|' -f1)
+            PUBLIC_URL=$(echo "$line" | cut -d'|' -f2)
             TIME_STAMP="*(Last updated: $(date -u))*"
             
             # 2. Create the Markdown to update README
