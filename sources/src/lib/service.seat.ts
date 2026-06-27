@@ -123,7 +123,7 @@ export class SeatService {
     } | {
         userId: string;
         email: any;
-    }): Promise<{
+    } | any): Promise<{
         status: number;
         data?: any;
     } | {
@@ -195,7 +195,7 @@ export class SeatService {
         } | {
             userId: string;
             email: any;
-        },
+        } | any,
         req: Request
     ): Promise<{
         status: number;
@@ -217,7 +217,7 @@ export class SeatService {
             mutexLockError = await this.lockSeatMutex(seatId, mutexLockStatus);
             if (mutexLockError && (mutexLockError?.error || '').length) {
                 await auditLog({
-                    userId: session.userId,
+                    userId: session?.userId,
                     action: 'HOLD',
                     target: seatId,
                     status: 'FAILED',
@@ -241,7 +241,7 @@ export class SeatService {
 
             // audit
             await auditLog({
-                userId: session.userId,
+                userId: session?.userId,
                 action: 'HOLD',
                 target: seatId,
                 status: 'SUCCESS',
@@ -256,7 +256,7 @@ export class SeatService {
             if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
                 // audit
                 await auditLog({
-                    userId: session.userId,
+                    userId: session?.userId,
                     action: 'HOLD',
                     target: seatId,
                     status: 'FAILED',
@@ -272,7 +272,7 @@ export class SeatService {
 
             // audit
             await auditLog({
-                userId: session.userId,
+                userId: session?.userId,
                 action: 'HOLD',
                 target: seatId.join(', '),
                 status: 'FAILED',
@@ -296,7 +296,7 @@ export class SeatService {
         } | {
             userId: string;
             email: any;
-        }
+        } | any
     ) {
         // validate 1: seat is not BOOKED
         const seat = await tx.seat.findUnique({ where: { id: seatId } });
@@ -311,7 +311,7 @@ export class SeatService {
                 status: 'PENDING',
                 expiresAt: { gte: new Date() },  // in expired 5 minutes
                 NOT: {
-                    userId: session.userId, // not for me
+                    userId: session?.userId, // not for me
                 },
             },
         });
@@ -335,7 +335,7 @@ export class SeatService {
         // Create Booking PENDING
         return tx.booking.create({
             data: {
-                userId: session.userId,
+                userId: session?.userId,
                 seatId: seatId,
                 status: 'PENDING',
                 expiresAt: new Date(Date.now() + RESERVE_EXPIRY_MINUTES * 60 * 1000), // expired in 5 minutes
@@ -352,7 +352,7 @@ export class SeatService {
         } | {
             userId: string;
             email: any;
-        },
+        } | any,
         req: Request
     ): Promise<{
         status: number;
@@ -379,7 +379,7 @@ export class SeatService {
 
             // audit
             await auditLog({
-                userId: session.userId,
+                userId: session?.userId,
                 action: 'SINGLE_RELEASE',
                 target: seatId,
                 status: 'SUCCESS',
@@ -393,7 +393,7 @@ export class SeatService {
             if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
                 // audit
                 await auditLog({
-                    userId: session.userId,
+                    userId: session?.userId,
                     action: 'SINGLE_RELEASE',
                     target: seatId,
                     status: 'FAILED',
@@ -409,7 +409,7 @@ export class SeatService {
 
             // audit
             await auditLog({
-                userId: session.userId,
+                userId: session?.userId,
                 action: 'SINGLE_RELEASE',
                 target: seatId,
                 status: 'FAILED',
@@ -428,7 +428,7 @@ export class SeatService {
         } | {
             userId: string;
             email: any;
-        }
+        } | any
     ) {
         // check seat existing
         const seat = await tx.seat.findUnique({ where: { id: seatId } });
@@ -436,7 +436,7 @@ export class SeatService {
 
         // check booking
         const booking = await tx.booking.findFirst({
-            where: { seatId: seatId, userId: session.userId, status: 'PENDING' },
+            where: { seatId: seatId, userId: session?.userId, status: 'PENDING' },
         });
         if (!booking) throw new Error('No active reservation found under your account.');
 
@@ -459,7 +459,7 @@ export class SeatService {
         } | {
             userId: string;
             email: any;
-        },
+        } | any,
         req: Request
     ): Promise<{
         status: number;
@@ -488,7 +488,7 @@ export class SeatService {
             mutexLockError = mutexLockResults.filter(res => res && (res?.error || '').length);
             if (mutexLockError && mutexLockError.length) {
                 await auditLog({
-                    userId: session.userId,
+                    userId: session?.userId,
                     action: 'RESERVED',
                     target: seatIds.join(','),
                     status: 'FAILED',
@@ -512,7 +512,7 @@ export class SeatService {
 
             // audit
             await auditLog({
-                userId: session.userId,
+                userId: session?.userId,
                 action: 'RESERVED',
                 target: seatIds.join(', '),
                 status: 'SUCCESS',
@@ -520,7 +520,7 @@ export class SeatService {
                 req
             });
             await auditLog({
-                userId: session.userId,
+                userId: session?.userId,
                 action: mockPaymentSuccess ? 'PAYMENT_SUCCESS' : 'PAYMENT_FAILED',
                 target: seatIds.join(', '),
                 status: 'SUCCESS',
@@ -564,7 +564,7 @@ export class SeatService {
             if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
                 // audit
                 await auditLog({
-                    userId: session.userId,
+                    userId: session?.userId,
                     action: 'RESERVED',
                     target: seatIds.join(', '),
                     status: 'FAILED',
@@ -580,7 +580,7 @@ export class SeatService {
 
             // audit
             await auditLog({
-                userId: session.userId,
+                userId: session?.userId,
                 action: 'RESERVED',
                 target: seatIds.join(', '),
                 status: 'FAILED',
@@ -599,7 +599,7 @@ export class SeatService {
         } | {
             userId: string;
             email: any;
-        },
+        } | any,
         mockPaymentSuccess?: boolean
     ) {
         // 🕵️ OCC LAYER: Loop via every seat to check lock by version
@@ -613,7 +613,7 @@ export class SeatService {
             const booking = await tx.booking.findFirst({
                 where: {
                     seatId: seatId,
-                    userId: session.userId,
+                    userId: session?.userId,
                     status: 'PENDING',
                     expiresAt: { gte: now },
                 },
@@ -638,7 +638,7 @@ export class SeatService {
 
         // update all booking
         await tx.booking.updateMany({
-            where: { seatId: { in: seatIds }, userId: session.userId, status: 'PENDING' },
+            where: { seatId: { in: seatIds }, userId: session?.userId, status: 'PENDING' },
             data: { status: mockPaymentSuccess ? 'COMPLETED' : 'FAILED' },
         });
     }
@@ -652,7 +652,7 @@ export class SeatService {
         } | {
             userId: string;
             email: any;
-        },
+        } | any,
         req: Request
     ): Promise<{
         status: number;
@@ -729,7 +729,7 @@ export class SeatService {
         } | {
             userId: string;
             email: any;
-        }
+        } | any
     ) {
         const now = new Date();
 

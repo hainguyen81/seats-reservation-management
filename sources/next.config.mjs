@@ -27,6 +27,9 @@ const nextConfig = {
       fullUrl: !productionMode,
     },
   },
+  experimental: {
+    instrumentationHook: true,
+  },
 
   // 💡 alias webpack because docker build for production
   webpack: (config, { dev, isServer }) => {

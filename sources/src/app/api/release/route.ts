@@ -1,19 +1,12 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
-import { auditLog } from '@/lib/audit';
-import { verifyAccessToken } from '@/lib/auth';
 import { seatService } from '@/lib/service.seat';
+import { withGlobalErrorHandler } from '@/lib/apiWrapper';
 
 /**
  * Background Sweeper for releasing EXPIRED seats
  */
 
-export async function POST(req: Request) {
-    try {
-        const session = await verifyAccessToken();
-        const response = await seatService.release(session, req);
-        return NextResponse.json(response, { status: response?.status || 500 });
-    } catch (e) {
-        return NextResponse.json({ error: e }, { status: 500 });
-    }
-}
+export const POST = withGlobalErrorHandler(async (req: Request, session) => {
+    const response = await seatService.release(session, req);
+    return NextResponse.json(response, { status: response?.status || 500 });
+}, false);
