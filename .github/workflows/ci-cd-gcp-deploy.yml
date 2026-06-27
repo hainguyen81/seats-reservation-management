@@ -243,22 +243,24 @@ jobs:
           
           # 3. Use sed to replace everything between the anchor text blocks
           # This syntax targets the lines between the START and END markers
-          sed -i "/<!-- GCP_LINK_START -->/,/<!-- GCP_LINK_END -->/ {
-            /<!-- GCP_LINK_START -->/b
-            /<!-- GCP_LINK_END -->/b
+          PLACEHOLDER_START="START-gcp-${{ matrix.service.name }}"
+          PLACEHOLDER_END="END-gcp-${{ matrix.service.name }}"
+          sed -i "/<!-- $PLACEHOLDER_START -->/,/<!-- $PLACEHOLDER_END -->/ {
+            /<!-- $PLACEHOLDER_START -->/b
+            /<!-- $PLACEHOLDER_END -->/b
             d
           }" README.md
           # Insert the new text right after the START marker
-          sed -i "/<!-- GCP_LINK_START -->/a $LINK_MARKDOWN" README.md
+          sed -i "/<!-- $PLACEHOLDER_START -->/a $LINK_MARKDOWN" README.md
           
           # This syntax targets the lines between the START and END markers
-          sed -i "/<!-- GCP_LINK_START -->/,/<!-- GCP_LINK_END -->/ {
-            /<!-- GCP_LINK_START -->/b
-            /<!-- GCP_LINK_END -->/b
+          sed -i "/<!-- $PLACEHOLDER_START -->/,/<!-- $PLACEHOLDER_END -->/ {
+            /<!-- $PLACEHOLDER_START -->/b
+            /<!-- $PLACEHOLDER_END -->/b
             d
           }" ./sources/README.md
           # Insert the new text right after the START marker
-          sed -i "/<!-- GCP_LINK_START -->/a $LINK_MARKDOWN" ./sources/README.md
+          sed -i "/<!-- $PLACEHOLDER_START -->/a $LINK_MARKDOWN" ./sources/README.md
       
       # Optional: Commit/Push modified README
       - name: 🚀 Auto Commit and Push README changes
@@ -267,6 +269,7 @@ jobs:
         with:
           commit_message: "docs: automated update of deployment links to README.md [skip ci]"
           file_pattern: "README.md"
+          push_options: '--force-with-lease'
           
       # Optional: Post the URL as a comment on your Pull Request (great for debugging)
       - name: Comment PR with URL

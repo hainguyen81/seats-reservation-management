@@ -2,8 +2,13 @@
 
 ## 🌐 Public GCP & GKE Demostration
 
-<!-- GCP_LINK_START --><!-- GCP_LINK_END -->
-<!-- GKE_LINK_START --><!-- GKE_LINK_END -->
+| Demo Versions | Demo Link(s) |
+| :--- | :--- |
+| **GCP SQLite Demo** | <!-- START-gcp-seats-reservation-sqlite --><!-- END-gcp-seats-reservation-sqlite -->
+| **GCP Postgres Demo** | <!-- START-gcp-seats-reservation-sqlite --><!-- END-gcp-seats-reservation-sqlite -->
+| :--- | :--- |
+| **GKE SQLite Demo** | <!-- START-gke-seats-reservation-sqlite --><!-- END-gke-seats-reservation-sqlite -->
+| **GKE Postgres Demo** | <!-- START-gke-seats-reservation-sqlite --><!-- END-gke-seats-reservation-sqlite -->
 
 ## 🌐 GitHub CI/CD Main Workflow
 
