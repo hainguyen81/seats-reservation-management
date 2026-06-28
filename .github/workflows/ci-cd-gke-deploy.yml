@@ -314,6 +314,8 @@ jobs:
               --workload-pool="$PROJECT_ID.svc.id.goog" \
               --workload-metadata=GKE_METADATA \
               --enable-autoscaling --min-nodes=1 --max-nodes=2 \
+              --enable-master-authorized-networks \
+              --master-authorized-networks 0.0.0.0/0 \
               --addons=HttpLoadBalancing \
               --logging=NONE \
               --monitoring=NONE \
@@ -484,32 +486,48 @@ jobs:
           while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
             echo "-> Attempt $ATTEMPT/$MAX_ATTEMPTS: Dispatching IAM policy synchronization..."
             
-            # Load $GCP_SA_EMAIL to gcloud
-            BIND_OUTPUT=$(gcloud iam service-accounts add-iam-policy-binding "$GCP_SA_EMAIL" \
-                --role="roles/iam.workloadIdentityUser" \
-                --member="serviceAccount:${GCP_PROJECT_ID}.svc.id.goog[${K8S_DEPLOYMENT_NAMESPACE}/gcp-service-account-runner]" \
-                --project="${GCP_PROJECT_ID}" \
-                --quiet 2>&1) && BIND_SUCCESS=true
-            if [ "$BIND_SUCCESS" = true ]; then
-              echo "✅ Success: IAM policy binding applied seamlessly."
-              break
-            else
-              # if conflicting (concurrent policy changes) of matrix parallel services
-              if echo "$BIND_OUTPUT" | grep -q -i "concurrent policy changes"; then
-                echo "::warning::⚠️ GCP IAM Lock caught. Another matrix pipeline is writing. Retrying in ${DELAY}s..."
-                sleep $DELAY
-                DELAY=$((DELAY * 2))
-                ATTEMPT=$((ATTEMPT + 1))
-              else
-                # other error (Ex: wrong configuration or permission denied), stop pipeline
-                echo "❌ Fatal Error: Google Cloud IAM API rejected operation."
-                echo "$BIND_OUTPUT"
-                exit 1
-              fi
-            fi
+            # IAM Roles to binding
+            # - VM Hardware: roles/container.defaultNodeServiceAccount, roles/logging.logWriter, roles/monitoring.metricWriter
+            # - Workload Identity (App/Pod): roles/iam.workloadIdentityUser
+            # - App/Pod Bussiness Logic: roles/storage.objectViewer, roles/storage.objectAdmin, roles/secretmanager.secretAccessor, roles/cloudsql.client
+            ROLES=(
+              "roles/container.defaultNodeServiceAccount"
+              "roles/iam.workloadIdentityUser"
+              "roles/logging.logWriter"
+              "roles/monitoring.metricWriter"
+              "roles/storage.objectViewer"
+              "roles/storage.objectAdmin"
+              "roles/secretmanager.secretAccessor"
+            )
             
-            # Reset for looping
-            unset BIND_SUCCESS
+            for ROLE in "${ROLES[@]}"; do
+              # Load $GCP_SA_EMAIL to gcloud
+              BIND_OUTPUT=$(gcloud iam service-accounts add-iam-policy-binding "$GCP_SA_EMAIL" \
+                  --role="${ROLE}" \
+                  --member="serviceAccount:${GCP_PROJECT_ID}.svc.id.goog[${K8S_DEPLOYMENT_NAMESPACE}/gcp-service-account-runner]" \
+                  --project="${GCP_PROJECT_ID}" \
+                  --quiet 2>&1) && BIND_SUCCESS=true
+              if [ "$BIND_SUCCESS" = true ]; then
+                echo "✅ [ ${ROLE} ] Success: IAM policy binding applied seamlessly."
+                break
+              else
+                # if conflicting (concurrent policy changes) of matrix parallel services
+                if echo "$BIND_OUTPUT" | grep -q -i "concurrent policy changes"; then
+                  echo "::warning::⚠️ [ ${ROLE} ] GCP IAM Lock caught. Another matrix pipeline is writing. Retrying in ${DELAY}s..."
+                  sleep $DELAY
+                  DELAY=$((DELAY * 2))
+                  ATTEMPT=$((ATTEMPT + 1))
+                else
+                  # other error (Ex: wrong configuration or permission denied), stop pipeline
+                  echo "❌ [ ${ROLE} ] Fatal Error: Google Cloud IAM API rejected operation."
+                  echo "$BIND_OUTPUT"
+                  exit 1
+                fi
+              fi
+            
+              # Reset for looping
+              unset BIND_SUCCESS
+            done
           done
           
           if [ $ATTEMPT -gt $MAX_ATTEMPTS ]; then
@@ -667,7 +685,7 @@ jobs:
           # Request public information (IP, access port)
           if ! SERVICE_TABLE=$(kubectl get service $K8S_DEPLOYMENT_SERVICE -n $K8S_DEPLOYMENT_NAMESPACE 2>&1 | tee /dev/stdout); then
             # 🔥 Show as Step Warning on GITHUB CI/CD UI
-            echo "::warning::⚠️ Could not reach [GKE Service] $K8S_DEPLOYMENT_SERVICE (namespace=$K8S_DEPLOYMENT_NAMESPACE) or reached 60s timeout boundary."
+            echo "::warning::⚠️ Could not reach [GKE Service] $K8S_DEPLOYMENT_SERVICE (namespace=$K8S_DEPLOYMENT_NAMESPACE) or reached $TIMEOUT timeout boundary."
             echo "Bypassing hard error check to prevent pipeline failure."
             EXTERNAL_IP=""
           
