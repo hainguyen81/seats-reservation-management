@@ -149,7 +149,7 @@ jobs:
               
               } else {
                 console.error(`🚨 [ Invalid k6 Report Type ] The provided k6 report type [ ${rawInputRptType} ] is completely INVALID / NOT SUPPORTED!`);
-                console.error(`👉 Allowed values (case-insensitive) are: [ ${SHORT_RPT_TYPES.join(" | ")} ] or [ ${LONG_RPT_TYPES.join(" | "} ]`);
+                console.error(`👉 Allowed values (case-insensitive) are: [ ${SHORT_RPT_TYPES.join(" | ")} ] or [ ${LONG_RPT_TYPES.join(" | ")} ]`);
                 process.exit(1);
               }
             }
