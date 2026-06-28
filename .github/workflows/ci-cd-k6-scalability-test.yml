@@ -30,15 +30,15 @@ on:
         type: choice
         default: "🌿 GitHub CI/CD Console"
         options:
-          - "🌿 GitHub CI/CD Console"
-          - "🔣 JSON"
-          - "🔢 CSV"
-          - "🕸️ Web Dashboard"
-          - "🔥 Prometheus"
-          - "📊 OTLP"
-          - "👣 Experimental OTLP"
-          - "🔭 Time-Series Database InfluxDB"
-          - "📝 Datadog Agent"
+          - "GitHub CI/CD Console"
+          - "JSON"
+          - "CSV"
+          - "Web Dashboard"
+          - "Prometheus"
+          - "OTLP"
+          - "Experimental OTLP"
+          - "Time-Series Database InfluxDB"
+          - "Datadog Agent"
   
   # allow other workflow call into (inputs same as workflow_dispatch but required)
   workflow_call:
@@ -68,15 +68,24 @@ on:
         type: choice
         default: "🌿 GitHub CI/CD Console"
         options:
-          - "🌿 GitHub CI/CD Console"
-          - "🔣 JSON"
-          - "🔢 CSV"
-          - "🕸️ Web Dashboard"
-          - "🔥 Prometheus"
-          - "📊 OTLP"
-          - "👣 Experimental OTLP"
-          - "🔭 Time-Series Database InfluxDB"
-          - "📝 Datadog Agent"
+          - "GitHub CI/CD Console"
+          - "JSON"
+          - "CSV"
+          - "Web Dashboard"
+          - "Prometheus"
+          - "OTLP"
+          - "Experimental OTLP"
+          - "Time-Series Database InfluxDB"
+          - "Datadog Agent"
+          #- "🌿 GitHub CI/CD Console"
+          #- "🔣 JSON"
+          #- "🔢 CSV"
+          #- "🕸️ Web Dashboard"
+          #- "🔥 Prometheus"
+          #- "📊 OTLP"
+          #- "👣 Experimental OTLP"
+          #- "🔭 Time-Series Database InfluxDB"
+          #- "📝 Datadog Agent"
 
 # permissions for GitHub Actions READ/WRITE
 permissions:
