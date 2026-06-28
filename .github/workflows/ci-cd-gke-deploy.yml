@@ -480,21 +480,22 @@ jobs:
           echo "========================================================================="
           # !!!IMPORTANT!!! Due to multiple parallel jobs did this step, so they maybe conflict;
           # so retrying 3 times (interval 3 seconds, and double after every retry time) when conflicting
-          ATTEMPT=1
-          MAX_ATTEMPTS=3
-          DELAY=3
-          while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
-            echo "-> Attempt $ATTEMPT/$MAX_ATTEMPTS: Dispatching IAM policy synchronization..."
             
-            # IAM Roles to binding
-            # - VM Hardware: roles/container.defaultNodeServiceAccount, roles/logging.logWriter, roles/monitoring.metricWriter
-            # - Workload Identity (App/Pod): roles/iam.workloadIdentityUser
-            # - App/Pod Bussiness Logic: roles/storage.objectViewer, roles/storage.objectAdmin, roles/secretmanager.secretAccessor, roles/cloudsql.client
-            ROLES=(
-              "roles/iam.workloadIdentityUser"
-            )
+          # IAM Roles to binding
+          # - VM Hardware: roles/container.defaultNodeServiceAccount, roles/logging.logWriter, roles/monitoring.metricWriter
+          # - Workload Identity (App/Pod): roles/iam.workloadIdentityUser
+          # - App/Pod Bussiness Logic: roles/storage.objectViewer, roles/storage.objectAdmin, roles/secretmanager.secretAccessor, roles/cloudsql.client
+          ROLES=(
+            "roles/iam.workloadIdentityUser"
+          )
             
-            for ROLE in "${ROLES[@]}"; do
+          for ROLE in "${ROLES[@]}"; do
+            ATTEMPT=1
+            MAX_ATTEMPTS=3
+            DELAY=3
+            while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+              echo "-> [ ${ROLE} ] Attempt $ATTEMPT/$MAX_ATTEMPTS: Dispatching IAM policy synchronization..."
+              
               # Load $GCP_SA_EMAIL to gcloud
               BIND_OUTPUT=$(gcloud iam service-accounts add-iam-policy-binding "$GCP_SA_EMAIL" \
                   --role="${ROLE}" \
@@ -521,13 +522,13 @@ jobs:
             
               # Reset for looping
               unset BIND_SUCCESS
+              
+              if [ $ATTEMPT -gt $MAX_ATTEMPTS ]; then
+                echo "❌ [ ${ROLE} ] Fatal: Exceeded maximum retry gates due to heavy concurrent contention."
+                exit 1
+              fi
             done
           done
-          
-          if [ $ATTEMPT -gt $MAX_ATTEMPTS ]; then
-            echo "❌ Fatal: Exceeded maximum retry gates due to heavy concurrent contention."
-            exit 1
-          fi
       
       # -------------------------------------------------
       # 12. Create secret to adapt into K8s deployment:
