@@ -88,7 +88,7 @@ jobs:
         if: success()                 # if previous step is successful
         run: |
           # create JSON file contains the published information
-          echo '{"name": "${{ matrix.service.name }}", "published_url": "${{ matrix.service.published_url }}"}' > "${{ matrix.service.name }}.json"
+          echo '{"name": "${{ matrix.service.name }}", "published_url": "${{ matrix.service.published_url }}"}' > "published-${{ matrix.service.name }}.json"
       
       # 2.1. Upload published service JSON to an temporary artifact
       - name: 📦 Upload Published Service Information Artifact
@@ -96,7 +96,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: published-service-${{ matrix.service.name }}
-          path: "${{ matrix.service.name }}.json"
+          path: "published-${{ matrix.service.name }}.json"
   
   # ==============================================================================
   # 🏃 Publish URL to project README.md
@@ -119,22 +119,22 @@ jobs:
         with:
           # Use pattern (*) to download all artifacts with prefix `published-service-` to same folder
           pattern: published-service-*
-          path: temp-urls
-          merge-multiple: true # Merge all files `.json` to temp-urls folder
+          path: temp-published-urls
+          merge-multiple: true # Merge all files `.json` to `temp-published-urls` folder
       
       # 3. Export the GCP public URL to README
       - name: 🔗 Generate and Export GCP Links to README
         if: success()                 # if previous step is successful
         run: |
           # 1. Check if not found any `.json` file from artifact
-          if [ ! -d "temp-urls" ] || [ -z "$(ls -A temp-urls/*.json 2>/dev/null)" ]; then
+          if [ ! -d "temp-published-urls" ] || [ -z "$(ls -A temp-published-urls/published-*.json 2>/dev/null)" ]; then
             echo "⚠️ Not found any published service information JSON file."
             exit 1
           fi
           
           # 2. Use jq to collect all JSON files to one JSON Object (-s)
           # Ex: [{"name":"service-A","published_url":"url-A"},{"name":"service-B","published_url":"url-B"}]
-          JSON_ARRAY=$(jq -s -c '.' temp-urls/*.json)
+          JSON_ARRAY=$(jq -s -c '.' temp-published-urls/published-*.json)
           
           echo "🏃 Published Services Information from Artifacts:"
           echo "$JSON_ARRAY"

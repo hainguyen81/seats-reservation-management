@@ -272,7 +272,7 @@ jobs:
         if: success()                 # if previous step is successful
         run: |
           # create a JSON file to keep the published information
-          echo '{"name": "gcp-${{ matrix.service.name }}", "published_url": "${{ steps.gcp_cloud_run_deployment_check.outputs.gcp_cloud_run_url }}"}' > "${{ matrix.service.name }}.json"
+          echo '{"name": "gcp-${{ matrix.service.name }}", "published_url": "${{ steps.gcp_cloud_run_deployment_check.outputs.gcp_cloud_run_url }}"}' > "gcp-${{ matrix.service.name }}.json"
       
       # 5.1. Upload published service JSON to an temporary artifact
       - name: 📦 Upload Published Service Information Artifact
@@ -281,7 +281,7 @@ jobs:
         with:
           # Unique artifact name by service to avoid conflicted/overwritten
           name: gcp-url-${{ matrix.service.name }}
-          path: "${{ matrix.service.name }}.json"
+          path: "gcp-${{ matrix.service.name }}.json"
       
       # Optional: Post the URL as a comment on your Pull Request (great for debugging)
       - name: Comment PR with URL
@@ -311,26 +311,26 @@ jobs:
         with:
           # Use pattern (*) to download all artifacts with prefix `gcp-url-` to same folder
           pattern: gcp-url-*
-          path: temp-urls
-          merge-multiple: true # Merge all files `.json` to temp-urls folder
+          path: temp-gcp-urls
+          merge-multiple: true # Merge all files `.json` to `temp-gcp-urls` folder
       
       # 2. Read artifact folder to combine published information
       - name: 🛠️ Combine Published URL(s) to Enviroment JSON Variables
         id: build_published_services
         run: |
           echo "1. Artifact JSON files:"
-          ls -la temp-urls/
+          ls -la temp-gcp-urls/
           
           echo "----------------------------------------"
           echo "2. Combine all JSON files..."
           # Check if not found any json file
-          if [ ! -d "temp-urls" ] || [ -z "$(ls -A temp-urls/*.json 2>/dev/null)" ]; then
+          if [ ! -d "temp-gcp-urls" ] || [ -z "$(ls -A temp-gcp-urls/gcp-*.json 2>/dev/null)" ]; then
             echo "❌ Not found any published information `.json` file."
             exit 1
           fi
           
           # Use `jq` to read all `.json` file and collect to JSON array
-          PUBLISHED_SERVICES=$(jq -s -c '.' temp-urls/*.json)
+          PUBLISHED_SERVICES=$(jq -s -c '.' temp-gcp-urls/gcp-*.json)
           echo "🏃 Published Services:"
           echo "$PUBLISHED_SERVICES"
           echo "published-services=$PUBLISHED_SERVICES" >> $GITHUB_OUTPUT
