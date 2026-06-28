@@ -255,7 +255,8 @@ jobs:
             ENCODED_AUTH=$(echo -n "$RAW_AUTH" | base64)
             
             K6_OTEL_EXPORTER_TYPE="http" \
-            K6_OTEL_HTTP_EXPORTER_ENDPOINT="${{ secrets.GRAFANA_PROMETHEUS_URL }}" \
+            K6_OTEL_HTTP_EXPORTER_ENDPOINT="${{ secrets.GRAFANA_PROMETHEUS_OTLP_HOST }}" \
+            K6_OTEL_HTTP_EXPORTER_URL_PATH="${{ secrets.GRAFANA_PROMETHEUS_OTLP_API }}" \
             K6_OTEL_HEADERS="Authorization=Basic $ENCODED_AUTH" \
             k6 run \
               --out opentelemetry \
