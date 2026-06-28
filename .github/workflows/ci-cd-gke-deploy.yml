@@ -491,13 +491,7 @@ jobs:
             # - Workload Identity (App/Pod): roles/iam.workloadIdentityUser
             # - App/Pod Bussiness Logic: roles/storage.objectViewer, roles/storage.objectAdmin, roles/secretmanager.secretAccessor, roles/cloudsql.client
             ROLES=(
-              "roles/container.defaultNodeServiceAccount"
               "roles/iam.workloadIdentityUser"
-              "roles/logging.logWriter"
-              "roles/monitoring.metricWriter"
-              "roles/storage.objectViewer"
-              "roles/storage.objectAdmin"
-              "roles/secretmanager.secretAccessor"
             )
             
             for ROLE in "${ROLES[@]}"; do
