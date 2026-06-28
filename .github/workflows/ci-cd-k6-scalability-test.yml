@@ -31,7 +31,14 @@ on:
         default: "🌿 GitHub CI/CD Console"
         options:
           - 🌿 GitHub CI/CD Console
-          - 🔥 Prometheus: Metrics Collecting
+          - 🔣 JSON
+          - 🔢 CSV
+          - 🕸️ Web Dashboard [ Port 5665 ]
+          - 🔥 Prometheus
+          - 📊 OTLP
+          - 👣 Experimental OTLP
+          - 🔭 Time-Series Database InfluxDB [ Port 8086 ]
+          - 📝 StatsD, Datadog Agent, or New Relic
   
   # allow other workflow call into (inputs same as workflow_dispatch but required)
   workflow_call:
@@ -144,7 +151,7 @@ jobs:
           if [ "$K6_RPT_TYPE" == "🌿 GitHub CI/CD Console" ]; then
             k6 run $K6_TEST_FILE
           
-          elif [ "$K6_RPT_TYPE" == "🔥 Prometheus: Metrics Collecting" ]; then
+          elif [ "$K6_RPT_TYPE" == "🔥 Prometheus" ]; then
             k6 run \
               --out experimental-prometheus-rw \
               --tag test_env=seats-reservation-k6-test \
