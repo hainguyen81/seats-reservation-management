@@ -340,6 +340,30 @@ jobs:
             fi
           fi
           
+          # IAM Policy Binding for Project Service Account. Role: roles/container.defaultNodeServiceAccount
+          CREATE_OUTPUT=$(gcloud projects add-iam-policy-binding "${GCP_PROJECT_ID}" \
+              --member="serviceAccount:$GCP_SA_EMAIL" \
+              --role="roles/container.defaultNodeServiceAccount" \
+              --quiet 2>&1) || CREATE_EXIT_CODE=$?
+          
+          # Check reposne Google Cloud Engine API
+          if [ -z "$CREATE_EXIT_CODE" ] || [ "$CREATE_EXIT_CODE" -eq 0 ]; then
+            echo "✅ Success: GKE IAM Service Account Policy Role 'roles/container.defaultNodeServiceAccount' already bound for the first time."
+          else
+            # 🔥 Check 409: if error is Already exists / ALREADY_EXISTS, bypass to continue
+            if echo "$CREATE_OUTPUT" | grep -q -i "already exists"; then
+              echo "========================================================================="
+              echo "✅ Notice: GKE IAM Service Account Policy Role 'roles/container.defaultNodeServiceAccount' already bound on Google Cloud."
+              echo "Bypassing 409 conflict safely. Proceeding directly to software layers."
+              echo "========================================================================="
+            else
+              # other error (Ex: Not enough quota or permission denied), stop pipeline
+              echo "❌ Fatal Error: GKE IAM Service Account Policy Role rejected binding operation with code $CREATE_EXIT_CODE"
+              echo "$CREATE_OUTPUT"
+              exit 1
+            fi
+          fi
+          
           # 2. Smart Wait Loop
           # Loop every 30 seconds to ask GCP whether cluster is 'RUNNING'.
           # to avoid pipeline timeout and other push code requests not stuck by this.
