@@ -259,6 +259,8 @@ jobs:
             # =================================================
             # Force enviroments to pipeline for k6 using
             export K6_OPENTELEMETRY_HTTP_ENDPOINT="${{ secrets.GRAFANA_PROMETHEUS_URL }}"
+            # 🔥 Force k6 turn off gRPC mode and use HTTP protocol
+            export K6_OPENTELEMETRY_HTTP_PROTOCOL="http/protobuf"
             export K6_OPENTELEMETRY_HTTP_HEADERS="Authorization=Basic $ENCODED_AUTH"
             
             k6 run \
