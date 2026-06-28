@@ -238,7 +238,8 @@ jobs:
           # for Prometheus
           K6_OTEL_SERVICE_NAME: "GCP/GKE Seats Reservation"
           K6_OTEL_SERVICE_VERSION: "v1.0"
-          K6_OTEL_EXPORT_INTERVAL: "10s"
+          K6_OTEL_FLUSH_INTERVAL: "1s"
+          K6_OTEL_EXPORT_INTERVAL: "3s"
           K6_OTEL_EXPORTER_PROTOCOL: "http/protobuf"
           K6_OTEL_GRPC_EXPORTER_ENDPOINT: ${{ secrets.GRAFANA_PROMETHEUS_OTLP_HOST }}
           K6_OTEL_HTTP_EXPORTER_ENDPOINT: ${{ secrets.GRAFANA_PROMETHEUS_OTLP_HOST }}
@@ -262,61 +263,49 @@ jobs:
             RAW_AUTH="${{ secrets.GRAFANA_USER_ID }}:${{ secrets.GRAFANA_API_TOKEN }}"
             ENCODED_AUTH=$(printf "%s" "$RAW_AUTH" | base64 | tr -d '\n\r')
             export K6_OTEL_HEADERS="Authorization=Basic $ENCODED_AUTH"
-            echo "⚙️ K6 OTEL Headers: $K6_OTEL_HEADERS"
             
             k6 run \
               --out opentelemetry \
               --tag test_env=seats-reservation-k6-test \
               $K6_TEST_FILE
-            
-            # # -------------------------------------------------
-            # # `experimental-prometheus-rw`
-            # # -------------------------------------------------
-            # K6_PROMETHEUS_RW_USERNAME="${{ secrets.GRAFANA_USER_ID }}" \
-            # K6_PROMETHEUS_RW_PASSWORD="${{ secrets.GRAFANA_API_TOKEN }}" \
-            # K6_PROMETHEUS_RW_SERVER_URL="${{ secrets.GRAFANA_PROMETHEUS_URL }}" \
-            # k6 run \
-            #   --out experimental-prometheus-rw \
-            #   --tag test_env=seats-reservation-k6-test \
-            #   $K6_TEST_FILE
           
-          elif [ "$K6_RPT_TYPE" == "otlp" -o "$K6_RPT_TYPE_NAME" == "📊 OTLP" ]; then
+          elif [ "$K6_RPT_TYPE" == "otlp" ]; then
             k6 run \
               --out opentelemetry \
               --tag test_env=seats-reservation-k6-test \
               $K6_TEST_FILE
           
-          elif [ "$K6_RPT_TYPE" == "experimental-otlp" -o "$K6_RPT_TYPE_NAME" == "👣 Experimental OTLP" ]; then
+          elif [ "$K6_RPT_TYPE" == "experimental-otlp" ]; then
             k6 run \
               --out experimental-opentelemetry \
               --tag test_env=seats-reservation-k6-test \
               $K6_TEST_FILE
           
-          elif [ "$K6_RPT_TYPE" == "influxdb" -o "$K6_RPT_TYPE_NAME" == "🔭 Time-Series Database InfluxDB" ]; then
+          elif [ "$K6_RPT_TYPE" == "influxdb" ]; then
             k6 run \
               --out influxdb=http://localhost:8086/k6-test-report \
               --tag test_env=seats-reservation-k6-test \
               $K6_TEST_FILE
           
-          elif [ "$K6_RPT_TYPE" == "datadog" -o "$K6_RPT_TYPE_NAME" == "📝 Datadog Agent" ]; then
+          elif [ "$K6_RPT_TYPE" == "datadog" ]; then
             k6 run \
               --out statsd \
               --tag test_env=seats-reservation-k6-test \
               $K6_TEST_FILE
           
-          elif [ "$K6_RPT_TYPE" == "json" -o "$K6_RPT_TYPE_NAME" == "🔣 JSON" ]; then
+          elif [ "$K6_RPT_TYPE" == "json" ]; then
             k6 run \
               --out json=k6-test-report.json \
               --tag test_env=seats-reservation-k6-test \
               $K6_TEST_FILE
           
-          elif [ "$K6_RPT_TYPE" == "csv" -o "$K6_RPT_TYPE_NAME" == "🔢 CSV" ]; then
+          elif [ "$K6_RPT_TYPE" == "csv" ]; then
             k6 run \
               --out csv=k6-test-report.csv \
               --tag test_env=seats-reservation-k6-test \
               $K6_TEST_FILE
           
-          elif [ "$K6_RPT_TYPE" == "web-dashboard" -o "$K6_RPT_TYPE_NAME" == "🕸️ Web Dashboard" ]; then
+          elif [ "$K6_RPT_TYPE" == "web-dashboard" ]; then
             k6 run \
               --out web-dashboard=report=k6-test-report.html \
               --tag test_env=seats-reservation-k6-test \
