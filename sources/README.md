@@ -7,8 +7,8 @@
 | **GCP SQLite** | <!-- START-gcp-seats-reservation-sqlite --> [https://seats-reservation-sqlite-2omkqplgya-uc.a.run.app](https://seats-reservation-sqlite-2omkqplgya-uc.a.run.app)<br> *(Last updated: Sat Jun 27 16:51:58 UTC 2026)* <!-- END-gcp-seats-reservation-sqlite --> |
 | **GCP Postgres** | <!-- START-gcp-seats-reservation-postgres --> [https://seats-reservation-postgres-2omkqplgya-uc.a.run.app](https://seats-reservation-postgres-2omkqplgya-uc.a.run.app)<br> *(Last updated: Sat Jun 27 16:51:58 UTC 2026)* <!-- END-gcp-seats-reservation-postgres --> |
 | &nbsp; | &nbsp; |
-| **GKE SQLite** | <!-- START-gke-seats-reservation-sqlite -->![🏃 Comming soon](https://img.shields.io/badge/%F0%9F%8F%83%20Comming%20soon-orange)<!-- END-gke-seats-reservation-sqlite --> |
-| **GKE Postgres** | <!-- START-gke-seats-reservation-postgres -->![🏃 Comming soon](https://img.shields.io/badge/%F0%9F%8F%83%20Comming%20soon-orange)<!-- END-gke-seats-reservation-postgres --> |
+| **GKE SQLite** | <!-- START-gke-seats-reservation-sqlite --> [http://35.226.149.88:80](http://35.226.149.88:80)<br> *(Last updated: Sun Jun 28 07:01:57 UTC 2026)* <!-- END-gke-seats-reservation-sqlite --> |
+| **GKE Postgres** | <!-- START-gke-seats-reservation-postgres --> [http://136.114.146.251:80](http://136.114.146.251:80)<br> *(Last updated: Sun Jun 28 07:01:57 UTC 2026)* <!-- END-gke-seats-reservation-postgres --> |
 
 ## 🌐 GitHub CI/CD Workflows
 
