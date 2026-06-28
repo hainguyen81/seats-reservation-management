@@ -254,14 +254,30 @@ jobs:
             RAW_AUTH="${{ secrets.GRAFANA_USER_ID }}:${{ secrets.GRAFANA_API_TOKEN }}"
             ENCODED_AUTH=$(echo -n "$RAW_AUTH" | base64)
             
+            # =================================================
+            # WAY 1: Prometheus OTLP `opentelemetry`
+            # =================================================
             # Force enviroments to pipeline for k6 using
             export K6_OTLP_HTTP_ENDPOINT="${{ secrets.GRAFANA_PROMETHEUS_URL }}"
             export K6_OTLP_HTTP_HEADERS="Authorization=Basic $ENCODED_AUTH"
             
             k6 run \
-              --out experimental-prometheus-rw \
+              --out opentelemetry \
               --tag test_env=seats-reservation-k6-test \
               $K6_TEST_FILE
+            
+            # # =================================================
+            # # WAY 2: Prometheus Remote Write `experimental-prometheus-rw`
+            # # =================================================
+            # # Force enviroments to pipeline for k6 using
+            # export K6_PROMETHEUS_RW_SERVER_URL="${{ secrets.GRAFANA_PROMETHEUS_URL }}"
+            # export K6_PROMETHEUS_RW_USERNAME="${{ secrets.GRAFANA_USER_ID }}"
+            # export K6_PROMETHEUS_RW_PASSWORD="${{ secrets.GRAFANA_API_TOKEN }}"
+            # 
+            # k6 run \
+            #   --out experimental-prometheus-rw \
+            #   --tag test_env=seats-reservation-k6-test \
+            #   $K6_TEST_FILE
           
           elif [ "$K6_RPT_TYPE" == "otlp" -o "$K6_RPT_TYPE_NAME" == "📊 OTLP" ]; then
             k6 run \
