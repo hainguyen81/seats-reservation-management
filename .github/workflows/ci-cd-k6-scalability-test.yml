@@ -1,3 +1,13 @@
+# -------------------------------------------------
+# GUIDELINE:
+# -------------------------------------------------
+# - Prometheus:
+#   - GRAFANA_PROMETHEUS_OTLP_HOST: <Grafana Domain:443. Ex: otlp-gateway-prod-ap-southeast-1.grafana.net:443>
+#   - GRAFANA_PROMETHEUS_OTLP_API: <Grafana Prometheus Endpoint Path. Ex: /otlp/v1/metrics>
+#   - GRAFANA_USER_ID: <Grafana Access Token User ID. It's a number with 7 digits. Ex: 1234567>
+#   - GRAFANA_API_TOKEN: <Grafana Access Token. It starts with `glc_`. Ex: glc_eyJvIjoiMTgyNDMyMyIsIm4iOiJzd.....>
+# -------------------------------------------------
+
 name: 📈 [ TEST ] Scalability k6 Stress Testing (Pure k6 Load Injector)
 
 on:
@@ -264,10 +274,19 @@ jobs:
             ENCODED_AUTH=$(printf "%s" "$RAW_AUTH" | base64 | tr -d '\n\r')
             export K6_OTEL_HEADERS="Authorization=Basic $ENCODED_AUTH"
             
+            # 🎯 `--graceful-stop`: force k6 waiting more 15 seconds to push metrics finished
+            GRACEFUL_STOP="15s"
+            
             k6 run \
               --out opentelemetry \
               --tag test_env=seats-reservation-k6-test \
+              --graceful-stop $GRACEFUL_STOP \
               $K6_TEST_FILE
+            
+            # force CI/CD waiting k6
+            echo "⏳ Test process almost done. Keep waiting in 20 seconds to flush metrics to Grafana Cloud..."
+            sleep 20
+            echo "✅ Everything has been done! Safely."
           
           elif [ "$K6_RPT_TYPE" == "otlp" ]; then
             k6 run \
