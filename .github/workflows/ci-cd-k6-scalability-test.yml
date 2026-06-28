@@ -235,6 +235,10 @@ jobs:
           K6_TEST_FILE: ${{ inputs.k6_test_file }}
           K6_RPT_TYPE: ${{ steps.k6-rpt-gateway.outputs.rptTypeShortValue }}
           K6_RPT_TYPE_NAME: ${{ steps.k6-rpt-gateway.outputs.rptTypeFullValue }}
+          # for Prometheus
+          K6_OTEL_EXPORTER_TYPE: "http"
+          K6_OTEL_HTTP_EXPORTER_ENDPOINT: "${{ secrets.GRAFANA_PROMETHEUS_OTLP_HOST }}"
+          K6_OTEL_HTTP_EXPORTER_URL_PATH: "${{ secrets.GRAFANA_PROMETHEUS_OTLP_API }}"
         run: |
           echo "========================================================================="
           echo "🎯 TARGET URL DEPLOYED OUTSIDE: $TARGET_URL"
@@ -252,12 +256,9 @@ jobs:
           elif [ "$K6_RPT_TYPE" == "prometheus" -o "$K6_RPT_TYPE_NAME" == "🔥 Prometheus" ]; then
             # ⚙️ Calculate and encode AUTHORIZATION HEADER by BASIC AUTH STANDARDS
             RAW_AUTH="${{ secrets.GRAFANA_USER_ID }}:${{ secrets.GRAFANA_API_TOKEN }}"
-            ENCODED_AUTH=$(echo -n "$RAW_AUTH" | base64)
+            ENCODED_AUTH=$(printf "%s" "$RAW_AUTH" | base64 | tr -d '\n\r')
+            export K6_OTEL_HEADERS="Authorization=Basic $ENCODED_AUTH"
             
-            K6_OTEL_EXPORTER_TYPE="http" \
-            K6_OTEL_HTTP_EXPORTER_ENDPOINT="${{ secrets.GRAFANA_PROMETHEUS_OTLP_HOST }}" \
-            K6_OTEL_HTTP_EXPORTER_URL_PATH="${{ secrets.GRAFANA_PROMETHEUS_OTLP_API }}" \
-            K6_OTEL_HEADERS="Authorization=Basic $ENCODED_AUTH" \
             k6 run \
               --out opentelemetry \
               --tag test_env=seats-reservation-k6-test \
