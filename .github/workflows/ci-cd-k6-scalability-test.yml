@@ -250,13 +250,28 @@ jobs:
             k6 run $K6_TEST_FILE
           
           elif [ "$K6_RPT_TYPE" == "prometheus" -o "$K6_RPT_TYPE_NAME" == "🔥 Prometheus" ]; then
-            K6_PROMETHEUS_RW_USERNAME="${{ secrets.GRAFANA_USER_ID }}" \
-            K6_PROMETHEUS_RW_PASSWORD="${{ secrets.GRAFANA_API_TOKEN }}" \
-            K6_PROMETHEUS_RW_SERVER_URL="${{ secrets.GRAFANA_PROMETHEUS_URL }}" \
+            # ⚙️ Calculate and encode AUTHORIZATION HEADER by BASIC AUTH STANDARDS
+            RAW_AUTH="${{ secrets.GRAFANA_USER_ID }}:${{ secrets.GRAFANA_API_TOKEN }}"
+            ENCODED_AUTH=$(echo -n "$RAW_AUTH" | base64)
+            
+            K6_OTEL_EXPORTER_TYPE="http" \
+            K6_OTEL_HTTP_EXPORTER_ENDPOINT="${{ secrets.GRAFANA_PROMETHEUS_URL }}" \
+            K6_OTEL_HEADERS="Authorization=Basic $ENCODED_AUTH" \
             k6 run \
-              --out experimental-prometheus-rw \
+              --out opentelemetry
               --tag test_env=seats-reservation-k6-test \
               $K6_TEST_FILE
+            
+            # # -------------------------------------------------
+            # # `experimental-prometheus-rw`
+            # # -------------------------------------------------
+            # K6_PROMETHEUS_RW_USERNAME="${{ secrets.GRAFANA_USER_ID }}" \
+            # K6_PROMETHEUS_RW_PASSWORD="${{ secrets.GRAFANA_API_TOKEN }}" \
+            # K6_PROMETHEUS_RW_SERVER_URL="${{ secrets.GRAFANA_PROMETHEUS_URL }}" \
+            # k6 run \
+            #   --out experimental-prometheus-rw
+            #   --tag test_env=seats-reservation-k6-test \
+            #   $K6_TEST_FILE
           
           elif [ "$K6_RPT_TYPE" == "otlp" -o "$K6_RPT_TYPE_NAME" == "📊 OTLP" ]; then
             k6 run \
