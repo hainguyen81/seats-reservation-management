@@ -24,6 +24,14 @@ on:
         required: false
         type: number
         default: 30
+      k6_test_report:
+        description: "📋 Report Type"
+        required: false
+        type: choice
+        default: "🌿 GitHub CI/CD Console"
+        options:
+          - 🌿 GitHub CI/CD Console
+          - 🔥 Prometheus: Metrics Collecting
   
   # allow other workflow call into (inputs same as workflow_dispatch but required)
   workflow_call:
@@ -47,6 +55,21 @@ on:
         required: false
         type: number
         default: 30
+      k6_test_report:
+        description: "📋 Report Type"
+        required: true
+        type: choice
+        default: "🌿 GitHub CI/CD Console"
+        options:
+          - 🌿 GitHub CI/CD Console
+          - 🔣 JSON
+          - 🔢 CSV
+          - 🕸️ Web Dashboard [ Port 5665 ]
+          - 🔥 Prometheus: Metrics Collecting
+          - 📊 OTLP
+          - 👣 Experimental OTLP
+          - 🔭 Time-Series Database InfluxDB [ Port 8086 ]
+          - 📝 StatsD, Datadog Agent, or New Relic
 
 # permissions for GitHub Actions READ/WRITE
 permissions:
@@ -95,10 +118,11 @@ jobs:
           CONCURRENT_USERS: ${{ inputs.concurrent_users }}
           TEST_DURATION: ${{ inputs.test_duration }}
           K6_TEST_FILE: ${{ inputs.k6_test_file }}
-          # # 🎯 Use correct prefix `K6_OTLP_` to allow k6 engine attach them when sending metrics
-          # K6_OTLP_HTTP_ENDPOINT: ${{ secrets.GRAFANA_PROMETHEUS_URL }}
-          # # OTLP Authentication requires Basic Auth under format "Username:Token"
-          # K6_OTLP_HTTP_HEADERS: "Authorization=Basic ${{ b64encode(format('{0}:{1}', secrets.GRAFANA_USER_ID, secrets.GRAFANA_API_TOKEN)) }}"
+          K6_RPT_TYPE: ${{ inputs.k6_test_report }}
+          # 🎯 Use correct prefix `K6_OTLP_` to allow k6 engine attach them when sending metrics
+          K6_OTLP_HTTP_ENDPOINT: ${{ secrets.GRAFANA_PROMETHEUS_URL }}
+          # OTLP Authentication requires Basic Auth under format "Username:Token"
+          K6_OTLP_HTTP_HEADERS: "Authorization=Basic ${{ b64encode(format('{0}:{1}', secrets.GRAFANA_USER_ID, secrets.GRAFANA_API_TOKEN)) }}"
         run: |
           echo "========================================================================="
           echo "🎯 TARGET URL DEPLOYED OUTSIDE: $TARGET_URL"
@@ -116,10 +140,62 @@ jobs:
           
           # execute k6 test
           # k6 run $K6_TEST_FILE
-          k6 run \
-            --out output-otlp \
-            --tag test_env=seats-reservation-k6-test \
-            $K6_TEST_FILE
+          # available output types: cloud (maybe charged fee), csv, experimental-opentelemetry, experimental-prometheus-rw, influxdb, json, opentelemetry, statsd, web-dashboard
+          if [ "$K6_RPT_TYPE" == "🌿 GitHub CI/CD Console" ]; then
+            k6 run $K6_TEST_FILE
+          
+          elif [ "$K6_RPT_TYPE" == "🔥 Prometheus: Metrics Collecting" ]; then
+            k6 run \
+              --out experimental-prometheus-rw \
+              --tag test_env=seats-reservation-k6-test \
+              $K6_TEST_FILE
+          
+          elif [ "$K6_RPT_TYPE" == "📊 OTLP" ]; then
+            k6 run \
+              --out opentelemetry \
+              --tag test_env=seats-reservation-k6-test \
+              $K6_TEST_FILE
+          
+          elif [ "$K6_RPT_TYPE" == "👣 Experimental OTLP" ]; then
+            k6 run \
+              --out experimental-opentelemetry \
+              --tag test_env=seats-reservation-k6-test \
+              $K6_TEST_FILE
+          
+          elif [ "$K6_RPT_TYPE" == "🔭 Time-Series Database InfluxDB [ Port 8086 ]" ]; then
+            k6 run \
+              --out influxdb \
+              --tag test_env=seats-reservation-k6-test \
+              $K6_TEST_FILE
+          
+          elif [ "$K6_RPT_TYPE" == "📝 StatsD, Datadog Agent, or New Relic" ]; then
+            k6 run \
+              --out statsd \
+              --tag test_env=seats-reservation-k6-test \
+              $K6_TEST_FILE
+          
+          elif [ "$K6_RPT_TYPE" == "🔣 JSON" ]; then
+            k6 run \
+              --out json \
+              --tag test_env=seats-reservation-k6-test \
+              $K6_TEST_FILE
+          
+          elif [ "$K6_RPT_TYPE" == "🔢 CSV" ]; then
+            k6 run \
+              --out csv \
+              --tag test_env=seats-reservation-k6-test \
+              $K6_TEST_FILE
+          
+          elif [ "$K6_RPT_TYPE" == "🕸️ Web Dashboard [ Port 5665 ]" ]; then
+            k6 run \
+              --out web-dashboard \
+              --tag test_env=seats-reservation-k6-test \
+              $K6_TEST_FILE
+          
+          else
+            echo "❌ $K6_RPT_TYPE is an UNSUPPORTED report type."
+            exit 1
+          fi
       
       # 5. Report summary
       - name: 📊 Compile Aggregated Telemetry Report to GitHub Summary
