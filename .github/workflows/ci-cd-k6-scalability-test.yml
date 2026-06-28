@@ -252,7 +252,7 @@ jobs:
           elif [ "$K6_RPT_TYPE" == "prometheus" -o "$K6_RPT_TYPE_NAME" == "🔥 Prometheus" ]; then
             # ⚙️ Calculate and encode AUTHORIZATION HEADER by BASIC AUTH STANDARDS
             RAW_AUTH="${{ secrets.GRAFANA_USER_ID }}:${{ secrets.GRAFANA_API_TOKEN }}"
-            ENCODED_AUTH=$(echo -n "$RAW_AUTH" | base64)
+            ENCODED_AUTH=$(echo -n "$RAW_AUTH" | base64 | tr -d '\n')
             
             # =================================================
             # WAY 1: Prometheus OTLP `opentelemetry`
