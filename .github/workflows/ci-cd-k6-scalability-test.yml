@@ -181,10 +181,6 @@ jobs:
           TEST_DURATION: ${{ inputs.test_duration }}
           K6_TEST_FILE: ${{ inputs.k6_test_file }}
           K6_RPT_TYPE: ${{ inputs.k6_test_report }}
-          # 🎯 Use correct prefix `K6_OTLP_` to allow k6 engine attach them when sending metrics
-          K6_OTLP_HTTP_ENDPOINT: ${{ secrets.GRAFANA_PROMETHEUS_URL }}
-          # OTLP Authentication requires Basic Auth under format "Username:Token"
-          K6_OTLP_HTTP_HEADERS: "Authorization=Basic ${{ b64encode(format('{0}:{1}', secrets.GRAFANA_USER_ID, secrets.GRAFANA_API_TOKEN)) }}"
         run: |
           echo "========================================================================="
           echo "🎯 TARGET URL DEPLOYED OUTSIDE: $TARGET_URL"
