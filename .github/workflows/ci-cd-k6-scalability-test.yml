@@ -125,8 +125,8 @@ jobs:
             
             // 1. define value map between `workflow_call` and `workflow_dispatch`
             const FULL_RPT_TYPES = JSON.parse(process.env.SUPPORTED_REPORT_TYPES);
-            const SHORT_RPT_TYPES = Object.keys(FULL_MAP);
-            const LONG_RPT_TYPES = Object.values(FULL_MAP);
+            const SHORT_RPT_TYPES = Object.keys(FULL_RPT_TYPES);
+            const LONG_RPT_TYPES = Object.values(FULL_RPT_TYPES);
             
             let rptTypeFullValue = "";
             let rptTypeShortValue = "";
