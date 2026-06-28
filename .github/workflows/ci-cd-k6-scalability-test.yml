@@ -145,7 +145,7 @@ jobs:
               if (rptShortValueKey) {
                 rptTypeFullValue = FULL_RPT_TYPES[rptShortValueKey];
                 rptTypeShortValue = rptShortValueKey;
-                console.log(`✅ [ `workflow_dispatch` detected] Input matched Profile / Key. Preserving standard layout: [ ${rptTypeFullValue} ]`);
+                console.log(`✅ [ 'workflow_dispatch' detected] Input matched Profile / Key. Preserving standard layout: [ ${rptTypeFullValue} ]`);
               
               } else {
                 console.error(`🚨 [ Invalid k6 Report Type ] The provided k6 report type [ ${rawInputRptType} ] is completely INVALID / NOT SUPPORTED!`);
