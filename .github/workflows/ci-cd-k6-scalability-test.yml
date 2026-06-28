@@ -254,7 +254,7 @@ jobs:
             K6_PROMETHEUS_RW_PASSWORD="${{ secrets.GRAFANA_API_TOKEN }}" \
             K6_PROMETHEUS_RW_SERVER_URL="${{ secrets.GRAFANA_PROMETHEUS_URL }}" \
             k6 run \
-              --out experimental-prometheus-rw
+              --out experimental-prometheus-rw \
               --tag test_env=seats-reservation-k6-test \
               $K6_TEST_FILE
           
