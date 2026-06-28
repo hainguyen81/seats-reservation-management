@@ -192,14 +192,6 @@ jobs:
           echo "⏳ SUSTAINED INJECTION HOLD WINDOW: $TEST_DURATION"
           echo "========================================================================="
           
-          # ⚙️ Calculate and encode AUTHORIZATION HEADER by BASIC AUTH STANDARDS
-          RAW_AUTH="${{ secrets.GRAFANA_USER_ID }}:${{ secrets.GRAFANA_API_TOKEN }}"
-          ENCODED_AUTH=$(echo -n "$RAW_AUTH" | base64)
-          
-          # Force enviroments to pipeline for k6 using
-          export K6_OTLP_HTTP_ENDPOINT="${{ secrets.GRAFANA_PROMETHEUS_URL }}"
-          export K6_OTLP_HTTP_HEADERS="Authorization=Basic $ENCODED_AUTH"
-          
           # execute k6 test
           # k6 run $K6_TEST_FILE
           # available output types: cloud (maybe charged fee), csv, experimental-opentelemetry, experimental-prometheus-rw, influxdb, json, opentelemetry, statsd, web-dashboard
@@ -207,6 +199,14 @@ jobs:
             k6 run $K6_TEST_FILE
           
           elif [ "$K6_RPT_TYPE" == "🔥 Prometheus" ]; then
+            # ⚙️ Calculate and encode AUTHORIZATION HEADER by BASIC AUTH STANDARDS
+            RAW_AUTH="${{ secrets.GRAFANA_USER_ID }}:${{ secrets.GRAFANA_API_TOKEN }}"
+            ENCODED_AUTH=$(echo -n "$RAW_AUTH" | base64)
+            
+            # Force enviroments to pipeline for k6 using
+            export K6_OTLP_HTTP_ENDPOINT="${{ secrets.GRAFANA_PROMETHEUS_URL }}"
+            export K6_OTLP_HTTP_HEADERS="Authorization=Basic $ENCODED_AUTH"
+            
             k6 run \
               --out experimental-prometheus-rw \
               --tag test_env=seats-reservation-k6-test \
