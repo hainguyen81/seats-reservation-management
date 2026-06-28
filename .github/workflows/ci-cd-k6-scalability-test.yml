@@ -175,14 +175,16 @@ jobs:
               $K6_TEST_FILE
           
           elif [ "$K6_RPT_TYPE" == "🔣 JSON" ]; then
+            echo "$K6_RPT_TYPE: Report JSON file 'k6-test-report.json' will be exported after testing finished"
             k6 run \
-              --out json \
+              --out json=k6-test-report.json \
               --tag test_env=seats-reservation-k6-test \
               $K6_TEST_FILE
           
           elif [ "$K6_RPT_TYPE" == "🔢 CSV" ]; then
+            echo "$K6_RPT_TYPE: Report JSON file 'k6-test-report.csv' will be exported after testing finished"
             k6 run \
-              --out csv \
+              --out csv=k6-test-report.csv \
               --tag test_env=seats-reservation-k6-test \
               $K6_TEST_FILE
           
@@ -197,8 +199,19 @@ jobs:
             exit 1
           fi
       
-      # 5. Report summary
+      # 5. Upload report files to artifact for downloading
+      - name: 📦 Archive Performance Telemetry Artifacts for Download
+        if: success() && (inputs.k6_test_report == '🔣 JSON' || inputs.k6_test_report == '🔢 CSV')
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-test-reports     # report file ZIP name
+          path: k6-test-report.*
+          retention-days: 3         # auto delete file on GitHub after 3 days to save resources
+      
+      # 6. Report summary
       - name: 📊 Compile Aggregated Telemetry Report to GitHub Summary
+        env:
+          K6_RPT_TYPE: ${{ inputs.k6_test_report }}
         if: always()
         run: |
           echo "### 📊 Concurrency k6 Benchmarking Summary Report" >> $GITHUB_STEP_SUMMARY
@@ -207,6 +220,9 @@ jobs:
           echo "* **Sustained Load Blast Window:** \`${{ inputs.test_duration }}\`" >> $GITHUB_STEP_SUMMARY
           echo "✅ Execution metrics maps registered. Check the step logs above to review raw telemetry latency data table!" >> $GITHUB_STEP_SUMMARY
           echo "✅ Real-time metrics streaming process executed flawlessly. Grafana dashboard telemetry stack ready for export." >> $GITHUB_STEP_SUMMARY
+          if [ "$K6_RPT_TYPE" = "🔣 JSON" -o "$K6_RPT_TYPE" = "🔢 CSV" ]; then
+            echo "✅ Raw test data successfully captured. Navigate to the top of this Workflow run summary page to download **k6-test-reports.zip**!" >> $GITHUB_STEP_SUMMARY
+          fi
       
       # Clean up
       - name: ⚙️ Force Kill Orphan Processes
