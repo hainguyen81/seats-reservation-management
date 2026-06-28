@@ -62,21 +62,14 @@ on:
         required: false
         type: number
         default: 30
+      # due to GitHub not support type `choice` in `workflow_call`,
+      # so need to validate and map between `workflow_call` and `workflow_dispatch`
+      # supported available types: `console`, `json`, `csv`, `web-dashboard`, `prometheus`, `otlp`, `experimental-otlp`, `influxdb`, `datadog`
       k6_test_report:
         description: "📋 Report Type"
-        required: true
-        type: choice
-        default: "🌿 GitHub CI/CD Console"
-        options:
-          - "🌿 GitHub CI/CD Console"
-          - "🔣 JSON"
-          - "🔢 CSV"
-          - "🕸️ Web Dashboard"
-          - "🔥 Prometheus"
-          - "📊 OTLP"
-          - "👣 Experimental OTLP"
-          - "🔭 Time-Series Database InfluxDB"
-          - "📝 Datadog Agent"
+        required: false
+        type: string
+        default: "console"
 
 # permissions for GitHub Actions READ/WRITE
 permissions:
@@ -90,6 +83,19 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   LANG: 'C.UTF-8'
   LC_ALL: 'C.UTF-8'
+  
+  SUPPORTED_REPORT_TYPES: >
+    {
+      "console":              "🌿 GitHub CI/CD Console",
+      "json":                 "🔣 JSON",
+      "csv":                  "🔢 CSV",
+      "web-dashboard":        "🕸️ Web Dashboard",
+      "prometheus":           "🔥 Prometheus",
+      "otlp":                 "📊 OTLP",
+      "experimental-otlp":    "👣 Experimental OTLP",
+      "influxdb":             "🔭 Time-Series Database InfluxDB",
+      "datadog":              "📝 Datadog Agent"
+    }
 
 jobs:
   # Run High-Concurrency k6 Injection
@@ -107,6 +113,53 @@ jobs:
           echo "Terminating pipeline execution immediately to protect production infrastructure."
           exit 1 # Require Admin Rights
       
+      # 2. Check to convert the `workflow_call.k6_test_report` to same value as `workflow_dispatch.k6_test_report`
+      - name: 🎛️ Validate and Map Performance Report Enums
+        id: k6-rpt-gateway
+        env:
+          INPUTS_K6_RPT_TYPE: ${{ inputs.k6_test_report }}
+        run: |
+          node -e '
+            // 🎯 check the inputted report type
+            const rawInputRptType = process.env.INPUTS_K6_RPT_TYPE ? process.env.INPUTS_K6_RPT_TYPE.trim().toLowerCase() : "console";
+            
+            // 1. define value map between `workflow_call` and `workflow_dispatch`
+            const FULL_RPT_TYPES = JSON.parse(process.env.SUPPORTED_REPORT_TYPES);
+            const SHORT_RPT_TYPES = Object.keys(FULL_MAP);
+            const LONG_RPT_TYPES = Object.values(FULL_MAP);
+            
+            let rptTypeFullValue = "";
+            let rptTypeShortValue = "";
+            
+            // 2. check short value
+            if (SHORT_RPT_TYPES.includes(rawInputRptType)) {
+              // Use short value as calling from `workflow_call`
+              rptTypeFullValue = FULL_RPT_TYPES[rawInputRptType];
+              rptTypeShortValue = rawInputRptType;
+              console.log(`✅ [ 'workflow_call' detected ] Successfully mapped Short Value [ ${rawInputRptType} ] to Full Profile: [ ${rptTypeFullValue} ]`);
+            
+            } else {
+              // Use Full Profile as calling from `workflow_dispatch`.
+              const rptShortValueKey = Object.keys(FULL_RPT_TYPES).find(key => FULL_RPT_TYPES[key].toLowerCase() === rawInputRptType || key.toLowerCase() === rawInputRptType);
+              
+              if (rptShortValueKey) {
+                rptTypeFullValue = FULL_RPT_TYPES[rptShortValueKey];
+                rptTypeShortValue = rptShortValueKey;
+                console.log(`✅ [ `workflow_dispatch` detected] Input matched Profile / Key. Preserving standard layout: [ ${rptTypeFullValue} ]`);
+              
+              } else {
+                console.error(`🚨 [ Invalid k6 Report Type ] The provided k6 report type [ ${rawInputRptType} ] is completely INVALID / NOT SUPPORTED!`);
+                console.error(`👉 Allowed values (case-insensitive) are: [ ${SHORT_RPT_TYPES.join(" | ")} ] or [ ${LONG_RPT_TYPES.join(" | "} ]`);
+                process.exit(1);
+              }
+            }
+            
+            // 3. export k6 report type for next steps
+            const fs = require("fs");
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `rptTypeFullValue=${rptTypeFullValue}\n`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `rptTypeShortValue=${rptTypeShortValue}\n`);
+          '
+      
       # 2. Check out sources to run k6 test file
       - name: 📁 Checkout Benchmark Engineering Repositories
         if: success()                 # if previous step is successful
@@ -114,7 +167,7 @@ jobs:
       
       # 2.1 Optional: for InfluxDB metrics report
       - name: 🐋 Spin Up Isolated Docker InfluxDB Substrate Server
-        if: success() && (inputs.k6_test_report == '🔭 Time-Series Database InfluxDB')
+        if: success() && (steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'influxdb')
         run: |
           echo "Bootstrapping containerized InfluxDB storage node..."
           # Use InfluxDB 1.8 port 8086
@@ -132,7 +185,7 @@ jobs:
       
       # 2.2 Optional: for Datadog Agent
       - name: 🐋 Spin Up Local Vector Agent Node (Absolute Offline)
-        if: success() && (inputs.k6_test_report == '📝 Datadog Agent')
+        if: success() && (steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'datadog')
         run: |
           echo "Bootstrapping containerized Vector Agent logging substrate..."
           
@@ -180,21 +233,23 @@ jobs:
           CONCURRENT_USERS: ${{ inputs.concurrent_users }}
           TEST_DURATION: ${{ inputs.test_duration }}
           K6_TEST_FILE: ${{ inputs.k6_test_file }}
-          K6_RPT_TYPE: ${{ inputs.k6_test_report }}
+          K6_RPT_TYPE: ${{ steps.k6-rpt-gateway.outputs.rptTypeShortValue }}
+          K6_RPT_TYPE_NAME: ${{ steps.k6-rpt-gateway.outputs.rptTypeFullValue }}
         run: |
           echo "========================================================================="
           echo "🎯 TARGET URL DEPLOYED OUTSIDE: $TARGET_URL"
           echo "👥 SIMULATING MAXIMUM ATTACK VUs: $CONCURRENT_USERS"
           echo "⏳ SUSTAINED INJECTION HOLD WINDOW: $TEST_DURATION"
+          echo "⏳ K6 REPORT TYPE: $K6_RPT_TYPE | $K6_RPT_TYPE_NAME"
           echo "========================================================================="
           
           # execute k6 test
           # k6 run $K6_TEST_FILE
           # available output types: cloud (maybe charged fee), csv, experimental-opentelemetry, experimental-prometheus-rw, influxdb, json, opentelemetry, statsd, web-dashboard
-          if [ "$K6_RPT_TYPE" == "🌿 GitHub CI/CD Console" ]; then
+          if [ "$K6_RPT_TYPE" == "console" -o "$K6_RPT_TYPE_NAME" == "🌿 GitHub CI/CD Console" ]; then
             k6 run $K6_TEST_FILE
           
-          elif [ "$K6_RPT_TYPE" == "🔥 Prometheus" ]; then
+          elif [ "$K6_RPT_TYPE" == "prometheus" -o "$K6_RPT_TYPE_NAME" == "🔥 Prometheus" ]; then
             # ⚙️ Calculate and encode AUTHORIZATION HEADER by BASIC AUTH STANDARDS
             RAW_AUTH="${{ secrets.GRAFANA_USER_ID }}:${{ secrets.GRAFANA_API_TOKEN }}"
             ENCODED_AUTH=$(echo -n "$RAW_AUTH" | base64)
@@ -208,59 +263,56 @@ jobs:
               --tag test_env=seats-reservation-k6-test \
               $K6_TEST_FILE
           
-          elif [ "$K6_RPT_TYPE" == "📊 OTLP" ]; then
+          elif [ "$K6_RPT_TYPE" == "otlp" -o "$K6_RPT_TYPE_NAME" == "📊 OTLP" ]; then
             k6 run \
               --out opentelemetry \
               --tag test_env=seats-reservation-k6-test \
               $K6_TEST_FILE
           
-          elif [ "$K6_RPT_TYPE" == "👣 Experimental OTLP" ]; then
+          elif [ "$K6_RPT_TYPE" == "experimental-otlp" -o "$K6_RPT_TYPE_NAME" == "👣 Experimental OTLP" ]; then
             k6 run \
               --out experimental-opentelemetry \
               --tag test_env=seats-reservation-k6-test \
               $K6_TEST_FILE
           
-          elif [ "$K6_RPT_TYPE" == "🔭 Time-Series Database InfluxDB" ]; then
+          elif [ "$K6_RPT_TYPE" == "influxdb" -o "$K6_RPT_TYPE_NAME" == "🔭 Time-Series Database InfluxDB" ]; then
             k6 run \
               --out influxdb=http://localhost:8086/k6-test-report \
               --tag test_env=seats-reservation-k6-test \
               $K6_TEST_FILE
           
-          elif [ "$K6_RPT_TYPE" == "📝 Datadog Agent" ]; then
+          elif [ "$K6_RPT_TYPE" == "datadog" -o "$K6_RPT_TYPE_NAME" == "📝 Datadog Agent" ]; then
             k6 run \
               --out statsd \
               --tag test_env=seats-reservation-k6-test \
               $K6_TEST_FILE
           
-          elif [ "$K6_RPT_TYPE" == "🔣 JSON" ]; then
-            echo "$K6_RPT_TYPE: Report JSON file 'k6-test-report.json' will be exported after testing finished"
+          elif [ "$K6_RPT_TYPE" == "json" -o "$K6_RPT_TYPE_NAME" == "🔣 JSON" ]; then
             k6 run \
               --out json=k6-test-report.json \
               --tag test_env=seats-reservation-k6-test \
               $K6_TEST_FILE
           
-          elif [ "$K6_RPT_TYPE" == "🔢 CSV" ]; then
-            echo "$K6_RPT_TYPE: Report JSON file 'k6-test-report.csv' will be exported after testing finished"
+          elif [ "$K6_RPT_TYPE" == "csv" -o "$K6_RPT_TYPE_NAME" == "🔢 CSV" ]; then
             k6 run \
               --out csv=k6-test-report.csv \
               --tag test_env=seats-reservation-k6-test \
               $K6_TEST_FILE
           
-          elif [ "$K6_RPT_TYPE" == "🕸️ Web Dashboard" ]; then
-            echo "$K6_RPT_TYPE: Report JSON file 'k6-test-report.html' will be exported after testing finished"
+          elif [ "$K6_RPT_TYPE" == "web-dashboard" -o "$K6_RPT_TYPE_NAME" == "🕸️ Web Dashboard" ]; then
             k6 run \
               --out web-dashboard=report=k6-test-report.html \
               --tag test_env=seats-reservation-k6-test \
               $K6_TEST_FILE
           
           else
-            echo "❌ $K6_RPT_TYPE is an UNSUPPORTED report type."
+            echo "❌ [ $K6_RPT_TYPE | $K6_RPT_TYPE_NAME ] is an UNSUPPORTED report type."
             exit 1
           fi
       
       # 4.1 Optional: for InfluxDB metrics report
       - name: 🗜️ Execute InfluxDB Telemetry Data Export Protocol
-        if: always() && (inputs.k6_test_report == '🔭 Time-Series Database InfluxDB')
+        if: success() && (steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'influxdb')
         run: |
           echo "Extracting raw time-series data chunks from docker container ecosystem..."
           
@@ -276,7 +328,7 @@ jobs:
       
       # 4.2 Optional: for Datadog Agent
       - name: 🗜️ Process and Compact Vector Exported Telemetry File
-        if: always() && (inputs.k6_test_report == '📝 Datadog Agent')
+        if: success() && (steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'datadog')
         run: |
           echo "Validating offline telemetry logs captured on local storage substrate..."
           
@@ -292,7 +344,14 @@ jobs:
       
       # 5. Upload report files to artifact for downloading
       - name: 📦 Archive Performance Telemetry Artifacts for Download
-        if: success() && (inputs.k6_test_report == '🔣 JSON' || inputs.k6_test_report == '🔢 CSV' || inputs.k6_test_report == '🕸️ Web Dashboard' || inputs.k6_test_report == '🔭 Time-Series Database InfluxDB' || inputs.k6_test_report == '📝 Datadog Agent')
+        if: >-
+          success()
+          && (steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'json'
+            || steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'csv'
+            || steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'web-dashboard'
+            || steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'influxdb'
+            || steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'datadog'
+          )
         uses: actions/upload-artifact@v4
         with:
           name: k6-test-reports     # report file ZIP name
@@ -302,7 +361,8 @@ jobs:
       # 6. Report summary
       - name: 📊 Compile Aggregated Telemetry Report to GitHub Summary
         env:
-          K6_RPT_TYPE: ${{ inputs.k6_test_report }}
+          K6_RPT_TYPE: ${{ steps.k6-rpt-gateway.outputs.rptTypeShortValue }}
+          K6_RPT_TYPE_NAME: ${{ steps.k6-rpt-gateway.outputs.rptTypeFullValue }}
         if: always()
         run: |
           echo "### 📊 Concurrency k6 Benchmarking Summary Report" >> $GITHUB_STEP_SUMMARY
@@ -311,8 +371,12 @@ jobs:
           echo "* **Sustained Load Blast Window:** \`${{ inputs.test_duration }}\`" >> $GITHUB_STEP_SUMMARY
           echo "✅ Execution metrics maps registered. Check the step logs above to review raw telemetry latency data table!" >> $GITHUB_STEP_SUMMARY
           echo "✅ Real-time metrics streaming process executed flawlessly. Grafana dashboard telemetry stack ready for export." >> $GITHUB_STEP_SUMMARY
-          if [ "$K6_RPT_TYPE" = "🔣 JSON" -o "$K6_RPT_TYPE" = "🔢 CSV" -o "$K6_RPT_TYPE" = "🕸️ Web Dashboard" -o "$K6_RPT_TYPE" = "🔭 Time-Series Database InfluxDB" -o "$K6_RPT_TYPE" = "📝 Datadog Agent" ]; then
-            echo "✅ Raw test data successfully captured. Navigate to the top of this Workflow run summary page to download **k6-test-reports.zip**!" >> $GITHUB_STEP_SUMMARY
+          if [ "$K6_RPT_TYPE" = "json" ] \
+            -o [ "$K6_RPT_TYPE" = "csv" ] \
+            -o [ "$K6_RPT_TYPE" = "web-dashboard" ] \
+            -o [ "$K6_RPT_TYPE" = "influxdb" ] \
+            -o [ "$K6_RPT_TYPE" = "datadog" ]; then
+            echo "✅ [ $K6_RPT_TYPE | $K6_RPT_TYPE_NAME ] Raw test data successfully captured. Navigate to the top of this Workflow run summary page to download **k6-test-reports.zip**!" >> $GITHUB_STEP_SUMMARY
           fi
       
       # Clean up
