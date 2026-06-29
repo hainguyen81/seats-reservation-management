@@ -584,7 +584,9 @@ jobs:
           commit_message: "Docs: Automated update of captured prometheus dashboard image assert for README.md [skip ci]"
           file_pattern: |
             sources/.assets/.prometheus/prometheus_dashboard.png
+            sources/.assets/**
             sources/.assets/**/*
+            sources/.assets/.*
             sources/.assets/.*/*
       
       # 7. Report summary
