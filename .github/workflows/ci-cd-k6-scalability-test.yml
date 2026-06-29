@@ -447,13 +447,13 @@ jobs:
           RAW_AUTH="${{ secrets.GRAFANA_USER_ID }}:${{ secrets.GRAFANA_API_TOKEN }}"
           ENCODED_AUTH=$(printf "%s" "$RAW_AUTH" | base64 | tr -d '\n\r')
           export K6_OTEL_HEADERS="Authorization=Basic $ENCODED_AUTH"
-          GRAFANA_HOST="${{ secrets.GRAFANA_PROMETHEUS_METRICS_DASHBOARD_URL }}"
+          GRAFANA_DASHBOARD_URL="${{ secrets.GRAFANA_PROMETHEUS_METRICS_DASHBOARD_URL }}"
           
           echo "🚀 Sending HTTP POST request to ensure public token is active on Dashboard: $DASHBOARD_UID"
           
           # 🔥 Call API to request Grafana share dashboard as Public
           # if dashboard hasn't been activated public, API will turn it ON. Else, API will response the configuration
-          RESPONSE=$(curl -s -X POST "$GRAFANA_HOST/api/dashboards/uid/$DASHBOARD_UID/public-dashboards" \
+          RESPONSE=$(curl -s -X POST "$GRAFANA_DASHBOARD_URL/api/dashboards/uid/$DASHBOARD_UID/public-dashboards" \
             -H "Authorization: Basic $ENCODED_AUTH" \
             -H "Content-Type: application/json" \
             -d '{
@@ -478,7 +478,7 @@ jobs:
             echo "⚠️ Could not request access Grafana via POST, try with GET..."
             
             # Fallback Gate: if it had been turned ON, POST maybe response conflicts, use GET to request again
-            RESPONSE_GET=$(curl -s -X GET "$GRAFANA_HOST/api/dashboards/uid/$DASHBOARD_UID/public-dashboards" \
+            RESPONSE_GET=$(curl -s -X GET "$GRAFANA_DASHBOARD_URL/api/dashboards/uid/$DASHBOARD_UID/public-dashboards" \
               -H "Authorization: Basic $ENCODED_AUTH")
             
             PUBLIC_TOKEN=$(echo "$RESPONSE_GET" | node -e '
@@ -501,7 +501,7 @@ jobs:
           fi
           
           # Finally: combine the Public External Link
-          FINAL_PUBLIC_URL="$GRAFANA_HOST/public-dashboards/$PUBLIC_TOKEN"
+          FINAL_PUBLIC_URL="$GRAFANA_DASHBOARD_URL/public-dashboards/$PUBLIC_TOKEN"
           echo "========================================================================="
           echo "🎯 GRAFANA PUBLIC EXTERNAL LINK IS LIVE: $FINAL_PUBLIC_URL"
           echo "========================================================================="
