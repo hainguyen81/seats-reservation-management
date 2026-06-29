@@ -584,7 +584,7 @@ jobs:
         continue-on-error: true     # no problem if error
         with:
           commit_message: "Docs: Automated update of captured prometheus dashboard image assert for README.md [skip ci]"
-          file_pattern: "README.md sources/README.md"
+          file_pattern: "sources/.assets/*"
       
       # 7. Report summary
       - name: 📊 Compile Aggregated Telemetry Report to GitHub Summary
