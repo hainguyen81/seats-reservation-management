@@ -525,10 +525,10 @@ jobs:
           if [ "$K6_RPT_TYPE" = "json" \
             -o "$K6_RPT_TYPE" = "csv" \
             -o "$K6_RPT_TYPE" = "web-dashboard" \
-            -o "$K6_RPT_TYPE" = "influxdb" ] \
+            -o "$K6_RPT_TYPE" = "influxdb" \
             -o "$K6_RPT_TYPE" = "datadog" \
           ]; then
-            echo "✅ [ $K6_RPT_TYPE: $K6_RPT_TYPE_NAME ] Raw test data successfully captured. Navigate to the top of this Workflow run summary page to download **k6-test-reports.zip**!" >> $GITHUB_STEP_SUMMARY
+            echo "✅ [ $K6_RPT_TYPE - $K6_RPT_TYPE_NAME ] Raw test data successfully captured. Navigate to the top of this Workflow run summary page to download **k6-test-reports.zip**!" >> $GITHUB_STEP_SUMMARY
           fi
           if [ "$K6_RPT_TYPE" = "prometheus" ]; then
             PROMETHEUS_DASHBOARD_URL=${{ steps.grafana-prometheus-api-gateway.outputs.prometheus_dashboard_url }}
