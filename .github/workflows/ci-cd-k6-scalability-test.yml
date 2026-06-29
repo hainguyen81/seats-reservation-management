@@ -567,14 +567,51 @@ jobs:
           echo "prometheus_dashboard_url=$encoded_url" >> $GITHUB_OUTPUT
       
       # Optional: Due to README could not showing the embeded dashboard, so capture the dashboard as asset image to show
-      - name: 📷 Capture Prometheus Dashboard Asset Image
-        if: ${{ steps.grafana-prometheus-api-gateway.outputs.original_prometheus_dashboard_url != '' }}
-        uses: karol-brejna-i/webpage-screenshot-action@v1.1.2
-        continue-on-error: true     # no problem if error
-        with:
-          url: ${{ steps.grafana-prometheus-api-gateway.outputs.original_prometheus_dashboard_url }}
-          output: sources/.assets/.prometheus/prometheus_dashboard.png
-          delay: 30 # wait 30 seconds
+      - name: Install Playwright and Dependencies to capture Prometheus Dashboard
+        if: success() && (steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'prometheus')
+        run: |
+          npm install playwright
+          npx playwright install chromium --with-deps
+      
+      # capture prometheus metrics dashboard
+      - name: Capture Prometheus Dashboard Using Playwright
+        if: success() && (steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'prometheus')
+        env:
+          DASHBOARD_URL: ${{ steps.grafana-prometheus-api-gateway.outputs.original_prometheus_dashboard_url }}
+          CAPTURED_IMAGE_PATH: "sources/.assets/.prometheus/prometheus_dashboard.png"
+        run: |
+          node -e "
+          const { chromium } = require('playwright');
+          (async () => {
+            // open Chrome
+            console.log('- Open Chrome to load Prometheus Dashboard...');
+            const browser = await chromium.launch({ headless: true });
+            const context = await browser.newContext({
+              viewport: { width: 1920, height: 1080 }
+            });
+            const page = await context.newPage();
+            
+            // use 'networkidle' to wait no any API (XHR/Fetch) running in background
+            console.log('- Navigating to Prometheus Dashboard...');
+            await page.goto(process.env.DASHBOARD_URL, { 
+              waitUntil: 'networkidle', 
+              timeout: 60000 
+            });
+            
+            // wait more 5 seconds to make sure dashboard already loaded
+            await page.waitForTimeout(5000);
+            
+            // capture screen to image path
+            console.log('- Capture Prometheus Dashboard...');
+            await page.screenshot({ 
+              path: CAPTURED_IMAGE_PATH, 
+              fullPage: true 
+            });
+            
+            console.log('- Screenshot captured successfully!');
+            await browser.close();
+          })();
+          "
 
       # Optional: Commit and push captured images to repository
       - name: 🚀 Auto Commit and Push Asserts
