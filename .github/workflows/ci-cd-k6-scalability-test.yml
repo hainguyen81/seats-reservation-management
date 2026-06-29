@@ -442,12 +442,11 @@ jobs:
       - name: 📡 Dynamically Provision and Fetch Grafana Public External Link
         env:
           K6_RPT_TYPE: ${{ steps.k6-rpt-gateway.outputs.rptTypeShortValue }}
-        if: success() && (env.K6_RPT_TYPE == 'prometheus')
-        id: grafana-prometheus-api-gateway
-        env:
           GRAFANA_USER_ID: ${{ secrets.GRAFANA_USER_ID }}
           GRAFANA_API_TOKEN: ${{ secrets.GRAFANA_API_TOKEN }}
           PROMETHEUS_DASHBOARD_UID: ${{ secrets.GRAFANA_PROMETHEUS_METRICS_DASHBOARD_ID }}
+        if: success() && (env.K6_RPT_TYPE == 'prometheus')
+        id: grafana-prometheus-api-gateway
         run: |
           echo "🔌 Connecting to Grafana Enterprise API Substrate..."
           
