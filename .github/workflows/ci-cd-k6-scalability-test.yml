@@ -436,8 +436,7 @@ jobs:
       - name: 📡 Dynamically Provision and Fetch Grafana Public External Link
         if: >-
           success()
-          && (steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'prometheus'
-          )
+          && (steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'prometheus')
         id: grafana-prometheus-api-gateway
         env:
           GRAFANA_USER_ID: ${{ secrets.GRAFANA_USER_ID }}
