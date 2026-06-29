@@ -352,10 +352,23 @@ jobs:
           
           # receive k6 test exit code to check
           K6_EXIT_CODE=$?
-          if [ "$K6_EXIT_CODE" -le 99 ]; then
-            echo "✅ K6 run finished (but FAILED QUALITY) with acceptable code: $K6_EXIT_CODE. Moving to flush metrics..."
+          if [ $K6_EXIT_CODE -eq 0 ]; then
+            echo "========================================================================="
+            echo "🏆 PERFECT EXHAUSTIVE BLAST SUCCESS: Exit Code is exactly $K6_EXIT_CODE!"
+            echo "🚀 100% Request passed and thresholds are perfectly satisfied!"
+            echo "Moving to flush metrics..."
+            echo "========================================================================="
+            
+          elif [ "$K6_EXIT_CODE" -le 99 ]; then
+            echo "========================================================================="
+            echo "🏆 EXHAUSTIVE FAILED QUALITY: Exit Code is $K6_EXIT_CODE!"
+            echo "Moving to flush metrics..."
+            echo "========================================================================="
+            
           else
-            echo "🚨 K6 fatal infrastructure crash! Code: $K6_EXIT_CODE"
+            echo "========================================================================="
+            echo "🚨 K6 FATAL INFRASTRUCTURE CRASH: Exit Code: $K6_EXIT_CODE"
+            echo "========================================================================="
             exit "$K6_EXIT_CODE" # force stop pipeline
           fi
             
