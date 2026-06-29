@@ -12,7 +12,7 @@
 
 ## 🌐 Prometheus Metrics Dashboard Demostration
 
-<!-- START-prometheus-metrics-dashboard -->![🏃 Comming soon](https://img.shields.io/badge/%F0%9F%8F%83%20Comming%20soon-orange)<!-- END-prometheus-metrics-dashboard -->
+<!-- START-prometheus-metrics-dashboard -->[🏃 Comming soon](https://img.shields.io/badge/%F0%9F%8F%83%20Comming%20soon-orange)<!-- END-prometheus-metrics-dashboard -->
 
 ## 🌐 GitHub CI/CD Workflows
 
