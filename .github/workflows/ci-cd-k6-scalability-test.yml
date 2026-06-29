@@ -501,7 +501,7 @@ jobs:
             "timeSelectionEnabled": true,
             "annotationsEnabled": true
           }'
-          RESPONSE_POST=$(call_grafana_api "POST" "$DASHBOARD_API" "$POST_DATA", "$GRAFANA_API_TOKEN")
+          RESPONSE_POST=$(call_grafana_api "POST" "$DASHBOARD_API" "$POST_DATA" "$GRAFANA_API_TOKEN")
           
           # Extract response JSON by node to get public token
           PUBLIC_TOKEN=$(echo "$RESPONSE_POST" | node -e '
@@ -519,7 +519,7 @@ jobs:
             echo "⚠️ Could not request access Grafana via POST, try with GET..."
             
             # Fallback Gate: if it had been turned ON, POST maybe response conflicts, use GET to request again
-            RESPONSE_GET=$(call_grafana_api "GET" "$DASHBOARD_API", "", "$GRAFANA_API_TOKEN")
+            RESPONSE_GET=$(call_grafana_api "GET" "$DASHBOARD_API" "" "$GRAFANA_API_TOKEN")
             
             PUBLIC_TOKEN=$(echo "$RESPONSE_GET" | node -e '
               const input = require("fs").readFileSync(0, "utf-8");
