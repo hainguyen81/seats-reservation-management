@@ -569,7 +569,7 @@ jobs:
       # Optional: Due to README could not showing the embeded dashboard, so capture the dashboard as asset image to show
       - name: 📷 Capture Prometheus Dashboard Asset Image
         if: ${{ steps.grafana-prometheus-api-gateway.outputs.original_prometheus_dashboard_url != '' }}
-        uses: lambstatus/screenshot-action@v1
+        uses: swinton/screenshot-website@v1.x
         continue-on-error: true     # no problem if error
         with:
           url: ${{ steps.grafana-prometheus-api-gateway.outputs.original_prometheus_dashboard_url }}
