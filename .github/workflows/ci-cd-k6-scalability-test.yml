@@ -128,10 +128,17 @@ env:
     }
 
 jobs:
+  # ==============================================================================
+  # 📈 SCALABILITY K6 STRESS TESTING (PURE K6 LOAD INJECTOR)
+  # ==============================================================================
   # Run High-Concurrency k6 Injection
   k6-injection:
     name: 🔥 Dispatch High-Concurrency k6 Load Injection Matrix
     runs-on: ubuntu-latest
+    
+    outputs:
+      prometheus_dashboard_url: ${{ steps.grafana-prometheus-api-gateway.outputs.prometheus_dashboard_url }}
+    
     steps:
       # 1. Check whether allow for running workflow
       - name: 🛡️ Gatekeeper - Validate Administrative Access
@@ -288,10 +295,10 @@ jobs:
           # execute k6 test
           # k6 run $K6_TEST_FILE
           # available output types: cloud (maybe charged fee), csv, experimental-opentelemetry, experimental-prometheus-rw, influxdb, json, opentelemetry, statsd, web-dashboard
-          if [ "$K6_RPT_TYPE" == "console" -o "$K6_RPT_TYPE_NAME" == "🌿 GitHub CI/CD Console" ]; then
+          if [ "$K6_RPT_TYPE" == "console" ]; then
             k6 run $K6_TEST_FILE
           
-          elif [ "$K6_RPT_TYPE" == "prometheus" -o "$K6_RPT_TYPE_NAME" == "🔥 Prometheus" ]; then
+          elif [ "$K6_RPT_TYPE" == "prometheus" ]; then
             # ⚙️ Calculate and encode AUTHORIZATION HEADER by BASIC AUTH STANDARDS
             RAW_AUTH="${{ secrets.GRAFANA_USER_ID }}:${{ secrets.GRAFANA_API_TOKEN }}"
             ENCODED_AUTH=$(printf "%s" "$RAW_AUTH" | base64 | tr -d '\n\r')
@@ -425,7 +432,87 @@ jobs:
           path: k6-test-report.*
           retention-days: 3         # auto delete file on GitHub after 3 days to save resources
       
-      # 6. Report summary
+      # 6. Connect grafana to capture prometheus metrics graph for showing on README
+      - name: 📡 Dynamically Provision and Fetch Grafana Public External Link
+        if: >-
+          success()
+          && (steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'prometheus'
+          )
+        id: grafana-prometheus-api-gateway
+        env:
+          GRAFANA_USER_ID: ${{ secrets.GRAFANA_USER_ID }}
+          GRAFANA_API_TOKEN: ${{ secrets.GRAFANA_API_TOKEN }}
+          PROMETHEUS_DASHBOARD_UID: ${{ secrets.GRAFANA_PROMETHEUS_METRICS_DASHBOARD_ID }}
+        run: |
+          echo "🔌 Connecting to Grafana Enterprise API Substrate..."
+          
+          # ⚙️ Calculate and encode AUTHORIZATION HEADER by BASIC AUTH STANDARDS
+          RAW_AUTH="${{ secrets.GRAFANA_USER_ID }}:${{ secrets.GRAFANA_API_TOKEN }}"
+          ENCODED_AUTH=$(printf "%s" "$RAW_AUTH" | base64 | tr -d '\n\r')
+          export K6_OTEL_HEADERS="Authorization=Basic $ENCODED_AUTH"
+          GRAFANA_HOST="https://grafana.net"
+          
+          echo "🚀 Sending HTTP POST request to ensure public token is active on Dashboard: $DASHBOARD_UID"
+          
+          # 🔥 Call API to request Grafana share dashboard as Public
+          # if dashboard hasn't been activated public, API will turn it ON. Else, API will response the configuration
+          RESPONSE=$(curl -s -X POST "$GRAFANA_HOST/api/dashboards/uid/$DASHBOARD_UID/public-dashboards" \
+            -H "Authorization: Basic $ENCODED_AUTH" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "isEnabled": true,
+              "shareType": "public",
+              "timeSelectionEnabled": true
+            }')
+          
+          # Extract response JSON by node to get public token
+          PUBLIC_TOKEN=$(echo "$RESPONSE" | node -e '
+            const input = require("fs").readFileSync(0, "utf-8");
+            try {
+              const data = JSON.parse(input);
+              // Grafana API response public token in `accessToken` or uid
+              console.log(data.accessToken || data.uid || "NOT_FOUND");
+            } catch(e) {
+              console.log("NOT_FOUND");
+            }
+          ')
+          
+          if [ "$PUBLIC_TOKEN" = "NOT_FOUND" -o -z "$PUBLIC_TOKEN" ]; then
+            echo "⚠️ Could not request access Grafana via POST, try with GET..."
+            
+            # Fallback Gate: if it had been turned ON, POST maybe response conflicts, use GET to request again
+            RESPONSE_GET=$(curl -s -X GET "$GRAFANA_HOST/api/dashboards/uid/$DASHBOARD_UID/public-dashboards" \
+              -H "Authorization: Basic $ENCODED_AUTH")
+            
+            PUBLIC_TOKEN=$(echo "$RESPONSE_GET" | node -e '
+              const input = require("fs").readFileSync(0, "utf-8");
+              try {
+                const data = JSON.parse(input);
+                // Nếu trả về mảng danh sách public dashboards [3.2]
+                if (Array.isArray(data) && data.length > 0) {
+                  console.log(data[0].accessToken || data[0].uid);
+                } else {
+                  console.log(data.accessToken || data.uid || "NOT_FOUND");
+                }
+              } catch(e) { console.log("NOT_FOUND"); }
+            ')
+          fi
+          
+          if [ "$PUBLIC_TOKEN" = "NOT_FOUND" -o -z "$PUBLIC_TOKEN" ]; then
+            echo "⚠️ Could not request access Grafana via POST, GET..."
+            exit 0 # exit as success
+          fi
+          
+          # Finally: combine the Public External Link
+          FINAL_PUBLIC_URL="$GRAFANA_HOST/public-dashboards/$PUBLIC_TOKEN"
+          echo "========================================================================="
+          echo "🎯 GRAFANA PUBLIC EXTERNAL LINK IS LIVE: $FINAL_PUBLIC_URL"
+          echo "========================================================================="
+          
+          # 🖨️ push the published link to GITHUB_OUTPUT for next steps
+          echo "prometheus_dashboard_url=$FINAL_PUBLIC_URL" >> $GITHUB_OUTPUT
+      
+      # 7. Report summary
       - name: 📊 Compile Aggregated Telemetry Report to GitHub Summary
         env:
           K6_RPT_TYPE: ${{ steps.k6-rpt-gateway.outputs.rptTypeShortValue }}
@@ -445,7 +532,43 @@ jobs:
             -o [ "$K6_RPT_TYPE" = "datadog" ]; then
             echo "✅ [ $K6_RPT_TYPE | $K6_RPT_TYPE_NAME ] Raw test data successfully captured. Navigate to the top of this Workflow run summary page to download **k6-test-reports.zip**!" >> $GITHUB_STEP_SUMMARY
           fi
-      
+          if [ "$K6_RPT_TYPE" = "prometheus" ]; then
+            const PROMETHEUS_DASHBOARD_URL = ${{ steps.grafana-prometheus-api-gateway.outputs.prometheus_dashboard_url }}
+            if [ -n "$PROMETHEUS_DASHBOARD_URL" ]; then
+              echo "✅ Real-time metrics streaming live here: $PROMETHEUS_DASHBOARD_URL" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+  
+  # ==============================================================================
+  # ⚡ PUBLISH PROMETHEUS DASHBOARD URL TO README
+  # ==============================================================================
+  publish-prometheus-url-to-readme:
+    name: ⚡ Generate and Export Prometheus Dashboard Link to README
+    needs: [ k6-injection ]           # wait for deployment, combine enviroment
+    if: |
+      always() && 
+      needs.k6-injection.result == 'success' && 
+      needs.k6-injection.outputs.prometheus_dashboard_url != ''
+    secrets: inherit # bypass secrets to child workflow
+    uses: ./.github/workflows/ci-cd-publish-url.yml
+    with:
+      env_data: >-
+        {
+          "name": "prometheus-metrics-dashboard",
+          "published_url": "${{ needs.k6-injection.outputs.prometheus_dashboard_url }}"
+        }
+  
+  # ==============================================================================
+  # ⚙️ CLEAN UP
+  # ==============================================================================
+  clean-up:
+    name: ⚙️ Force Kill Orphan Processes
+    runs-on: ubuntu-latest
+    needs: [ deploy-to-gcp, publish-url-to-readme ]           # wait for deployment, combine enviroment
+    # always run although other jobs are success or failure
+    if: ${{ !cancelled() }}
+    
+    steps:
       # Clean up
       - name: ⚙️ Force Kill Orphan Processes
         if: always()    # Always run to clean up

@@ -166,7 +166,7 @@ jobs:
               # 🚀 Use sed:
               # - Find START and END tags on same line, 
               # - Clear everything inside tags and replace $LINK_MARKDOWN into.
-              sed -i "s|${PLACEHOLDER_START}.*${PLACEHOLDER_END}|${PLACEHOLDER_START} ${REPLACEMENT_MARKDOWN} ${PLACEHOLDER_END}|g" "$file_path"
+              sed -i ":a;N;\$!ba;s|${PLACEHOLDER_START}.*${PLACEHOLDER_END}|${PLACEHOLDER_START} ${REPLACEMENT_MARKDOWN} ${PLACEHOLDER_END}|g" "$file_path"
               echo "✔️ Updated $file_path successfully"
             }
             
