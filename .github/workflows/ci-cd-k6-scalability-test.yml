@@ -444,6 +444,47 @@ jobs:
         run: |
           echo "🔌 Connecting to Grafana Enterprise API Substrate..."
           
+          # craete function to trace/debug when calling API
+          call_grafana_api() {
+            local method=$1
+            local url=$2
+            local data=$3
+            
+            echo "--------------------------------------------------"
+            echo "🔍 [DEBUG] Executing HTTP $method request..."
+            
+            # create file to store response body, response headers
+            local res_body_file=$(mktemp)
+            local res_headers_file=$(mktemp)
+            local http_status
+            
+            if [ "$method" = "POST" ]; then
+              http_status=$(curl -s -o "$res_body_file" -D "$res_headers_file" -X POST "$url" \
+                -H "Authorization: Bearer $GRAFANA_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "$data" -w "%{http_code}")
+            else
+              http_status=$(curl -s -o "$res_body_file" -D "$res_headers_file" -X GET "$url" \
+                -H "Authorization: Bearer $GRAFANA_TOKEN" \
+                -H "Content-Type: application/json" -w "%{http_code}")
+            fi
+            
+            # --- debug/tracing ---
+            echo "📥 [DEBUG] HTTP Status Code: $http_status"
+            echo "📥 [DEBUG] Response Headers:"
+            cat "$res_headers_file" | sed 's/^/    /'
+            
+            echo "📥 [DEBUG] Response Body:"
+            cat "$res_body_file" | sed 's/^/    /'
+            echo "--------------------------------------------------"
+            
+            # show response body JSON to return value
+            cat "$res_body_file"
+            
+            # clean up
+            rm -f "$res_body_file" "$res_headers_file"
+          }
+          
           # !!!IMPORTANT!!! No need to encode auth token here
           # ⚙️ Calculate AUTHORIZATION HEADER by Bearer AUTH STANDARDS
           RAW_AUTH="${{ secrets.GRAFANA_USER_ID }}:${{ secrets.GRAFANA_API_TOKEN }}"
@@ -454,18 +495,16 @@ jobs:
           
           # 🔥 Call API to request Grafana share dashboard as Public
           # if dashboard hasn't been activated public, API will turn it ON. Else, API will response the configuration
-          RESPONSE=$(curl -s -X POST "$DASHBOARD_API" \
-            -H "Authorization: Bearer $RAW_AUTH" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "isEnabled": true,
-              "shareType": "public",
-              "timeSelectionEnabled": true,
-              "annotationsEnabled": true
-            }')
+          POST_DATA='{
+            "isEnabled": true,
+            "shareType": "public",
+            "timeSelectionEnabled": true,
+            "annotationsEnabled": true
+          }'
+          RESPONSE_POST=$(call_grafana_api "POST" "$DASHBOARD_API" "$POST_DATA")
           
           # Extract response JSON by node to get public token
-          PUBLIC_TOKEN=$(echo "$RESPONSE" | node -e '
+          PUBLIC_TOKEN=$(echo "$RESPONSE_POST" | node -e '
             const input = require("fs").readFileSync(0, "utf-8");
             try {
               const data = JSON.parse(input);
@@ -480,9 +519,7 @@ jobs:
             echo "⚠️ Could not request access Grafana via POST, try with GET..."
             
             # Fallback Gate: if it had been turned ON, POST maybe response conflicts, use GET to request again
-            RESPONSE_GET=$(curl -s -X GET "$DASHBOARD_API" \
-              -H "Authorization: Basic $ENCODED_AUTH" \
-              -H "Content-Type: application/json")
+            RESPONSE_GET=$(call_grafana_api "GET" "$DASHBOARD_API")
             
             PUBLIC_TOKEN=$(echo "$RESPONSE_GET" | node -e '
               const input = require("fs").readFileSync(0, "utf-8");
