@@ -119,6 +119,10 @@ jobs:
       # 1. Check out source to publish README.md
       - name: ⬇️ Checkout Source Code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          persist-credentials: true
+          fetch-depth: 0 # pull all history to avoid conflicts (non fast-forward)
 
       # 2. Download Published Service Information Artifact from previous job to combine
       - name: 📥 Download All Service Artifacts
