@@ -96,7 +96,7 @@ jobs:
           if [ "${{ matrix.service.encoded }}" = "true" ]; then
             published_url=$(printf "%s" "$published_url" | base64 --decode | rev)     # decode base64, after that reverse
           fi
-          echo '{"name": "${{ matrix.service.name }}", "published_url": "$published_url"}' > "published-${{ matrix.service.name }}.json"
+          echo '{"name": "${{ matrix.service.name }}", "published_url": "'"$published_url"'"}' > "published-${{ matrix.service.name }}.json"
       
       # 2.1. Upload published service JSON to an temporary artifact
       - name: 📦 Upload Published Service Information Artifact
