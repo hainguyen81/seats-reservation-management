@@ -6,6 +6,7 @@
 #   - GRAFANA_PROMETHEUS_OTLP_API: <Grafana Prometheus Endpoint Path. Ex: /otlp/v1/metrics>
 #   - GRAFANA_USER_ID: <Grafana Access Token User ID. It's a number with 7 digits. Ex: 1234567>
 #   - GRAFANA_API_TOKEN: <Grafana Access Token. It starts with `glc_`. Ex: glc_eyJvIjoiMTgyNDMyMyIsIm4iOiJzd.....>
+#   - GRAFANA_PROMETHEUS_SERVICE_ACCOUNT_TOKEN: <Grafana Prometheus Service Account Access Token. It starts with `glsa_`. Ex: glsa_qz27C4wgNUTA6.....>
 # -------------------------------------------------
 
 name: 📈 [ TEST ] Scalability k6 Stress Testing (Pure k6 Load Injector)
@@ -436,8 +437,7 @@ jobs:
       - name: 📡 Dynamically Provision and Fetch Grafana Public External Link
         if: success() && (steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'prometheus')
         env:
-          GRAFANA_USER_ID: ${{ secrets.GRAFANA_USER_ID }}
-          GRAFANA_API_TOKEN: ${{ secrets.GRAFANA_API_TOKEN }}
+          PROMETHEUS_SERVICE_ACCOUNT_TOKEN: ${{ secrets.GRAFANA_PROMETHEUS_SERVICE_ACCOUNT_TOKEN }}
           PROMETHEUS_DASHBOARD_UID: ${{ secrets.GRAFANA_PROMETHEUS_METRICS_DASHBOARD_ID }}
           PROMETHEUS_DASHBOARD_URL: ${{ secrets.GRAFANA_PROMETHEUS_METRICS_DASHBOARD_URL }}
         id: grafana-prometheus-api-gateway
@@ -461,11 +461,13 @@ jobs:
               http_status=$(curl -s -o "$res_body_file" -D "$res_headers_file" -X POST "$url" \
                 -H "Authorization: Bearer $token" \
                 -H "Content-Type: application/json" \
-                -d "$data" -w "%{http_code}")
+                -d "$data" \
+                -w "%{http_code}")
             else
               http_status=$(curl -s -o "$res_body_file" -D "$res_headers_file" -X GET "$url" \
                 -H "Authorization: Bearer $token" \
-                -H "Content-Type: application/json" -w "%{http_code}")
+                -H "Content-Type: application/json" \
+                -w "%{http_code}")
             fi
             
             # --- debug/tracing ---
@@ -485,6 +487,23 @@ jobs:
             rm -f "$res_body_file" "$res_headers_file"
           }
           
+          read_grafana_token() {
+            local response=$1
+            
+            respone_token=$(echo "$response" | node -e '
+              const input = require("fs").readFileSync(0, "utf-8");
+              try {
+                const data = JSON.parse(input);
+                if (Array.isArray(data) && data.length > 0) {
+                  console.log(data[0].accessToken || data[0].uid || "NOT_FOUND");
+                } else {
+                  console.log(data.accessToken || data.uid || "NOT_FOUND");
+                }
+              } catch(e) { console.log("NOT_FOUND"); }
+            ')
+            cat $respone_token
+          }
+          
           # !!!IMPORTANT!!! No need to encode auth token here
           # ⚙️ Calculate AUTHORIZATION HEADER by Bearer AUTH STANDARDS
           echo "🔌 Connecting to Grafana Enterprise API Substrate..."
@@ -501,38 +520,18 @@ jobs:
             "timeSelectionEnabled": true,
             "annotationsEnabled": true
           }'
-          RESPONSE_POST=$(call_grafana_api "POST" "$DASHBOARD_API" "$POST_DATA" "$GRAFANA_API_TOKEN")
+          RESPONSE_POST=$(call_grafana_api "POST" "$DASHBOARD_API" "$POST_DATA" "$PROMETHEUS_SERVICE_ACCOUNT_TOKEN")
           
           # Extract response JSON by node to get public token
-          PUBLIC_TOKEN=$(echo "$RESPONSE_POST" | node -e '
-            const input = require("fs").readFileSync(0, "utf-8");
-            try {
-              const data = JSON.parse(input);
-              // Grafana API response public token in `accessToken` or uid
-              console.log(data.accessToken || data.uid || "NOT_FOUND");
-            } catch(e) {
-              console.log("NOT_FOUND");
-            }
-          ')
+          PUBLIC_TOKEN=$(read_grafana_token "$RESPONSE_POST")
           
           if [ "$PUBLIC_TOKEN" = "NOT_FOUND" -o -z "$PUBLIC_TOKEN" ]; then
             echo "⚠️ Could not request access Grafana via POST, try with GET..."
             
             # Fallback Gate: if it had been turned ON, POST maybe response conflicts, use GET to request again
-            RESPONSE_GET=$(call_grafana_api "GET" "$DASHBOARD_API" "" "$GRAFANA_API_TOKEN")
+            RESPONSE_GET=$(call_grafana_api "GET" "$DASHBOARD_API" "{}" "$PROMETHEUS_SERVICE_ACCOUNT_TOKEN")
             
-            PUBLIC_TOKEN=$(echo "$RESPONSE_GET" | node -e '
-              const input = require("fs").readFileSync(0, "utf-8");
-              try {
-                const data = JSON.parse(input);
-                // Grafana API response public token in `accessToken` or uid
-                if (Array.isArray(data) && data.length > 0) {
-                  console.log(data[0].accessToken || data[0].uid || "NOT_FOUND");
-                } else {
-                  console.log(data.accessToken || data.uid || "NOT_FOUND");
-                }
-              } catch(e) { console.log("NOT_FOUND"); }
-            ')
+            PUBLIC_TOKEN=$(read_grafana_token "$RESPONSE_GET")
           fi
           
           if [ "$PUBLIC_TOKEN" = "NOT_FOUND" -o -z "$PUBLIC_TOKEN" ]; then
