@@ -447,7 +447,7 @@ jobs:
           RAW_AUTH="${{ secrets.GRAFANA_USER_ID }}:${{ secrets.GRAFANA_API_TOKEN }}"
           ENCODED_AUTH=$(printf "%s" "$RAW_AUTH" | base64 | tr -d '\n\r')
           export K6_OTEL_HEADERS="Authorization=Basic $ENCODED_AUTH"
-          GRAFANA_HOST="https://grafana.net"
+          GRAFANA_HOST="${{ secret.GRAFANA_PROMETHEUS_METRICS_DASHBOARD_URL }}"
           
           echo "🚀 Sending HTTP POST request to ensure public token is active on Dashboard: $DASHBOARD_UID"
           
