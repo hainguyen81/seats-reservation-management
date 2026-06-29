@@ -204,7 +204,7 @@ jobs:
       
       # 2. Check out sources to run k6 test file
       - name: 📁 Checkout Benchmark Engineering Repositories
-        if: false # success()                 # if previous step is successful
+        if: success()                 # if previous step is successful
         uses: actions/checkout@v4
       
       # 2.1 Optional: for InfluxDB metrics report
@@ -569,13 +569,14 @@ jobs:
       # Optional: Due to README could not showing the embeded dashboard, so capture the dashboard as asset image to show
       - name: 📷 Capture Prometheus Dashboard Asset Image
         if: ${{ steps.grafana-prometheus-api-gateway.outputs.original_prometheus_dashboard_url != '' }}
-        uses: swinton/screenshot-website@v1.x
+        uses: swinton/webpage-screenshot-action@v1
         continue-on-error: true     # no problem if error
         with:
           url: ${{ steps.grafana-prometheus-api-gateway.outputs.original_prometheus_dashboard_url }}
-          output: "sources/.assets/.prometheus/prometheus_dashboard.png"
+          output: sources/.assets/.prometheus/prometheus_dashboard.png
           width: 850
           height: 700
+          delay: 5 # in seconds
 
       # Optional: Commit and push captured images to repository
       - name: 🚀 Auto Commit and Push Asserts
