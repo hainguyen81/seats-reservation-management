@@ -501,7 +501,7 @@ jobs:
                 }
               } catch(e) { console.log("NOT_FOUND"); }
             ')
-            cat $respone_token
+            echo "$respone_token"
           }
           
           # !!!IMPORTANT!!! No need to encode auth token here
