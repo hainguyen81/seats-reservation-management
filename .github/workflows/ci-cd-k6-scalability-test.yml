@@ -522,15 +522,16 @@ jobs:
           echo "* **Sustained Load Blast Window:** \`${{ inputs.test_duration }}\`" >> $GITHUB_STEP_SUMMARY
           echo "✅ Execution metrics maps registered. Check the step logs above to review raw telemetry latency data table!" >> $GITHUB_STEP_SUMMARY
           echo "✅ Real-time metrics streaming process executed flawlessly. Grafana dashboard telemetry stack ready for export." >> $GITHUB_STEP_SUMMARY
-          if [ "$K6_RPT_TYPE" = "json" ] \
-            -o [ "$K6_RPT_TYPE" = "csv" ] \
-            -o [ "$K6_RPT_TYPE" = "web-dashboard" ] \
-            -o [ "$K6_RPT_TYPE" = "influxdb" ] \
-            -o [ "$K6_RPT_TYPE" = "datadog" ]; then
+          if [ "$K6_RPT_TYPE" = "json" \
+            -o "$K6_RPT_TYPE" = "csv" \
+            -o "$K6_RPT_TYPE" = "web-dashboard" \
+            -o "$K6_RPT_TYPE" = "influxdb" ] \
+            -o "$K6_RPT_TYPE" = "datadog" \
+          ]; then
             echo "✅ [ $K6_RPT_TYPE: $K6_RPT_TYPE_NAME ] Raw test data successfully captured. Navigate to the top of this Workflow run summary page to download **k6-test-reports.zip**!" >> $GITHUB_STEP_SUMMARY
           fi
           if [ "$K6_RPT_TYPE" = "prometheus" ]; then
-            const PROMETHEUS_DASHBOARD_URL = ${{ steps.grafana-prometheus-api-gateway.outputs.prometheus_dashboard_url }}
+            PROMETHEUS_DASHBOARD_URL=${{ steps.grafana-prometheus-api-gateway.outputs.prometheus_dashboard_url }}
             if [ -n "$PROMETHEUS_DASHBOARD_URL" ]; then
               echo "✅ Real-time metrics streaming live here: $PROMETHEUS_DASHBOARD_URL" >> $GITHUB_STEP_SUMMARY
             fi
