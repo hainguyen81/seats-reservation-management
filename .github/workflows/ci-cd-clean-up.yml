@@ -41,6 +41,7 @@ jobs:
       
       # clean up history / logs
       - name: Clear workflows history / logs
+        if: success()                 # if previous step is successful
         uses: Mattraks/delete-workflow-runs@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
