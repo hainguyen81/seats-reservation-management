@@ -443,7 +443,8 @@ jobs:
         run: |
           echo "🔌 Connecting to Grafana Enterprise API Substrate..."
           
-          # ⚙️ Calculate and encode AUTHORIZATION HEADER by BASIC AUTH STANDARDS
+          # !!!IMPORTANT!!! No need to encode auth token here
+          # ⚙️ Calculate AUTHORIZATION HEADER by Bearer AUTH STANDARDS
           RAW_AUTH="${{ secrets.GRAFANA_USER_ID }}:${{ secrets.GRAFANA_API_TOKEN }}"
           GRAFANA_DASHBOARD_URL="${{ secrets.GRAFANA_PROMETHEUS_METRICS_DASHBOARD_URL }}"
           
