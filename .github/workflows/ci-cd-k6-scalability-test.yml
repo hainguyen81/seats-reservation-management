@@ -559,7 +559,8 @@ jobs:
           echo "========================================================================="
           
           # 🖨️ push the published link to GITHUB_OUTPUT for next steps
-          encoded_url=$(echo -n "$FINAL_PUBLIC_URL" | base64 | tr -d '\n')
+          encoded_url=$(printf "%s" "$FINAL_PUBLIC_URL" | base64 | tr -d '\n\r ')
+          echo "💡 Encoded URL: $encoded_url"
           echo "prometheus_dashboard_url=$encoded_url" >> $GITHUB_OUTPUT
       
       # 7. Report summary
