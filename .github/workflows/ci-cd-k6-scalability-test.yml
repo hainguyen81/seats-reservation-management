@@ -604,11 +604,11 @@ jobs:
     uses: ./.github/workflows/ci-cd-publish-url.yml
     with:
       env_data: >-
-        {
+        [{
           "name": "prometheus-metrics-dashboard",
           "published_url": "${{ needs.k6-injection.outputs.prometheus_dashboard_url }}",
           "encoded": "true"
-        }
+        }]
   
   # ==============================================================================
   # ⚙️ CLEAN UP
