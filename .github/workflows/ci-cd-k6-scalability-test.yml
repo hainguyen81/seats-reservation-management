@@ -289,7 +289,7 @@ jobs:
           echo "🎯 TARGET URL DEPLOYED OUTSIDE: $TARGET_URL"
           echo "👥 SIMULATING MAXIMUM ATTACK VUs: $CONCURRENT_USERS"
           echo "⏳ SUSTAINED INJECTION HOLD WINDOW: $TEST_DURATION"
-          echo "⏳ K6 REPORT TYPE: $K6_RPT_TYPE | $K6_RPT_TYPE_NAME"
+          echo "⏳ K6 REPORT TYPE: $K6_RPT_TYPE - $K6_RPT_TYPE_NAME"
           echo "========================================================================="
           
           # execute k6 test
@@ -386,9 +386,7 @@ jobs:
       
       # 4.1 Optional: for InfluxDB metrics report
       - name: 🗜️ Execute InfluxDB Telemetry Data Export Protocol
-        env:
-          K6_RPT_TYPE: ${{ steps.k6-rpt-gateway.outputs.rptTypeShortValue }}
-        if: success() && (env.K6_RPT_TYPE == 'influxdb')
+        if: success() && (steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'influxdb')
         run: |
           echo "Extracting raw time-series data chunks from docker container ecosystem..."
           
@@ -404,9 +402,7 @@ jobs:
       
       # 4.2 Optional: for Datadog Agent
       - name: 🗜️ Process and Compact Vector Exported Telemetry File
-        env:
-          K6_RPT_TYPE: ${{ steps.k6-rpt-gateway.outputs.rptTypeShortValue }}
-        if: success() && (env.K6_RPT_TYPE == 'datadog')
+        if: success() && (steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'datadog')
         run: |
           echo "Validating offline telemetry logs captured on local storage substrate..."
           
@@ -422,15 +418,13 @@ jobs:
       
       # 5. Upload report files to artifact for downloading
       - name: 📦 Archive Performance Telemetry Artifacts for Download
-        env:
-          K6_RPT_TYPE: ${{ steps.k6-rpt-gateway.outputs.rptTypeShortValue }}
         if: >-
           success()
-          && (env.K6_RPT_TYPE == 'json'
-            || env.K6_RPT_TYPE == 'csv'
-            || env.K6_RPT_TYPE == 'web-dashboard'
-            || env.K6_RPT_TYPE == 'influxdb'
-            || env.K6_RPT_TYPE == 'datadog'
+          && (steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'json'
+            || steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'csv'
+            || steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'web-dashboard'
+            || steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'influxdb'
+            || steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'datadog'
           )
         uses: actions/upload-artifact@v4
         with:
@@ -440,12 +434,11 @@ jobs:
       
       # 6. Connect grafana to capture prometheus metrics graph for showing on README
       - name: 📡 Dynamically Provision and Fetch Grafana Public External Link
+        if: success() && (steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'prometheus')
         env:
-          K6_RPT_TYPE: ${{ steps.k6-rpt-gateway.outputs.rptTypeShortValue }}
           GRAFANA_USER_ID: ${{ secrets.GRAFANA_USER_ID }}
           GRAFANA_API_TOKEN: ${{ secrets.GRAFANA_API_TOKEN }}
           PROMETHEUS_DASHBOARD_UID: ${{ secrets.GRAFANA_PROMETHEUS_METRICS_DASHBOARD_ID }}
-        if: success() && (env.K6_RPT_TYPE == 'prometheus')
         id: grafana-prometheus-api-gateway
         run: |
           echo "🔌 Connecting to Grafana Enterprise API Substrate..."
@@ -534,7 +527,7 @@ jobs:
             -o [ "$K6_RPT_TYPE" = "web-dashboard" ] \
             -o [ "$K6_RPT_TYPE" = "influxdb" ] \
             -o [ "$K6_RPT_TYPE" = "datadog" ]; then
-            echo "✅ [ $K6_RPT_TYPE | $K6_RPT_TYPE_NAME ] Raw test data successfully captured. Navigate to the top of this Workflow run summary page to download **k6-test-reports.zip**!" >> $GITHUB_STEP_SUMMARY
+            echo "✅ [ $K6_RPT_TYPE: $K6_RPT_TYPE_NAME ] Raw test data successfully captured. Navigate to the top of this Workflow run summary page to download **k6-test-reports.zip**!" >> $GITHUB_STEP_SUMMARY
           fi
           if [ "$K6_RPT_TYPE" = "prometheus" ]; then
             const PROMETHEUS_DASHBOARD_URL = ${{ steps.grafana-prometheus-api-gateway.outputs.prometheus_dashboard_url }}
