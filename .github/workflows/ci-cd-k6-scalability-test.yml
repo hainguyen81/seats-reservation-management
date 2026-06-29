@@ -29,16 +29,16 @@ on:
           - "👣 Experimental OTLP"
           - "🔭 Time-Series Database InfluxDB"
           - "📝 Datadog Agent"
-      k6_test_file:
-        description: "👷 Concurrency k6 Stress Testing File Path (Ex: ./sources/tests/scalability-test.js)"
-        required: false
-        type: string
-        default: "./sources/tests/scalability-health-check-test.js"
       target_url:
-        description: "🌐 Target Environment URL for Scalability Load Testing (LoadBalancer IP or Domain)"
+        description: "🌐 Target Test URL (LoadBalancer IP or Domain)"
         required: false
         type: string
         default: "http://localhost:3000"
+      k6_test_file:
+        description: "👷 K6 Testing File (Ex: ./sources/tests/scalability-test.js)"
+        required: false
+        type: string
+        default: "./sources/tests/scalability-health-check-test.js"
       concurrent_users:
         description: "👷 Maximum virtual users (VUs) to simulate simultaneously"
         required: false
@@ -71,15 +71,15 @@ on:
         required: false
         type: string
         default: "console"
+      target_url:
+        description: "🌐 Target Test URL (LoadBalancer IP or Domain)"
+        required: true
+        type: string
       k6_test_file:
-        description: "👷 Concurrency k6 Stress Testing File Path (Ex: ./sources/tests/scalability-test.js)"
+        description: "👷 K6 Testing File (Ex: ./sources/tests/scalability-test.js)"
         required: false
         type: string
         default: "./sources/tests/scalability-health-check-test.js"
-      target_url:
-        description: "🌐 Target Environment URL for Scalability Load Testing (LoadBalancer IP or Domain)"
-        required: true
-        type: string
       concurrent_users:
         description: "👷 Maximum virtual users (VUs) to simulate simultaneously"
         required: false
