@@ -7,15 +7,9 @@ import { check, sleep } from "k6";
 const TARGET_URL = __ENV.TARGET_URL || "http://localhost:3000";
 const MAX_VUS = parseInt(__ENV.CONCURRENT_USERS) || 50;
 const DURATION = __ENV.TEST_DURATION || 30; // in seconds
+const GRACEFUL_STOP = __ENV.GRACEFUL_STOP || 15; // in seconds
 
 export const options = {
-  // 🎢 TESTING FLOW PROFILE: Ramping profiles optimized for GKE micro-nodes
-  stages: [
-    { duration: "10s", target: MAX_VUS }, // 1. Fast ramp-up from zero to peak stress VUs
-    { duration: `${DURATION}s`, target: MAX_VUS }, // 2. Sustained peak load endurance window
-    { duration: "10s", target: 0 }, // 3. Smooth cool-down back to safe zero zone
-  ],
-
   // 🛡️ QUALITY GATES & METRIC THRESHOLDS (FAIL-FAST POLICY)
   thresholds: {
     // ❌ Error Rate Boundary: If more than 1% of total API calls return 5xx/4xx, fail the pipeline immediately [3.2]
@@ -30,9 +24,27 @@ export const options = {
   ext: {
     loadimpact: {
       project: 0,
-      name: "GKE Seats Reservation Benchmarking"
-    }
-  }
+      name: "GKE Seats Reservation Benchmarking",
+    },
+  },
+
+  // =========================================================================
+  // 🎬 Scenarios: FORCE K6 SEND METRICS TO NATIVE OPENTELEMETRY GATEWAY
+  // =========================================================================
+  scenarios: {
+    contacts: {
+      executor: "ramping-vus",
+      startVUs: 0,
+      // 🎢 TESTING FLOW PROFILE: Ramping profiles optimized for GKE micro-nodes
+      stages: [
+        { duration: "10s", target: MAX_VUS }, // 1. Fast ramp-up from zero to peak stress VUs
+        { duration: `${DURATION}s`, target: MAX_VUS }, // 2. Sustained peak load endurance window
+        { duration: "10s", target: 0 }, // 3. Smooth cool-down back to safe zero zone
+      ],
+      // 🎯 keep k6 wait a minute before finishing test. wait for pushing metrics finished
+      gracefulStop: `${GRACEFUL_STOP}s`,
+    },
+  },
 };
 
 // =========================================================================

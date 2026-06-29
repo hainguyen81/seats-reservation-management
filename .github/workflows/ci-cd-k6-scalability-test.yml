@@ -273,14 +273,11 @@ jobs:
             RAW_AUTH="${{ secrets.GRAFANA_USER_ID }}:${{ secrets.GRAFANA_API_TOKEN }}"
             ENCODED_AUTH=$(printf "%s" "$RAW_AUTH" | base64 | tr -d '\n\r')
             export K6_OTEL_HEADERS="Authorization=Basic $ENCODED_AUTH"
-            
-            # 🎯 `--graceful-stop`: force k6 waiting more 15 seconds to push metrics finished
-            GRACEFUL_STOP="15s"
+            export GRACEFUL_STOP=15 # keep k6 waiting for pushing metrics finished
             
             k6 run \
               --out opentelemetry \
               --tag test_env=seats-reservation-k6-test \
-              --http-debug full \
               $K6_TEST_FILE
             
             # force CI/CD waiting k6
