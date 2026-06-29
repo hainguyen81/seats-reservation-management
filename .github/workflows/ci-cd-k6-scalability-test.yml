@@ -559,7 +559,8 @@ jobs:
           echo "========================================================================="
           
           # 🖨️ push the published link to GITHUB_OUTPUT for next steps
-          echo "prometheus_dashboard_url=$(echo -n "$FINAL_PUBLIC_URL" | base64 | tr -d '\n')" >> $GITHUB_OUTPUT
+          encoded_url=$(echo -n "$FINAL_PUBLIC_URL" | base64 | tr -d '\n')
+          echo "prometheus_dashboard_url=$encoded_url" >> $GITHUB_OUTPUT
       
       # 7. Report summary
       - name: 📊 Compile Aggregated Telemetry Report to GitHub Summary
