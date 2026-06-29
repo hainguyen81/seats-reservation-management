@@ -565,6 +565,26 @@ jobs:
           echo "💡 Encoded URL: $encoded_url"
           echo "prometheus_dashboard_url=$encoded_url" >> $GITHUB_OUTPUT
       
+      # 7. Optional: Due to README could not showing the embeded dashboard, so capture the dashboard as asset image to show
+      - name: 📷 Capture Prometheus Dashboard Asset Image
+        if: ${{ steps.grafana-prometheus-api-gateway.outputs.prometheus_dashboard_url != '' }}
+        uses: aitaskorchestra/grabshot-action@v1
+        continue-on-error: true     # no problem if error
+        with:
+          url: ${{ steps.grafana-prometheus-api-gateway.outputs.prometheus_dashboard_url }}
+          width: "700"           # image width
+          height: "850"          # image height
+          output: "sources/.assets/.prometheus/prometheus_dashboard.png"
+
+      # 8. Optional: Commit and push captured image to repository
+      - name: 🚀 Auto Commit and Push README changes
+        if: success() && (steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'prometheus')
+        uses: stefanzweifel/git-auto-commit-action@v5
+        continue-on-error: true     # no problem if error
+        with:
+          commit_message: "Docs: Automated update of captured prometheus dashboard image assert for README.md [skip ci]"
+          file_pattern: "README.md sources/README.md"
+      
       # 7. Report summary
       - name: 📊 Compile Aggregated Telemetry Report to GitHub Summary
         env:
