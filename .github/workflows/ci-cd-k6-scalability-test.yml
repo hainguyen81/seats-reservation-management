@@ -452,9 +452,6 @@ jobs:
             local data=$3
             local token=$4
             
-            # mock user-agent to call API
-            local user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            
             echo "--------------------------------------------------" >&2
             echo "🔍 [DEBUG] Executing HTTP $method request..." >&2
             
@@ -467,14 +464,12 @@ jobs:
               http_status=$(curl -s -o "$res_body_file" -D "$res_headers_file" -X POST "$url" \
                 -H "Authorization: Bearer $token" \
                 -H "Content-Type: application/json" \
-                -H "User-Agent: $user_agent" \
                 -d "$data" \
                 -w "%{http_code}")
             else
               http_status=$(curl -s -o "$res_body_file" -D "$res_headers_file" -X GET "$url" \
                 -H "Authorization: Bearer $token" \
                 -H "Content-Type: application/json" \
-                -H "User-Agent: $user_agent" \
                 -w "%{http_code}")
             fi
             
