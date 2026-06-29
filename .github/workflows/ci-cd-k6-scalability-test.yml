@@ -609,7 +609,7 @@ jobs:
             try {
               element = await page.locator('div.react-grid-layout');
             } catch (error) {
-              console.log(`--- ⚠️ Could not locate metrics element 'div.react-grid-layout' to capture: ${error.message}.`);
+              console.log('--- ⚠️ Could not locate metrics element 'div.react-grid-layout' to capture: ' + error.message);
             }
             
             // screenshot
@@ -626,7 +626,7 @@ jobs:
               }
               console.log('- 💯 Screenshot captured successfully!');
             } catch (error) {
-              console.log(`- ❌ Error while screenshot: ${error.message}. Try to capture whole page...`);
+              console.log('- ❌ Error while screenshot: ' + error.message);
             }
             
             // finish
