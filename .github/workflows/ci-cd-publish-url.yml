@@ -94,8 +94,7 @@ jobs:
           # create JSON file contains the published information
           published_url=${{ matrix.service.published_url }}
           if [ "${{ matrix.service.encoded }}" = "true" ]; then
-            published_url=$(echo "$published_url" | base64 --decode)
-            published_url=$(echo "$published_url" | sed 's/|//')
+            published_url=$(printf "%s" "$published_url" | base64 --decode | rev)     # decode base64, after that reverse
           fi
           echo '{"name": "${{ matrix.service.name }}", "published_url": "$published_url"}' > "published-${{ matrix.service.name }}.json"
       
