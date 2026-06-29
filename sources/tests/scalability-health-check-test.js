@@ -43,7 +43,7 @@ const FAIL_FAST_POLICY =
       : {
           // ❌ Error Rate Boundary: If more than 1% of total API calls return 5xx/4xx, fail the pipeline immediately [3.2]
           http_req_failed: [`rate<=0.01`],
-        },
+        };
 
 export const options = {
   // =========================================================================
