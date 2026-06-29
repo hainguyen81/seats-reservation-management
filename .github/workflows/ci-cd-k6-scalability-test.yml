@@ -479,15 +479,16 @@ jobs:
             
             # Fallback Gate: if it had been turned ON, POST maybe response conflicts, use GET to request again
             RESPONSE_GET=$(curl -s -X GET "$GRAFANA_DASHBOARD_URL/api/dashboards/uid/$DASHBOARD_UID/public-dashboards" \
-              -H "Authorization: Basic $ENCODED_AUTH")
+              -H "Authorization: Basic $ENCODED_AUTH" \
+              -H "Content-Type: application/json")
             
             PUBLIC_TOKEN=$(echo "$RESPONSE_GET" | node -e '
               const input = require("fs").readFileSync(0, "utf-8");
               try {
                 const data = JSON.parse(input);
-                // Nếu trả về mảng danh sách public dashboards [3.2]
+                // Grafana API response public token in `accessToken` or uid
                 if (Array.isArray(data) && data.length > 0) {
-                  console.log(data[0].accessToken || data[0].uid);
+                  console.log(data[0].accessToken || data[0].uid || "NOT_FOUND");
                 } else {
                   console.log(data.accessToken || data.uid || "NOT_FOUND");
                 }
