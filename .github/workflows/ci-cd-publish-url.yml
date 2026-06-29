@@ -12,19 +12,23 @@ on:
           [
             {
                 "name":           "gcp-seats-reservation-sqlite",
-                "published_url":  ""
+                "published_url":  "",
+                "encoded":        "false"
             },
             {
                 "name":           "gcp-seats-reservation-postgres",
-                "published_url":  ""
+                "published_url":  "",
+                "encoded":        "false"
             },
             {
                 "name":           "gke-seats-reservation-sqlite",
-                "published_url":  ""
+                "published_url":  "",
+                "encoded":        "false"
             },
             {
                 "name":           "gke-seats-reservation-postgres",
-                "published_url":  ""
+                "published_url":  "",
+                "encoded":        "false"
             }
           ]
   
@@ -88,7 +92,11 @@ jobs:
         if: success()                 # if previous step is successful
         run: |
           # create JSON file contains the published information
-          echo '{"name": "${{ matrix.service.name }}", "published_url": "${{ matrix.service.published_url }}"}' > "published-${{ matrix.service.name }}.json"
+          published_url=${{ matrix.service.published_url }}
+          if [ "${{ matrix.service.encoded }}" = "true" ]; then
+            published_url=$(echo "$published_url" | base64 --decode)
+          fi
+          echo '{"name": "${{ matrix.service.name }}", "published_url": "$published_url"}' > "published-${{ matrix.service.name }}.json"
       
       # 2.1. Upload published service JSON to an temporary artifact
       - name: 📦 Upload Published Service Information Artifact
