@@ -386,7 +386,9 @@ jobs:
       
       # 4.1 Optional: for InfluxDB metrics report
       - name: 🗜️ Execute InfluxDB Telemetry Data Export Protocol
-        if: success() && (steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'influxdb')
+        env:
+          K6_RPT_TYPE: ${{ steps.k6-rpt-gateway.outputs.rptTypeShortValue }}
+        if: success() && (env.K6_RPT_TYPE == 'influxdb')
         run: |
           echo "Extracting raw time-series data chunks from docker container ecosystem..."
           
@@ -402,7 +404,9 @@ jobs:
       
       # 4.2 Optional: for Datadog Agent
       - name: 🗜️ Process and Compact Vector Exported Telemetry File
-        if: success() && (steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'datadog')
+        env:
+          K6_RPT_TYPE: ${{ steps.k6-rpt-gateway.outputs.rptTypeShortValue }}
+        if: success() && (env.K6_RPT_TYPE == 'datadog')
         run: |
           echo "Validating offline telemetry logs captured on local storage substrate..."
           
@@ -418,13 +422,15 @@ jobs:
       
       # 5. Upload report files to artifact for downloading
       - name: 📦 Archive Performance Telemetry Artifacts for Download
+        env:
+          K6_RPT_TYPE: ${{ steps.k6-rpt-gateway.outputs.rptTypeShortValue }}
         if: >-
           success()
-          && (steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'json'
-            || steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'csv'
-            || steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'web-dashboard'
-            || steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'influxdb'
-            || steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'datadog'
+          && (env.K6_RPT_TYPE == 'json'
+            || env.K6_RPT_TYPE == 'csv'
+            || env.K6_RPT_TYPE == 'web-dashboard'
+            || env.K6_RPT_TYPE == 'influxdb'
+            || env.K6_RPT_TYPE == 'datadog'
           )
         uses: actions/upload-artifact@v4
         with:
@@ -434,9 +440,9 @@ jobs:
       
       # 6. Connect grafana to capture prometheus metrics graph for showing on README
       - name: 📡 Dynamically Provision and Fetch Grafana Public External Link
-        if: >-
-          success()
-          && (steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'prometheus')
+        env:
+          K6_RPT_TYPE: ${{ steps.k6-rpt-gateway.outputs.rptTypeShortValue }}
+        if: success() && (env.K6_RPT_TYPE == 'prometheus')
         id: grafana-prometheus-api-gateway
         env:
           GRAFANA_USER_ID: ${{ secrets.GRAFANA_USER_ID }}
