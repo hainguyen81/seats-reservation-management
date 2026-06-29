@@ -739,7 +739,7 @@ jobs:
         if: success()                 # if previous step is successful
         run: |
           # create a JSON file to keep the published information
-          echo '{"name": "gke-${{ matrix.service.name }}", "published_url": "${{ steps.gke_cloud_run_deployment_check.outputs.gke_cloud_run_url }}"}' > "gke-${{ matrix.service.name }}.json"
+          echo '{"name": "gke-${{ matrix.service.name }}", "published_url": "${{ steps.gke_cloud_run_deployment_check.outputs.gke_cloud_run_url }}", "encoded": "false"}' > "gke-${{ matrix.service.name }}.json"
       
       # 15.1. Upload published service JSON to an temporary artifact
       - name: 📦 Upload Published Service Information Artifact
