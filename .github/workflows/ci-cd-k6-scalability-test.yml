@@ -269,7 +269,7 @@ jobs:
       
       # 4. Execute k6 test
       - name: 🏹 Launch Synchronized Concurrency Attack Loop
-        if: false # success()                 # if previous step is successful
+        if: success()                 # if previous step is successful
         env:
           TARGET_URL: ${{ inputs.target_url }}
           CONCURRENT_USERS: ${{ inputs.concurrent_users }}
@@ -567,14 +567,14 @@ jobs:
           echo "prometheus_dashboard_url=$encoded_url" >> $GITHUB_OUTPUT
       
       # Optional: Due to README could not showing the embeded dashboard, so capture the dashboard as asset image to show
-      - name: Install Playwright and Dependencies to capture Prometheus Dashboard
+      - name: 💻 Install Playwright and Dependencies to capture Prometheus Dashboard
         if: ${{ steps.grafana-prometheus-api-gateway.outputs.original_prometheus_dashboard_url != '' }}
         run: |
           npm install playwright
           npx playwright install chromium --with-deps
       
       # capture prometheus metrics dashboard
-      - name: Capture Prometheus Dashboard Using Playwright
+      - name: 📸 Capture Prometheus Dashboard Using Playwright
         if: ${{ steps.grafana-prometheus-api-gateway.outputs.original_prometheus_dashboard_url != '' }}
         env:
           DASHBOARD_URL: ${{ steps.grafana-prometheus-api-gateway.outputs.original_prometheus_dashboard_url }}
@@ -584,7 +584,7 @@ jobs:
           const { chromium } = require('playwright');
           (async () => {
             // open Chrome
-            console.log('- Open Chrome to load Prometheus Dashboard...');
+            console.log('- 🌍 Open Chrome to load Prometheus Dashboard...');
             const browser = await chromium.launch({ headless: true });
             const context = await browser.newContext({
               viewport: { width: 1920, height: 1080 }
@@ -592,7 +592,7 @@ jobs:
             const page = await context.newPage();
             
             // use 'networkidle' to wait no any API (XHR/Fetch) running in background
-            console.log('- Navigating to Prometheus Dashboard...');
+            console.log('- 🗺️ Navigating to Prometheus Dashboard...');
             await page.goto(process.env.DASHBOARD_URL, { 
               waitUntil: 'networkidle', 
               timeout: 60000 
@@ -601,14 +601,23 @@ jobs:
             // wait more 5 seconds to make sure dashboard already loaded
             await page.waitForTimeout(5000);
             
-            // capture screen to image path
-            console.log('- Capture Prometheus Dashboard...');
-            await page.screenshot({ 
-              path: process.env.CAPTURED_IMAGE_PATH, 
-              fullPage: true 
-            });
+            // find metrics
+            console.log('- 📸 Capture Prometheus Dashboard...');
+            const element = await page.$('div.react-grid-layout');
+            if (element) {
+              // found metrics, only capture metrics
+              await element.screenshot({ path: process.env.CAPTURED_IMAGE_PATH });
+              console.log('➡️ Captured metrics element successfully');
+            } else {
+              console.log('➡️ Capture whole page, due to not found metrics element.');
+              await page.screenshot({ 
+                path: process.env.CAPTURED_IMAGE_PATH, 
+                fullPage: true 
+              });
+            }
             
-            console.log('- Screenshot captured successfully!');
+            // finish
+            console.log('- 💯 Screenshot captured successfully!');
             await browser.close();
           })();
           "
