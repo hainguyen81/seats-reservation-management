@@ -451,6 +451,8 @@ jobs:
             
             echo "--------------------------------------------------" >&2
             echo "🔍 [DEBUG] Executing HTTP $method request..." >&2
+            echo "📊 Token Base64: $(echo -n "$token" | base64)" >&2
+            echo "📊 The length of token in CI/CD: ${#token}" >&2
             
             # create file to store response body, response headers
             local res_body_file=$(mktemp)
