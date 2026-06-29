@@ -8,7 +8,7 @@
 #   - GRAFANA_API_TOKEN: <Grafana Access Token. It starts with `glc_`. Ex: glc_eyJvIjoiMTgyNDMyMyIsIm4iOiJzd.....>
 #     This token and GRAFANA_USER_ID has been used to push metrics to grafana prometheus
 #   - GRAFANA_PROMETHEUS_METRICS_DASHBOARD_ID: <Grafana Dashboard ID. Ex: `hadlqhf`>
-#   - GRAFANA_PROMETHEUS_METRICS_DASHBOARD_URL: <Grafana Dashboard API Domain Link for calling API. Ex: https://shortisthmus2724.grafana.net>
+#   - GRAFANA_PROMETHEUS_METRICS_DASHBOARD_URL: <Grafana Dashboard API Domain Link for calling API. Ex: https://.......grafana.net>
 #   - GRAFANA_PROMETHEUS_SERVICE_ACCOUNT_TOKEN: <Grafana Prometheus Service Account Access Token. It starts with `glsa_`. Ex: glsa_tGgTtb1nLMDb.....>
 #     This token has been used to share the prometheus dashboard public
 # -------------------------------------------------
@@ -444,7 +444,7 @@ jobs:
         env:
           PROMETHEUS_SERVICE_ACCOUNT_TOKEN: ${{ secrets.GRAFANA_PROMETHEUS_SERVICE_ACCOUNT_TOKEN }}
           PROMETHEUS_DASHBOARD_UID: ${{ secrets.GRAFANA_PROMETHEUS_METRICS_DASHBOARD_ID }}
-          PROMETHEUS_DASHBOARD_URL: ${{ vars.GRAFANA_PROMETHEUS_METRICS_DASHBOARD_URL }}
+          PROMETHEUS_DASHBOARD_URL: ${{ secrets.GRAFANA_PROMETHEUS_METRICS_DASHBOARD_URL }}
         id: grafana-prometheus-api-gateway
         run: |
           # craete function to trace/debug when calling API
@@ -557,11 +557,12 @@ jobs:
           FINAL_PUBLIC_URL="$PUBLIC_DASHBOARD_URL/$PUBLIC_TOKEN"
           echo "========================================================================="
           echo "🎯 GRAFANA PUBLIC EXTERNAL LINK IS LIVE: $FINAL_PUBLIC_URL"
-          echo "💡 The link had maybe encoded by GitHub Security Policy. You could reach it from README.md"
+          echo "💡 The Link had maybe masked by GitHub Security Policy. So please reach it out from README.md"
           echo "========================================================================="
           
           # 🖨️ push the published link to GITHUB_OUTPUT for next steps
-          encoded_url=$(printf "%s" "$FINAL_PUBLIC_URL" | base64 | tr -d '\n\r ')
+          encoded_url=$(echo "$FINAL_PUBLIC_URL" | sed 's/http:\/\//http|:\/\//' | sed 's/https:\/\//https|:\/\//')
+          encoded_url=$(echo -n "$encoded_url" | base64 | tr -d '\n')
           echo "💡 Encoded URL: $encoded_url"
           echo "prometheus_dashboard_url=$encoded_url" >> $GITHUB_OUTPUT
       
