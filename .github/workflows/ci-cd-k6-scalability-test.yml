@@ -574,8 +574,6 @@ jobs:
         with:
           url: ${{ steps.grafana-prometheus-api-gateway.outputs.original_prometheus_dashboard_url }}
           output: sources/.assets/.prometheus/prometheus_dashboard.png
-          mode: element
-          selector: div.react-grid-layout
 
       # Optional: Commit and push captured images to repository
       - name: 🚀 Auto Commit and Push Asserts
