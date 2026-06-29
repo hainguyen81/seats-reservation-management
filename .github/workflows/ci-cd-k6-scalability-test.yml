@@ -35,7 +35,7 @@ on:
         type: string
         default: "http://localhost:3000"
       k6_test_file:
-        description: "👷 K6 Testing File (Ex: ./sources/tests/scalability-test.js)"
+        description: "🤖 K6 Testing File (Ex: ./sources/tests/scalability-test.js)"
         required: false
         type: string
         default: "./sources/tests/scalability-health-check-test.js"
@@ -45,17 +45,17 @@ on:
         type: number
         default: 50
       test_duration:
-        description: "✨ Execution boundary for the high stress testing injection loop (in seconds)"
+        description: "⚖️ Execution boundary for the high stress testing injection loop (in seconds)"
         required: false
         type: number
         default: 30
       accepted_failure_requests_percentage:
-        description: "✨ Accepted failure requests less than specified percentage"
+        description: "⚖️ Accepted failure requests less than specified percentage"
         required: false
         type: number
         default: 3
       accepted_reponse_in_ms:
-        description: "✨ Accepted requests response in specified milliseconds"
+        description: "⚖️ Accepted requests response in specified milliseconds"
         required: false
         type: number
         default: 3000
@@ -76,7 +76,7 @@ on:
         required: true
         type: string
       k6_test_file:
-        description: "👷 K6 Testing File (Ex: ./sources/tests/scalability-test.js)"
+        description: "🤖 K6 Testing File (Ex: ./sources/tests/scalability-test.js)"
         required: false
         type: string
         default: "./sources/tests/scalability-health-check-test.js"
@@ -86,17 +86,17 @@ on:
         type: number
         default: 50
       test_duration:
-        description: "✨ Execution boundary for the high stress testing injection loop (in seconds)"
+        description: "⚖️ Execution boundary for the high stress testing injection loop (in seconds)"
         required: false
         type: number
         default: 30
       accepted_failure_requests_percentage:
-        description: "✨ Accepted failure requests less than specified percentage"
+        description: "⚖️ Accepted failure requests less than specified percentage"
         required: false
         type: number
         default: 3
       accepted_reponse_in_ms:
-        description: "✨ Accepted requests response in specified milliseconds"
+        description: "⚖️ Accepted requests response in specified milliseconds"
         required: false
         type: number
         default: 3000
