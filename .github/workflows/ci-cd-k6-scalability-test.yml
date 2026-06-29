@@ -14,6 +14,21 @@ on:
   # Allows manual triggering of this workflow directly from the GitHub Actions UI
   workflow_dispatch:
     inputs:
+      k6_test_report:
+        description: "📋 Report Type"
+        required: false
+        type: choice
+        default: "🌿 GitHub CI/CD Console"
+        options:
+          - "🌿 GitHub CI/CD Console"
+          - "🔣 JSON"
+          - "🔢 CSV"
+          - "🕸️ Web Dashboard"
+          - "🔥 Prometheus"
+          - "📊 OTLP"
+          - "👣 Experimental OTLP"
+          - "🔭 Time-Series Database InfluxDB"
+          - "📝 Datadog Agent"
       k6_test_file:
         description: "👷 Concurrency k6 Stress Testing File Path (Ex: ./sources/tests/scalability-test.js)"
         required: false
@@ -34,25 +49,28 @@ on:
         required: false
         type: number
         default: 30
-      k6_test_report:
-        description: "📋 Report Type"
+      accepted_failure_requests_percentage:
+        description: "✨ Accepted failure requests less than specified percentage"
         required: false
-        type: choice
-        default: "🌿 GitHub CI/CD Console"
-        options:
-          - "🌿 GitHub CI/CD Console"
-          - "🔣 JSON"
-          - "🔢 CSV"
-          - "🕸️ Web Dashboard"
-          - "🔥 Prometheus"
-          - "📊 OTLP"
-          - "👣 Experimental OTLP"
-          - "🔭 Time-Series Database InfluxDB"
-          - "📝 Datadog Agent"
+        type: number
+        default: 3
+      accepted_reponse_in_ms:
+        description: "✨ Accepted requests response in specified milliseconds"
+        required: false
+        type: number
+        default: 3000
   
   # allow other workflow call into (inputs same as workflow_dispatch but required)
   workflow_call:
     inputs:
+      # due to GitHub not support type `choice` in `workflow_call`,
+      # so need to validate and map between `workflow_call` and `workflow_dispatch`
+      # supported available types: `console`, `json`, `csv`, `web-dashboard`, `prometheus`, `otlp`, `experimental-otlp`, `influxdb`, `datadog`
+      k6_test_report:
+        description: "📋 Report Type"
+        required: false
+        type: string
+        default: "console"
       k6_test_file:
         description: "👷 Concurrency k6 Stress Testing File Path (Ex: ./sources/tests/scalability-test.js)"
         required: false
@@ -72,14 +90,16 @@ on:
         required: false
         type: number
         default: 30
-      # due to GitHub not support type `choice` in `workflow_call`,
-      # so need to validate and map between `workflow_call` and `workflow_dispatch`
-      # supported available types: `console`, `json`, `csv`, `web-dashboard`, `prometheus`, `otlp`, `experimental-otlp`, `influxdb`, `datadog`
-      k6_test_report:
-        description: "📋 Report Type"
+      accepted_failure_requests_percentage:
+        description: "✨ Accepted failure requests less than specified percentage"
         required: false
-        type: string
-        default: "console"
+        type: number
+        default: 3
+      accepted_reponse_in_ms:
+        description: "✨ Accepted requests response in specified milliseconds"
+        required: false
+        type: number
+        default: 3000
 
 # permissions for GitHub Actions READ/WRITE
 permissions:
@@ -245,6 +265,9 @@ jobs:
           K6_TEST_FILE: ${{ inputs.k6_test_file }}
           K6_RPT_TYPE: ${{ steps.k6-rpt-gateway.outputs.rptTypeShortValue }}
           K6_RPT_TYPE_NAME: ${{ steps.k6-rpt-gateway.outputs.rptTypeFullValue }}
+          # k6 test enviroment variables
+          K6_ACCEPTED_RESPONSE_IN_MS: ${{ inputs.accepted_reponse_in_ms }} # in milliseconds, k6 must be received response
+          K6_ACCEPTED_FAILED_REQ_PERCENTAGE: ${{ inputs.accepted_failure_requests_percentage }} # failure requests must be less than specified percentage
           # for Prometheus
           K6_OTEL_SERVICE_NAME: "GCP/GKE Seats Reservation"
           K6_OTEL_SERVICE_VERSION: "v1.0"
@@ -273,17 +296,12 @@ jobs:
             RAW_AUTH="${{ secrets.GRAFANA_USER_ID }}:${{ secrets.GRAFANA_API_TOKEN }}"
             ENCODED_AUTH=$(printf "%s" "$RAW_AUTH" | base64 | tr -d '\n\r')
             export K6_OTEL_HEADERS="Authorization=Basic $ENCODED_AUTH"
-            export GRACEFUL_STOP=15 # keep k6 waiting for pushing metrics finished
+            export GRACEFUL_STOP=5 # keep k6 waiting for pushing metrics finished
             
             k6 run \
               --out opentelemetry \
               --tag test_env=seats-reservation-k6-test \
               $K6_TEST_FILE
-            
-            # force CI/CD waiting k6
-            echo "⏳ Test process almost done. Keep waiting in 20 seconds to flush metrics to Grafana Cloud..."
-            sleep 20
-            echo "✅ Everything has been done! Safely."
           
           elif [ "$K6_RPT_TYPE" == "otlp" ]; then
             k6 run \
@@ -331,6 +349,20 @@ jobs:
             echo "❌ [ $K6_RPT_TYPE | $K6_RPT_TYPE_NAME ] is an UNSUPPORTED report type."
             exit 1
           fi
+          
+          # receive k6 test exit code to check
+          K6_EXIT_CODE=$?
+          if [ "$K6_EXIT_CODE" -le 99 ]; then
+            echo "✅ K6 run finished (but FAILED QUALITY) with acceptable code: $K6_EXIT_CODE. Moving to flush metrics..."
+          else
+            echo "🚨 K6 fatal infrastructure crash! Code: $K6_EXIT_CODE"
+            exit "$K6_EXIT_CODE" # force stop pipeline
+          fi
+            
+          # force CI/CD waiting k6
+          echo "⏳ Test process almost done. Keep waiting in 20 seconds to flush metrics to Grafana Cloud..."
+          sleep 20
+          echo "✅ Everything has been done! Safely."
       
       # 4.1 Optional: for InfluxDB metrics report
       - name: 🗜️ Execute InfluxDB Telemetry Data Export Protocol

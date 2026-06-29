@@ -6,17 +6,45 @@ import { check, sleep } from "k6";
 // =========================================================================
 const TARGET_URL = __ENV.TARGET_URL || "http://localhost:3000";
 const MAX_VUS = parseInt(__ENV.CONCURRENT_USERS) || 50;
-const DURATION = __ENV.TEST_DURATION || 30; // in seconds
-const GRACEFUL_STOP = __ENV.GRACEFUL_STOP || 15; // in seconds
+const DURATION = parseInt(__ENV.TEST_DURATION) || 30; // in seconds
+const GRACEFUL_STOP = parseInt(__ENV.GRACEFUL_STOP) || 15; // in seconds
+const K6_ACCEPTED_RESPONSE_IN_MS =
+  parseInt(__ENV.K6_ACCEPTED_RESPONSE_IN_MS) || 3000 <= 0
+    ? 0
+    : parseInt(__ENV.K6_ACCEPTED_RESPONSE_IN_MS) || 3000; // in miliseconds (3 seconds)
+const K6_ACCEPTED_FAILED_REQ_PERCENTAGE =
+  parseInt(__ENV.K6_ACCEPTED_FAILED_REQ_PERCENTAGE) || 1 > 100
+    ? 100
+    : parseInt(__ENV.K6_ACCEPTED_FAILED_REQ_PERCENTAGE) || 1 <= 0
+    ? 0
+    : parseInt(__ENV.K6_ACCEPTED_FAILED_REQ_PERCENTAGE) || 1; // in percentage (1%)
 
 export const options = {
   // 🛡️ QUALITY GATES & METRIC THRESHOLDS (FAIL-FAST POLICY)
-  thresholds: {
-    // ❌ Error Rate Boundary: If more than 1% of total API calls return 5xx/4xx, fail the pipeline immediately [3.2]
-    http_req_failed: ["rate<0.01"],
-    // ⏱️ Latency Tolerances: 95% of requests must respond under 1.5 seconds to maintain transaction integrity
-    http_req_duration: ["p(95)<1500"],
-  },
+  thresholds:
+    K6_ACCEPTED_RESPONSE_IN_MS > 0
+      ? K6_ACCEPTED_FAILED_REQ_PERCENTAGE >= 0
+        ? {
+            // ❌ Error Rate Boundary: If more than 1% of total API calls return 5xx/4xx, fail the pipeline immediately [3.2]
+            http_req_failed: [
+              `rate<=${K6_ACCEPTED_FAILED_REQ_PERCENTAGE / 100}`,
+            ],
+            // ⏱️ Latency Tolerances: 95% of requests must respond under 1.5 seconds to maintain transaction integrity
+            http_req_duration: [`p(95)<=${K6_ACCPTED_RESPONSE_IN_MS}`],
+          }
+        : {
+            // ⏱️ Latency Tolerances: 95% of requests must respond under 1.5 seconds to maintain transaction integrity
+            http_req_duration: [`p(95)<=${K6_ACCPTED_RESPONSE_IN_MS}`],
+          }
+      : K6_ACCEPTED_FAILED_REQ_PERCENTAGE >= 0
+      ? {
+          // ❌ Error Rate Boundary: If more than 1% of total API calls return 5xx/4xx, fail the pipeline immediately [3.2]
+          http_req_failed: [`rate<=${K6_ACCEPTED_FAILED_REQ_PERCENTAGE / 100}`],
+        }
+      : {
+          // ❌ Error Rate Boundary: If more than 1% of total API calls return 5xx/4xx, fail the pipeline immediately [3.2]
+          http_req_failed: [`rate<=0.01`],
+        },
 
   // =========================================================================
   // 🔥 SYNC BLOCK: FORCE K6 SEND METRICS TO NATIVE OPENTELEMETRY GATEWAY
