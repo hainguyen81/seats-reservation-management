@@ -574,6 +574,14 @@ jobs:
         with:
           url: ${{ steps.grafana-prometheus-api-gateway.outputs.original_prometheus_dashboard_url }}
           output: sources/.assets/.prometheus/prometheus_dashboard.png
+          script: |
+            return new Promise((resolve) => {
+              if (document.readyState === 'complete') {
+                resolve();
+              } else {
+                window.addEventListener('load', () => resolve());
+              }
+            });
 
       # Optional: Commit and push captured images to repository
       - name: 🚀 Auto Commit and Push Asserts
