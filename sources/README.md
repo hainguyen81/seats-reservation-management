@@ -10,6 +10,10 @@
 | **GKE SQLite** | <!-- START-gke-seats-reservation-sqlite --> [http://35.226.149.88:80](http://35.226.149.88:80)<br> *(Last updated: Sun Jun 28 07:01:57 UTC 2026)* <!-- END-gke-seats-reservation-sqlite --> |
 | **GKE Postgres** | <!-- START-gke-seats-reservation-postgres --> [http://136.114.146.251:80](http://136.114.146.251:80)<br> *(Last updated: Sun Jun 28 07:01:57 UTC 2026)* <!-- END-gke-seats-reservation-postgres --> |
 
+## 🌐 Prometheus Metrics Dashboard Demostration
+
+<!-- START-prometheus-metrics-dashboard -->![🏃 Comming soon](https://img.shields.io/badge/%F0%9F%8F%83%20Comming%20soon-orange)<!-- END-prometheus-metrics-dashboard -->
+
 ## 🌐 GitHub CI/CD Workflows
 
 | GitHubCI/CD Workflows | Latest Running Status(es) |
