@@ -563,15 +563,16 @@ jobs:
           # 🖨️ push the published link to GITHUB_OUTPUT for next steps
           encoded_url=$(printf "%s" "$FINAL_PUBLIC_URL" | rev | base64 | tr -d '\n\r ')   # reverse, after that encode base64
           echo "💡 Encoded URL: $encoded_url"
+          echo "original_prometheus_dashboard_url=$FINAL_PUBLIC_URL" >> $GITHUB_OUTPUT
           echo "prometheus_dashboard_url=$encoded_url" >> $GITHUB_OUTPUT
       
       # 7. Optional: Due to README could not showing the embeded dashboard, so capture the dashboard as asset image to show
       - name: 📷 Capture Prometheus Dashboard Asset Image
-        if: ${{ steps.grafana-prometheus-api-gateway.outputs.prometheus_dashboard_url != '' }}
+        if: ${{ steps.grafana-prometheus-api-gateway.outputs.original_prometheus_dashboard_url != '' }}
         uses: aitaskorchestra/grabshot-action@v1
         continue-on-error: true     # no problem if error
         with:
-          url: ${{ steps.grafana-prometheus-api-gateway.outputs.prometheus_dashboard_url }}
+          url: ${{ steps.grafana-prometheus-api-gateway.outputs.original_prometheus_dashboard_url }}
           width: "700"           # image width
           height: "850"          # image height
           output: "sources/.assets/.prometheus/prometheus_dashboard.png"
