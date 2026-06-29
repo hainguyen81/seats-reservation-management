@@ -450,8 +450,8 @@ jobs:
             local data=$3
             local token=$4
             
-            echo "--------------------------------------------------"
-            echo "🔍 [DEBUG] Executing HTTP $method request..."
+            echo "--------------------------------------------------" >&2
+            echo "🔍 [DEBUG] Executing HTTP $method request..." >&2
             
             # create file to store response body, response headers
             local res_body_file=$(mktemp)
@@ -472,14 +472,14 @@ jobs:
             fi
             
             # --- debug/tracing ---
-            echo "📥 [DEBUG] HTTP URL: [ $method ] $url"
-            echo "📥 [DEBUG] HTTP Status Code: $http_status"
-            echo "📥 [DEBUG] Response Headers:"
-            cat "$res_headers_file" | sed 's/^/    /'
+            echo "📥 [DEBUG] HTTP URL: [ $method ] $url" >&2
+            echo "📥 [DEBUG] HTTP Status Code: $http_status" >&2
+            echo "📥 [DEBUG] Response Headers:" >&2
+            cat "$res_headers_file" | sed 's/^/    /' >&2
             
-            echo "📥 [DEBUG] Response Body:"
-            cat "$res_body_file" | sed 's/^/    /'
-            echo "--------------------------------------------------"
+            echo "📥 [DEBUG] Response Body:" >&2
+            cat "$res_body_file" | sed 's/^/    /' >&2
+            echo "--------------------------------------------------" >&2
             
             # show response body JSON to return value
             cat "$res_body_file"
@@ -501,7 +501,10 @@ jobs:
                 } else {
                   console.log(data.accessToken || data.uid || "NOT_FOUND");
                 }
-              } catch(e) { console.log("NOT_FOUND"); }
+              } catch(e) {
+                echo "⚠️ Could not detect access token or uid: $e" >&2
+                console.log("NOT_FOUND");
+              }
             ')
             echo "$respone_token"
           }
