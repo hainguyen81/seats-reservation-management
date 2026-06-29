@@ -19,9 +19,8 @@ const K6_ACCEPTED_FAILED_REQ_PERCENTAGE =
     ? 0
     : parseInt(__ENV.K6_ACCEPTED_FAILED_REQ_PERCENTAGE) || 1; // in percentage (1%)
 
-export const options = {
-  // 🛡️ QUALITY GATES & METRIC THRESHOLDS (FAIL-FAST POLICY)
-  thresholds:
+// 🛡️ QUALITY GATES & METRIC THRESHOLDS (FAIL-FAST POLICY)
+const FAIL_FAST_POLICY =
     K6_ACCEPTED_RESPONSE_IN_MS > 0
       ? K6_ACCEPTED_FAILED_REQ_PERCENTAGE >= 0
         ? {
@@ -46,6 +45,7 @@ export const options = {
           http_req_failed: [`rate<=0.01`],
         },
 
+export const options = {
   // =========================================================================
   // 🔥 SYNC BLOCK: FORCE K6 SEND METRICS TO NATIVE OPENTELEMETRY GATEWAY
   // =========================================================================
@@ -63,6 +63,8 @@ export const options = {
     contacts: {
       executor: "ramping-vus",
       startVUs: 0,
+      // 🛡️ QUALITY GATES & METRIC THRESHOLDS (FAIL-FAST POLICY)
+      thresholds: FAIL_FAST_POLICY,
       // 🎢 TESTING FLOW PROFILE: Ramping profiles optimized for GKE micro-nodes
       stages: [
         { duration: "10s", target: MAX_VUS }, // 1. Fast ramp-up from zero to peak stress VUs
