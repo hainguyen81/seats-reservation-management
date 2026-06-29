@@ -490,6 +490,7 @@ jobs:
           
           read_grafana_token() {
             local response=$1
+            local respone_token
             
             respone_token=$(echo "$response" | node -e '
               const input = require("fs").readFileSync(0, "utf-8");
@@ -521,7 +522,7 @@ jobs:
             "timeSelectionEnabled": true,
             "annotationsEnabled": true
           }'
-          RESPONSE_POST=$(call_grafana_api "POST" "$DASHBOARD_API" "$POST_DATA" "$PROMETHEUS_SERVICE_ACCOUNT_TOKEN")
+          RESPONSE_POST=$(call_grafana_api "POST" "$DASHBOARD_API" "$POST_DATA" "$PROMETHEUS_SERVICE_ACCOUNT_TOKEN") || true
           
           # Extract response JSON by node to get public token
           PUBLIC_TOKEN=$(read_grafana_token "$RESPONSE_POST")
@@ -530,7 +531,7 @@ jobs:
             echo "⚠️ Could not request access Grafana via POST, try with GET..."
             
             # Fallback Gate: if it had been turned ON, POST maybe response conflicts, use GET to request again
-            RESPONSE_GET=$(call_grafana_api "GET" "$DASHBOARD_API" "{}" "$PROMETHEUS_SERVICE_ACCOUNT_TOKEN")
+            RESPONSE_GET=$(call_grafana_api "GET" "$DASHBOARD_API" "" "$PROMETHEUS_SERVICE_ACCOUNT_TOKEN") || true
             
             PUBLIC_TOKEN=$(read_grafana_token "$RESPONSE_GET")
           fi
