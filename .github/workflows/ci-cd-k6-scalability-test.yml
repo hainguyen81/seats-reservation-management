@@ -280,7 +280,7 @@ jobs:
             k6 run \
               --out opentelemetry \
               --tag test_env=seats-reservation-k6-test \
-              --graceful-stop $GRACEFUL_STOP \
+              --http-debug full \
               $K6_TEST_FILE
             
             # force CI/CD waiting k6
