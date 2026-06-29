@@ -439,6 +439,7 @@ jobs:
           GRAFANA_USER_ID: ${{ secrets.GRAFANA_USER_ID }}
           GRAFANA_API_TOKEN: ${{ secrets.GRAFANA_API_TOKEN }}
           PROMETHEUS_DASHBOARD_UID: ${{ secrets.GRAFANA_PROMETHEUS_METRICS_DASHBOARD_ID }}
+          PROMETHEUS_DASHBOARD_URL: ${{ secrets.GRAFANA_PROMETHEUS_METRICS_DASHBOARD_URL }}
         id: grafana-prometheus-api-gateway
         run: |
           echo "🔌 Connecting to Grafana Enterprise API Substrate..."
@@ -446,13 +447,14 @@ jobs:
           # !!!IMPORTANT!!! No need to encode auth token here
           # ⚙️ Calculate AUTHORIZATION HEADER by Bearer AUTH STANDARDS
           RAW_AUTH="${{ secrets.GRAFANA_USER_ID }}:${{ secrets.GRAFANA_API_TOKEN }}"
-          GRAFANA_DASHBOARD_URL="${{ secrets.GRAFANA_PROMETHEUS_METRICS_DASHBOARD_URL }}"
+          DASHBOARD_API="$PROMETHEUS_DASHBOARD_URL/api/dashboards/uid/$DASHBOARD_UID/public-dashboards"
+          PUBLIC_DASHBOARD_URL="$PROMETHEUS_DASHBOARD_URL/public-dashboards"
           
           echo "🚀 Sending HTTP POST request to ensure public token is active on Dashboard: $DASHBOARD_UID"
           
           # 🔥 Call API to request Grafana share dashboard as Public
           # if dashboard hasn't been activated public, API will turn it ON. Else, API will response the configuration
-          RESPONSE=$(curl -s -X POST "$GRAFANA_DASHBOARD_URL/api/dashboards/uid/$DASHBOARD_UID/public-dashboards" \
+          RESPONSE=$(curl -s -X POST "$DASHBOARD_API" \
             -H "Authorization: Bearer $RAW_AUTH" \
             -H "Content-Type: application/json" \
             -d '{
@@ -478,7 +480,7 @@ jobs:
             echo "⚠️ Could not request access Grafana via POST, try with GET..."
             
             # Fallback Gate: if it had been turned ON, POST maybe response conflicts, use GET to request again
-            RESPONSE_GET=$(curl -s -X GET "$GRAFANA_DASHBOARD_URL/api/dashboards/uid/$DASHBOARD_UID/public-dashboards" \
+            RESPONSE_GET=$(curl -s -X GET "$DASHBOARD_API" \
               -H "Authorization: Basic $ENCODED_AUTH" \
               -H "Content-Type: application/json")
             
@@ -502,7 +504,7 @@ jobs:
           fi
           
           # Finally: combine the Public External Link
-          FINAL_PUBLIC_URL="$GRAFANA_DASHBOARD_URL/public-dashboards/$PUBLIC_TOKEN"
+          FINAL_PUBLIC_URL="$PUBLIC_DASHBOARD_URL/$PUBLIC_TOKEN"
           echo "========================================================================="
           echo "🎯 GRAFANA PUBLIC EXTERNAL LINK IS LIVE: $FINAL_PUBLIC_URL"
           echo "========================================================================="
