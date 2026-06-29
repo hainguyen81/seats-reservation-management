@@ -27,6 +27,7 @@ jobs:
   # 🗑️ Clear history / logs
   # ==============================================================================
   clear-history:
+    name: 🗑️ Clean up workflows history / logs
     runs-on: ubuntu-latest
     steps:
       # Check whether allow for running workflow
