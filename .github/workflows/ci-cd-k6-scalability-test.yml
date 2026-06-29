@@ -568,14 +568,14 @@ jobs:
       
       # Optional: Due to README could not showing the embeded dashboard, so capture the dashboard as asset image to show
       - name: Install Playwright and Dependencies to capture Prometheus Dashboard
-        if: success() && (steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'prometheus')
+        if: ${{ steps.grafana-prometheus-api-gateway.outputs.original_prometheus_dashboard_url != '' }}
         run: |
           npm install playwright
           npx playwright install chromium --with-deps
       
       # capture prometheus metrics dashboard
       - name: Capture Prometheus Dashboard Using Playwright
-        if: success() && (steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'prometheus')
+        if: ${{ steps.grafana-prometheus-api-gateway.outputs.original_prometheus_dashboard_url != '' }}
         env:
           DASHBOARD_URL: ${{ steps.grafana-prometheus-api-gateway.outputs.original_prometheus_dashboard_url }}
           CAPTURED_IMAGE_PATH: "sources/.assets/.prometheus/prometheus_dashboard.png"
@@ -604,7 +604,7 @@ jobs:
             // capture screen to image path
             console.log('- Capture Prometheus Dashboard...');
             await page.screenshot({ 
-              path: CAPTURED_IMAGE_PATH, 
+              path: process.env.CAPTURED_IMAGE_PATH, 
               fullPage: true 
             });
             
