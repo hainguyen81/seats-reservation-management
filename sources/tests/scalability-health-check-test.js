@@ -46,6 +46,9 @@ const FAIL_FAST_POLICY =
         };
 
 export const options = {
+  // 🛡️ QUALITY GATES & METRIC THRESHOLDS (FAIL-FAST POLICY)
+  thresholds: FAIL_FAST_POLICY,
+  
   // =========================================================================
   // 🔥 SYNC BLOCK: FORCE K6 SEND METRICS TO NATIVE OPENTELEMETRY GATEWAY
   // =========================================================================
@@ -63,8 +66,6 @@ export const options = {
     contacts: {
       executor: "ramping-vus",
       startVUs: 0,
-      // 🛡️ QUALITY GATES & METRIC THRESHOLDS (FAIL-FAST POLICY)
-      thresholds: FAIL_FAST_POLICY,
       // 🎢 TESTING FLOW PROFILE: Ramping profiles optimized for GKE micro-nodes
       stages: [
         { duration: "10s", target: MAX_VUS }, // 1. Fast ramp-up from zero to peak stress VUs
