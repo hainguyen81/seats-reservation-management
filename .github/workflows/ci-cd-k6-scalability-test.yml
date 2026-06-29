@@ -200,7 +200,7 @@ jobs:
       
       # 2. Check out sources to run k6 test file
       - name: 📁 Checkout Benchmark Engineering Repositories
-        if: success()                 # if previous step is successful
+        if: false # success()                 # if previous step is successful
         uses: actions/checkout@v4
       
       # 2.1 Optional: for InfluxDB metrics report
@@ -435,7 +435,8 @@ jobs:
       
       # 6. Connect grafana to capture prometheus metrics graph for showing on README
       - name: 📡 Dynamically Provision and Fetch Grafana Public External Link
-        if: success() && (steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'prometheus')
+        # if: success() && (steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'prometheus')
+        if: always()
         env:
           PROMETHEUS_SERVICE_ACCOUNT_TOKEN: ${{ secrets.GRAFANA_PROMETHEUS_SERVICE_ACCOUNT_TOKEN }}
           PROMETHEUS_DASHBOARD_UID: ${{ secrets.GRAFANA_PROMETHEUS_METRICS_DASHBOARD_ID }}
