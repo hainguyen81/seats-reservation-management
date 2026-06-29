@@ -594,10 +594,7 @@ jobs:
   publish-prometheus-url-to-readme:
     name: ⚡ Generate and Export Prometheus Dashboard Link to README
     needs: [ k6-injection ]           # wait for deployment, combine enviroment
-    if: |
-      always() && 
-      needs.k6-injection.result == 'success' && 
-      needs.k6-injection.outputs.prometheus_dashboard_url != ''
+    if: ${{ needs.k6-injection.outputs.prometheus_dashboard_url != '' }}
     secrets: inherit # bypass secrets to child workflow
     uses: ./.github/workflows/ci-cd-publish-url.yml
     with:
