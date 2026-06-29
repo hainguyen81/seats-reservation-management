@@ -603,21 +603,31 @@ jobs:
             
             // find metrics
             console.log('- 📸 Capture Prometheus Dashboard...');
-            const element = await page.$('div.react-grid-layout');
-            if (element) {
-              // found metrics, only capture metrics
-              await element.screenshot({ path: process.env.CAPTURED_IMAGE_PATH });
-              console.log('➡️ Captured metrics element successfully');
-            } else {
-              console.log('➡️ Capture whole page, due to not found metrics element.');
-              await page.screenshot({ 
-                path: process.env.CAPTURED_IMAGE_PATH, 
-                fullPage: true 
-              });
+            let element;
+            try {
+              element = await page.locator('div.react-grid-layout');
+            } catch (error) {
+              console.log(`--- ⚠️ Could not locate metrics element 'div.react-grid-layout' to capture: ${error.message}.`);
+            }
+            
+            // screenshot
+            try {
+              if (element) {
+                await element.screenshot({ path: process.env.CAPTURED_IMAGE_PATH });
+                console.log('--- ➡️ Captured metrics element successfully!');
+              } else {
+                console.log('--- ➡️ Capture whole page, due to not found metrics element.');
+                await page.screenshot({ 
+                  path: process.env.CAPTURED_IMAGE_PATH, 
+                  fullPage: true 
+                });
+              }
+              console.log('- 💯 Screenshot captured successfully!');
+            } catch (error) {
+              console.log(`- ❌ Error while screenshot: ${error.message}. Try to capture whole page...`);
             }
             
             // finish
-            console.log('- 💯 Screenshot captured successfully!');
             await browser.close();
           })();
           "
