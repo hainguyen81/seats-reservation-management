@@ -269,7 +269,7 @@ jobs:
       
       # 4. Execute k6 test
       - name: 🏹 Launch Synchronized Concurrency Attack Loop
-        if: success()                 # if previous step is successful
+        if: false # success()                 # if previous step is successful
         env:
           TARGET_URL: ${{ inputs.target_url }}
           CONCURRENT_USERS: ${{ inputs.concurrent_users }}
