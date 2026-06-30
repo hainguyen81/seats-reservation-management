@@ -1,6 +1,9 @@
 import http from "k6/http";
 import { check, sleep } from "k6";
-import { generateDynamicK6TestOptions } from "./scalability-k6-test.js";
+import {
+  generateDynamicK6TestOptions,
+  debugUniversalValue,
+} from "./scalability-k6-test.js";
 
 // k6 test options
 export const options = generateDynamicK6TestOptions();
