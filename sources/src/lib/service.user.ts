@@ -1,7 +1,7 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import { DefaultArgs } from "@prisma/client/runtime/library";
 import { prisma } from "./db";
-import { createTokensSession } from "./auth";
+import { createTokensSession, deleteTokensSession, verifyAccessToken } from "./auth";
 import { comparePassword, hashPassword } from "./hash";
 
 const AUTH_PROVIDER = process.env.AUTH_PROVIDER || 'custom';
@@ -116,6 +116,42 @@ export class UserService {
             },
         };
     }
+
+    public async unAuth(req: Request): Promise<{
+        status: number;
+        success?: boolean;
+        message?: string;
+    } | {
+        status: number;
+        stack?: any;
+        error?: string;
+    }> {
+    try {
+        // 1. check user via Access Token
+        const session = await verifyAccessToken();
+
+        if (session && session.userId) {
+            // 💡 clear session + tokens
+            await deleteTokensSession(session.userId);
+        } else {
+            // if Access Token expired, we use server root rights to force clear
+            const cookieStore = require('next/headers').cookies();
+            const { ACCESS_COOKIE, REFRESH_COOKIE } = require('@/lib/auth');
+
+            const store = await cookieStore;
+            store.delete(ACCESS_COOKIE);
+            store.delete(REFRESH_COOKIE);
+        }
+
+        return {
+            status: 200,
+            success: true,
+            message: 'Session successfully revoked and cookies cleared.'
+        };
+    } catch (error: any) {
+        return { error: error.message, status: 500, stack: error };
+    }
+}
 }
 
 // Enforce Singleton layout compliance
