@@ -40,10 +40,10 @@ on:
         type: string
         default: "http://localhost:3000"
       k6_test_file:
-        description: "🤖 K6 Testing File (Ex: ./sources/tests/scalability-test.js)"
+        description: "🤖 K6 Testing File (Ex: ./sources/tests/scalability-k6-test.js)"
         required: false
         type: string
-        default: "./sources/tests/scalability-health-check-test.js"
+        default: "./sources/tests/scalability-k6-test.js"
       concurrent_users:
         description: "👷 Maximum virtual users (VUs) to simulate simultaneously"
         required: false
@@ -81,10 +81,10 @@ on:
         required: true
         type: string
       k6_test_file:
-        description: "🤖 K6 Testing File (Ex: ./sources/tests/scalability-test.js)"
+        description: "🤖 K6 Testing File (Ex: ./sources/tests/scalability-k6-test.js)"
         required: false
         type: string
-        default: "./sources/tests/scalability-health-check-test.js"
+        default: "./sources/tests/scalability-k6-test.js"
       concurrent_users:
         description: "👷 Maximum virtual users (VUs) to simulate simultaneously"
         required: false
@@ -584,7 +584,7 @@ jobs:
         run: |
           npx ts-node --skip-project -e "
             const { captureWebpage } = require('./sources/src/lib/utilities/screenshot');
-            await captureWebpage({
+            captureWebpage({
               url: process.env.DASHBOARD_URL!,
               output: process.env.CAPTURED_IMAGE_PATH!,
               element: 'div.react-grid-layout',
