@@ -45,7 +45,7 @@ export default function () {
       const isOk = [200, 201].includes(r.status);
       if (!isOk) {
         console.log(
-          `[ 🤖 ${username} ${r.status} ] Login Response: ${
+          `[ 🤖 ${username} ${r.status} ] AUTH Response: ${
             r?.body || "Response No Data"
           }`
         );
@@ -81,7 +81,17 @@ export default function () {
 
   const holdChecker = `[ 🤖 ${username} ] Step 2 - Hold Concurrency Handled (200/201/400 or 409)`;
   check(holdRes, {
-    [holdChecker]: (r) => [200, 201, 400, 409].includes(r.status),
+    [holdChecker]: (r) => {
+      const isOk = [200, 201, 400, 409].includes(r.status);
+      if (!isOk) {
+        console.log(
+          `[ 🤖 ${username} ${r.status} ] HOLD Response: ${
+            r?.body || "Response No Data"
+          }`
+        );
+      }
+      return isOk;
+    },
   });
 
   if (!isWinnerOfHold) return; // Evict losers gracefully to prevent database inflation
@@ -99,6 +109,16 @@ export default function () {
   );
   const paymentChecker = `🏆 [ 🤖 ${username} ] Step 3 - Final Payment Successful (HTTP 200)`;
   check(paymentRes, {
-    [paymentChecker]: (r) => r.status === 200,
+    [paymentChecker]: (r) => {
+      const isOk = r.status === 200;
+      if (!isOk) {
+        console.log(
+          `[ 🤖 ${username} ${r.status} ] PAYMENT Response: ${
+            r?.body || "Response No Data"
+          }`
+        );
+      }
+      return isOk;
+    },
   });
 }
