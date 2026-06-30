@@ -15,7 +15,7 @@ interface ScreenshotOptions {
     url: string;
     output: string;
     element?: string; // Optional element locator like XPath, CSS. If omitted, it defaults to capturing the full page.
-    timeout?: 3000; // timeout to wait for opening url
+    timeout?: number; // timeout to wait for opening url
     wholePageIfNotFoundElement?: boolean, // capture whole page if not found element
     pageScreenshotOptions?: PageScreenshotOptions;
     elementScreenShotOptions?: LocatorScreenshotOptions;
