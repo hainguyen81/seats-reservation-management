@@ -591,6 +591,7 @@ jobs:
               url: process.env.DASHBOARD_URL!,
               output: process.env.CAPTURED_IMAGE_PATH!,
               element: 'div.react-grid-layout',
+              timeout: 10000,
               wholePageIfNotFoundElement: true,
               elementScreenShotOptions: {
                 quality: 100,
