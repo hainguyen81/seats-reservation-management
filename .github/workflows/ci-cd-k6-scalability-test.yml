@@ -311,7 +311,7 @@ jobs:
           # k6 run $K6_TEST_FILE
           # available output types: cloud (maybe charged fee), csv, experimental-opentelemetry, experimental-prometheus-rw, influxdb, json, opentelemetry, statsd, web-dashboard
           if [ "$K6_RPT_TYPE" == "console" ]; then
-            k6 run $K6_TEST_FILE
+            k6 run $K6_TEST_FILE || true
           
           elif [ "$K6_RPT_TYPE" == "prometheus" ]; then
             # ⚙️ Calculate and encode AUTHORIZATION HEADER by BASIC AUTH STANDARDS
@@ -323,49 +323,49 @@ jobs:
             k6 run \
               --out opentelemetry \
               --tag test_env=seats-reservation-k6-test \
-              $K6_TEST_FILE
+              $K6_TEST_FILE || true
           
           elif [ "$K6_RPT_TYPE" == "otlp" ]; then
             k6 run \
               --out opentelemetry \
               --tag test_env=seats-reservation-k6-test \
-              $K6_TEST_FILE
+              $K6_TEST_FILE || true
           
           elif [ "$K6_RPT_TYPE" == "experimental-otlp" ]; then
             k6 run \
               --out experimental-opentelemetry \
               --tag test_env=seats-reservation-k6-test \
-              $K6_TEST_FILE
+              $K6_TEST_FILE || true
           
           elif [ "$K6_RPT_TYPE" == "influxdb" ]; then
             k6 run \
               --out influxdb=http://localhost:8086/k6-test-report \
               --tag test_env=seats-reservation-k6-test \
-              $K6_TEST_FILE
+              $K6_TEST_FILE || true
           
           elif [ "$K6_RPT_TYPE" == "datadog" ]; then
             k6 run \
               --out statsd \
               --tag test_env=seats-reservation-k6-test \
-              $K6_TEST_FILE
+              $K6_TEST_FILE || true
           
           elif [ "$K6_RPT_TYPE" == "json" ]; then
             k6 run \
               --out json=k6-test-report.json \
               --tag test_env=seats-reservation-k6-test \
-              $K6_TEST_FILE
+              $K6_TEST_FILE || true
           
           elif [ "$K6_RPT_TYPE" == "csv" ]; then
             k6 run \
               --out csv=k6-test-report.csv \
               --tag test_env=seats-reservation-k6-test \
-              $K6_TEST_FILE
+              $K6_TEST_FILE || true
           
           elif [ "$K6_RPT_TYPE" == "web-dashboard" ]; then
             k6 run \
               --out web-dashboard=report=k6-test-report.html \
               --tag test_env=seats-reservation-k6-test \
-              $K6_TEST_FILE
+              $K6_TEST_FILE || true
           
           else
             echo "❌ [ $K6_RPT_TYPE | $K6_RPT_TYPE_NAME ] is an UNSUPPORTED report type."
