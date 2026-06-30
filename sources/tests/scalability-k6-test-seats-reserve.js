@@ -1,21 +1,30 @@
 import http from "k6/http";
 import { check, sleep } from "k6";
-import { k6TestOptions, getBaseParams } from "./scalability-k6-test.js";
+import { getBaseParams } from "./scalability-k6-test.js";
+
+// k6 test options
+export const options = generateDynamicK6TestOptions();
 
 // =========================================================================
-// 📈 INJECTING DYNAMIC LIFECYCLE CONFIGURATIONS VIA GITHUB ACTIONS env
+// 🧪 LIFECYCLE HOOK: DEBUG CẤU HÌNH ĐÃ NUỐT BIẾN __ENV THÀNH CÔNG VÂN VỨC [3.2]
 // =========================================================================
-const SEATS_RESERVATION = __ENV.TEST_DATA || "A5,A6";
+export function setup() {
+  // Thử ném nguyên cái options động vừa compile ra ngoài màn hình Console để rà soát
+  debugUniversalValue("Compiled Real-time K6 Options Struct", options);
+  
+  // Trích xuất thử biến URL động từ __ENV xem có thông mạng không [3.2]
+  debugUniversalValue("Target Deployed URL Endpoint", options.baseUrl);
+
+  return { debugPipelineTerminated: false };
+}
 
 // =========================================================================
 // 🏹 HIGH CONCURRENCY ATTACK PAYLOAD LOOP
 // =========================================================================
 export default function () {
-  const baseUrl = k6TestOptions.baseUrl;
+  const baseUrl = options?.baseUrl || "http://localhost:3000";
   const params = getBaseParams();
-  const TARGET_SEATS = (SEATS_RESERVATION || "")
-    .split(",")
-    .map((s) => s.trim());
+  const TARGET_SEATS = (options?.data || "").split(",").map((s) => s.trim());
 
   const testUser = `k6-bot-user-${__VU}@seats-reservation.com`;
   const loginPayload = JSON.stringify({

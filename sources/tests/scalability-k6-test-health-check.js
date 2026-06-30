@@ -1,13 +1,29 @@
 import http from "k6/http";
 import { check, sleep } from "k6";
-import { k6TestOptions } from "./scalability-k6-test.js";
+import { generateDynamicK6TestOptions } from "./scalability-k6-test.js";
+
+// k6 test options
+export const options = generateDynamicK6TestOptions();
+
+// =========================================================================
+// 🧪 LIFECYCLE HOOK: DEBUG CẤU HÌNH ĐÃ NUỐT BIẾN __ENV THÀNH CÔNG VÂN VỨC [3.2]
+// =========================================================================
+export function setup() {
+  // Thử ném nguyên cái options động vừa compile ra ngoài màn hình Console để rà soát
+  debugUniversalValue("Compiled Real-time K6 Options Struct", options);
+  
+  // Trích xuất thử biến URL động từ __ENV xem có thông mạng không [3.2]
+  debugUniversalValue("Target Deployed URL Endpoint", options.baseUrl);
+
+  return { debugPipelineTerminated: false };
+}
 
 // =========================================================================
 // 🏹 HIGH CONCURRENCY ATTACK PAYLOAD LOOP
 // =========================================================================
 export default function () {
   // Target the lightweight web-app health sensoring api route
-  const url = `${k6TestOptions.baseUrl}/api/health`;
+  const url = `${options?.baseUrl || "http://localhost:3000"}/api/health`;
 
   // Configure execution parameter metrics
   const params = {
