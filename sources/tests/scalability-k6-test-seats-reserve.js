@@ -33,10 +33,10 @@ export default function () {
     .map((s) => s.trim());
 
   const testUser = `k6-bot-user-${__VU}@seats-reservation.com`;
-  const loginPayload = JSON.stringify({
+  const loginPayload = {
     username: testUser,
     password: `k6-bot-user-${__VU}@123`,
-  });
+  };
 
   // Execute authentic user credentials evaluation flow
   const loginRes = http.post(`${baseUrl}/api/auth/login`, loginPayload, params);
