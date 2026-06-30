@@ -28,60 +28,64 @@ interface ScreenshotOptions {
 export async function captureWebpage(options: ScreenshotOptions): Promise<void> {
     const { url, output, element, elementScreenShotOptions, pageScreenshotOptions, wholePageIfNotFoundElement, timeout } = options;
 
-    // 1. Launch a headless browser instance
-    const browser = await chromium.launch({ headless: true });
-    const context = await browser.newContext({
-        viewport: { width: 1920, height: 1080 } // Set a large standard viewport size
-    });
-    const page: Page = await context.newPage();
-
     try {
-        console.log(`- 📸 Navigating to: ${url}`);
+        // 1. Launch a headless browser instance
+        const browser = await chromium.launch({ headless: true });
+        const context = await browser.newContext({
+            viewport: { width: 1920, height: 1080 } // Set a large standard viewport size
+        });
+        const page: Page = await context.newPage();
 
-        // 2. Wait until there are no remaining network requests (XHR/Fetch) for at least 500ms
-        await page.goto(url, { waitUntil: 'networkidle', timeout: timeout || 3000 });
+        try {
+            console.log(`- 📸 Navigating to: ${url}`);
 
-        // Allow an extra 5 seconds for complex charts or dashboards to finish rendering smooth graphics
-        await page.waitForTimeout(5000);
+            // 2. Wait until there are no remaining network requests (XHR/Fetch) for at least 500ms
+            await page.goto(url, { waitUntil: 'networkidle', timeout: timeout || 3000 });
 
-        let elementCaptured = false;
+            // Allow an extra 5 seconds for complex charts or dashboards to finish rendering smooth graphics
+            await page.waitForTimeout(5000);
 
-        // 3. If an element selector is provided, attempt to locate and capture that specific component
-        if ((element || '').length) {
-            console.log(`- 🔍 Searching for element: ${element}`);
-            try {
-                const pageElement = await page.locator(element || '');
-                if (pageElement) {
-                    console.log(`- 📸 Capturing element: ${element}`);
-                    let opts = elementScreenShotOptions || { path: output };
-                    opts.path = output;
-                    await pageElement.screenshot(opts);
-                    console.log(`--- 💯 Success: Captured specific element '${element}'`);
-                    elementCaptured = true;
-                } else {
-                    console.log(`--- ⚠️ Element '${element}' was not found in the DOM.`);
+            let elementCaptured = false;
+
+            // 3. If an element selector is provided, attempt to locate and capture that specific component
+            if ((element || '').length) {
+                console.log(`- 🔍 Searching for element: ${element}`);
+                try {
+                    const pageElement = await page.locator(element || '');
+                    if (pageElement) {
+                        console.log(`- 📸 Capturing element: ${element}`);
+                        let opts = elementScreenShotOptions || { path: output };
+                        opts.path = output;
+                        await pageElement.screenshot(opts);
+                        console.log(`--- 💯 Success: Captured specific element '${element}'`);
+                        elementCaptured = true;
+                    } else {
+                        console.log(`--- ⚠️ Element '${element}' was not found in the DOM.`);
+                    }
+                } catch (error: any) {
+                    console.log(`--- ⚠️ Error while locating element: ${error.message}`);
                 }
-            } catch (error: any) {
-                console.log(`--- ⚠️ Error while locating element: ${error.message}`);
             }
-        }
 
-        // 4. Fallback Mechanism: Capture the full webpage if no selector was specified or if the element target was missing
-        if (!(element || '').length || (!elementCaptured && wholePageIfNotFoundElement)) {
-            console.log('- 📸 Proceeding to capture the full page as a fallback option...');
-            let opts = pageScreenshotOptions || { path: output, fullPage: true };
-            opts.path = output;
-            opts.fullPage = true;
-            await page.screenshot(opts);
-            console.log('--- 💯 Full page screenshot captured successfully!');
-        }
+            // 4. Fallback Mechanism: Capture the full webpage if no selector was specified or if the element target was missing
+            if (!(element || '').length || (!elementCaptured && wholePageIfNotFoundElement)) {
+                console.log('- 📸 Proceeding to capture the full page as a fallback option...');
+                let opts = pageScreenshotOptions || { path: output, fullPage: true };
+                opts.path = output;
+                opts.fullPage = true;
+                await page.screenshot(opts);
+                console.log('--- 💯 Full page screenshot captured successfully!');
+            }
 
-    } catch (error: any) {
-        console.error(`- ❌ Critical error during execution: ${error.message}`);
-        throw error;
-    } finally {
-        // 5. Always close the browser instance to release system memory and resources
-        await browser.close();
+        } catch (error: any) {
+            console.error(`- ❌ Critical error during execution: ${error.message}`);
+            throw error;
+        } finally {
+            // 5. Always close the browser instance to release system memory and resources
+            await browser.close();
+        }
+    } catch (globalError: any) {
+        console.error(`- ❌ Global critical error during execution: ${globalError.message}`);
     }
 }
 

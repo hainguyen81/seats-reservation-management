@@ -582,56 +582,24 @@ jobs:
           DASHBOARD_URL: ${{ steps.grafana-prometheus-api-gateway.outputs.original_prometheus_dashboard_url }}
           CAPTURED_IMAGE_PATH: "sources/.assets/.prometheus/prometheus_dashboard.png"
         run: |
-          node -e "
-          const { chromium } = require('playwright');
-          (async () => {
-            // open Chrome
-            console.log('- 🌍 Open Chrome to load Prometheus Dashboard...');
-            const browser = await chromium.launch({ headless: true });
-            const context = await browser.newContext({
-              viewport: { width: 1920, height: 1080 }
-            });
-            const page = await context.newPage();
-            
-            // use 'networkidle' to wait no any API (XHR/Fetch) running in background
-            console.log('- 🗺️ Navigating to Prometheus Dashboard...');
-            await page.goto(process.env.DASHBOARD_URL, { 
-              waitUntil: 'networkidle', 
-              timeout: 60000 
-            });
-            
-            // wait more 5 seconds to make sure dashboard already loaded
-            await page.waitForTimeout(5000);
-            
-            // find metrics
-            console.log('- 📸 Capture Prometheus Dashboard...');
-            let element;
-            try {
-              element = await page.locator('div.react-grid-layout');
-            } catch (error) {
-              console.log("--- ⚠️ Could not locate metrics element 'div.react-grid-layout' to capture: " + error.message);
-            }
-            
-            // screenshot
-            try {
-              if (element) {
-                await element.screenshot({ path: process.env.CAPTURED_IMAGE_PATH });
-                console.log('--- ➡️ Captured metrics element successfully!');
-              } else {
-                console.log('--- ➡️ Capture whole page, due to not found metrics element.');
-                await page.screenshot({ 
-                  path: process.env.CAPTURED_IMAGE_PATH, 
-                  fullPage: true 
-                });
+          npx ts-node -e "
+            import { captureWebpage } from './sources/src/lib/utilities/screenshot.ts';
+            await captureWebpage({
+              url: process.env.DASHBOARD_URL!,
+              output: process.env.CAPTURED_IMAGE_PATH!,
+              element: 'div.react-grid-layout',
+              wholePageIfNotFoundElement: true,
+              elementScreenShotOptions: {
+                quality: 100,
+                timeout: 5000,
+                type: 'png'
+              },
+              pageScreenshotOptions: {
+                quality: 100,
+                timeout: 5000,
+                type: 'png'
               }
-              console.log('- 💯 Screenshot captured successfully!');
-            } catch (error) {
-              console.log('- ❌ Error while screenshot: ' + error.message);
-            }
-            
-            // finish
-            await browser.close();
-          })();
+            });
           "
 
       # Optional: Commit and push captured images to repository
