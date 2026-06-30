@@ -1,6 +1,3 @@
-import http from "k6/http";
-import { check, sleep } from "k6";
-
 // =========================================================================
 // 📈 INJECTING DYNAMIC LIFECYCLE CONFIGURATIONS VIA GITHUB ACTIONS env
 // =========================================================================
@@ -45,7 +42,10 @@ const FAIL_FAST_POLICY =
           http_req_failed: [`rate<=0.01`],
         };
 
-export const options = {
+export const k6TestOptions = {
+  baseUrl: TARGET_URL,
+  maxVus: MAX_VUS,
+
   // 🛡️ QUALITY GATES & METRIC THRESHOLDS (FAIL-FAST POLICY)
   thresholds: FAIL_FAST_POLICY,
   
@@ -78,32 +78,11 @@ export const options = {
   },
 };
 
-// =========================================================================
-// 🏹 HIGH CONCURRENCY ATTACK PAYLOAD LOOP
-// =========================================================================
-export default function () {
-  // Target the lightweight web-app health sensoring api route
-  const url = `${TARGET_URL}/api/health`;
-
-  // Configure execution parameter metrics
-  const params = {
-    headers: {
-      "Content-Type": "application/json",
-      "X-App-Benchmark-Client": "k6-load-injector-engine",
-    },
-  };
-
-  // Dispatch atomic concurrent execution call
-  const response = http.get(url, params);
-
-  // Validate transactional status response maps
-  check(response, {
-    "http transmission status is 200": (r) => r.status === 200,
-    "packet integrity network response time < 500ms": (r) =>
-      r.timings.duration < 500,
-  });
-
-  // ⏳ Controlled Throttling Buffer:
-  // Pacing half a second between virtual user iterations to mimic realistic user behavior
-  sleep(0.5);
+// Re-usable helper function to inject default JSON headers
+export function getBaseParams(token = null) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return { headers };
 }
