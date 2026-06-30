@@ -5,7 +5,7 @@ import { k6TestOptions, getBaseParams } from "./scalability-k6-test";
 // =========================================================================
 // 📈 INJECTING DYNAMIC LIFECYCLE CONFIGURATIONS VIA GITHUB ACTIONS env
 // =========================================================================
-const SEATS_RESERVATION = __ENV.SEATS_RESERVATION || "A5,A6";
+const SEATS_RESERVATION = __ENV.TEST_DATA || "A5,A6";
 
 // =========================================================================
 // 🏹 HIGH CONCURRENCY ATTACK PAYLOAD LOOP

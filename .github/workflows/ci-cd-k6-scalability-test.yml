@@ -44,6 +44,10 @@ on:
         required: false
         type: string
         default: "./sources/tests/scalability-k6-test-health-check.js"
+      k6_test_data:
+        description: "📦 K6 Testing Data (just supporting string data, could using JSON string and re-parsing it in test code)"
+        required: false
+        type: string
       concurrent_users:
         description: "👷 Maximum virtual users (VUs) to simulate simultaneously"
         required: false
@@ -85,6 +89,10 @@ on:
         required: false
         type: string
         default: "./sources/tests/scalability-k6-test-health-check.js"
+      k6_test_data:
+        description: "📦 K6 Testing Data (just supporting string data, could using JSON string and re-parsing it in test code)"
+        required: false
+        type: string
       concurrent_users:
         description: "👷 Maximum virtual users (VUs) to simulate simultaneously"
         required: false
@@ -272,6 +280,8 @@ jobs:
         if: success()                 # if previous step is successful
         env:
           TARGET_URL: ${{ inputs.target_url }}
+          # k6 test parameters
+          TEST_DATA: ${{ inputs.k6_test_data }}
           CONCURRENT_USERS: ${{ inputs.concurrent_users }}
           TEST_DURATION: ${{ inputs.test_duration }}
           K6_TEST_FILE: ${{ inputs.k6_test_file }}
