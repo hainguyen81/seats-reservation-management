@@ -200,13 +200,20 @@ export class SeatService {
     ): Promise<{
         status: number;
         success?: boolean;
-        expiresAt?: string;
+        reserved?: {
+            seat: string;
+            expiresAt: string;
+        }[];
     } | {
         status: number;
         stack?: any;
         error?: string;
     }> {
-        const { seatId } = await req.json();
+        const { seatId, seatIds } = await req.json();
+        const targetSeatIds: string[] = seatIds || (seatId ? [seatId] : []);
+        if (!targetSeatIds || !Array.isArray(targetSeatIds) || targetSeatIds.length === 0) {
+            return { error: 'Invalid or empty seat list', status: 400 };
+        }
         const mutexLockStatus = 'PENDING';
         let mutexLockError;
 
@@ -214,23 +221,25 @@ export class SeatService {
             // =========================================================================
             // STEP 1: MUTEX LOCK IN RAM VIA CIRCUIT BREAKER
             // =========================================================================
-            mutexLockError = await this.lockSeatMutex(seatId, mutexLockStatus);
-            if (mutexLockError && (mutexLockError?.error || '').length) {
-                await auditLog({
-                    userId: session?.userId,
-                    action: 'HOLD',
-                    target: seatId,
-                    status: 'FAILED',
-                    details: { error: mutexLockError.error },
-                    req
-                });
-                return mutexLockError;
+            for (const targetSeatId of targetSeatIds) {
+                mutexLockError = await this.lockSeatMutex(targetSeatId, mutexLockStatus);
+                if (mutexLockError && (mutexLockError?.error || '').length) {
+                    await auditLog({
+                        userId: session?.userId,
+                        action: 'HOLD',
+                        target: targetSeatId,
+                        status: 'FAILED',
+                        details: { error: mutexLockError.error },
+                        req
+                    });
+                    return mutexLockError;
+                }
             }
 
             // =========================================================================
             // STEP 2: TRANSACTION VIA OCC
             // =========================================================================
-            const result = await prisma.$transaction(async (tx) => seatService.holdTransaction(tx, seatId, session));
+            const result = await prisma.$transaction(async (tx) => seatService.holdTransaction(tx, targetSeatIds, session));
 
             // cache invalidation
             try {
@@ -243,11 +252,17 @@ export class SeatService {
             await auditLog({
                 userId: session?.userId,
                 action: 'HOLD',
-                target: seatId,
+                target: targetSeatIds.join(','),
                 status: 'SUCCESS',
                 req
             });
-            return { success: true, expiresAt: result.expiresAt.toISOString(), status: 200 };
+            return {
+                success: true, reserved: result.map((b): {
+                    seat: string;
+                    expiresAt: string;
+                } => { return {
+                    seat: b.seatId, expiresAt: b.expiresAt.toISOString()
+                }}), status: 200 };
         } catch (error: any) {
             debugger;
             // 💡 CACHE CONCURRENCY VIOLATION:
@@ -258,7 +273,7 @@ export class SeatService {
                 await auditLog({
                     userId: session?.userId,
                     action: 'HOLD',
-                    target: seatId,
+                    target: targetSeatIds.join(','),
                     status: 'FAILED',
                     details: { error: "[ P2025 ] Race condition detected: This seat was captured by another user at the same millisecond!" },
                     req
@@ -274,7 +289,7 @@ export class SeatService {
             await auditLog({
                 userId: session?.userId,
                 action: 'HOLD',
-                target: seatId.join(', '),
+                target: targetSeatIds.join(','),
                 status: 'FAILED',
                 details: { error: error.message },
                 req
@@ -290,7 +305,7 @@ export class SeatService {
 
     private async holdTransaction(
         tx: Omit<PrismaClient<Prisma.PrismaClientOptions, never, DefaultArgs>, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">,
-        seatId: string,
+        seatIds: string[],
         session: {
             userId: string;
         } | {
@@ -298,49 +313,57 @@ export class SeatService {
             email: any;
         } | any
     ) {
-        // validate 1: seat is not BOOKED
-        const seat = await tx.seat.findUnique({ where: { id: seatId } });
-        if (!seat || seat.status === 'BOOKED') {
-            throw new Error('This seat has already been fully booked and sold.');
-        }
+        // 🕵️ OCC LAYER: Loop via every seat to check lock by version
+        const now = new Date();
+        let bookingPromises: Promise<any>[] = [];
+        for (const seatId of seatIds) {
+            // validate 1: seat is not BOOKED
+            const seat = await tx.seat.findUnique({ where: { id: seatId } });
+            if (!seat || seat.status === 'BOOKED') {
+                throw new Error(`Seat ${seatId} is not found or already been fully booked and sold.`);
+            }
 
-        // validate 2: seat whether is RESERVED for other
-        const activeHoldByOthers = await tx.booking.findFirst({
-            where: {
-                seatId: seatId,
-                status: 'PENDING',
-                expiresAt: { gte: new Date() },  // in expired 5 minutes
-                NOT: {
-                    userId: session?.userId, // not for me
+            // validate 2: seat whether is RESERVED for other
+            const activeHoldByOthers = await tx.booking.findFirst({
+                where: {
+                    seatId: seatId,
+                    status: 'PENDING',
+                    expiresAt: { gte: now },  // in expired 5 minutes
+                    NOT: {
+                        userId: session?.userId, // not for me
+                    },
                 },
-            },
-        });
-        if (activeHoldByOthers) {
-            throw new Error('This seat is temporarily reserved by another user. Please choose another one.');
-        }
+            });
+            if (activeHoldByOthers) {
+                throw new Error(`Seat ${seatId} is temporarily reserved by another user. Please choose another one.`);
+            }
 
-        // 💡 SOLUTION Optimistic Concurrency Control OCC (COMPARE-AND-SWAP):
-        // Lock seat with status PENDING
-        await tx.seat.update({
-            where: {
-                id: String(seatId),
-                version: seat.version
-            },
-            data: {
-                status: 'PENDING',
-                version: seat.version + 1
-            },
-        });
+            // 💡 SOLUTION Optimistic Concurrency Control OCC (COMPARE-AND-SWAP):
+            // Lock seat with status PENDING
+            await tx.seat.update({
+                where: {
+                    id: String(seatId),
+                    version: seat.version
+                },
+                data: {
+                    status: 'PENDING',
+                    version: seat.version + 1
+                },
+            });
+
+            // Create Booking PENDING
+            bookingPromises.push(tx.booking.create({
+                data: {
+                    userId: session?.userId,
+                    seatId: seatId,
+                    status: 'PENDING',
+                    expiresAt: new Date(now.getTime() + RESERVE_EXPIRY_MINUTES * 60 * 1000), // expired in 5 minutes
+                },
+            }));
+        }
 
         // Create Booking PENDING
-        return tx.booking.create({
-            data: {
-                userId: session?.userId,
-                seatId: seatId,
-                status: 'PENDING',
-                expiresAt: new Date(Date.now() + RESERVE_EXPIRY_MINUTES * 60 * 1000), // expired in 5 minutes
-            },
-        });
+        return Promise.all(bookingPromises);
     }
 
     // -------------------------------------------------
@@ -357,13 +380,16 @@ export class SeatService {
     ): Promise<{
         status: number;
         success?: boolean;
-        expiresAt?: string;
     } | {
         status: number;
         stack?: any;
         error?: string;
     }> {
-        const { seatId } = await req.json();
+        const { seatId, seatIds } = await req.json();
+        const targetSeatIds: string[] = seatIds || (seatId ? [seatId] : []);
+        if (!targetSeatIds || !Array.isArray(targetSeatIds) || targetSeatIds.length === 0) {
+            return { error: 'Invalid or empty seat list', status: 400 };
+        }
         const mutexLockStatus = 'PENDING';
 
         // =========================================================================
@@ -375,13 +401,13 @@ export class SeatService {
         // STEP 2: TRANSACTION VIA OCC
         // =========================================================================
         try {
-            await prisma.$transaction(async (tx) => this.singleReleaseTransaction(tx, seatId, session));
+            await prisma.$transaction(async (tx) => this.singleReleaseTransaction(tx, targetSeatIds, session));
 
             // audit
             await auditLog({
                 userId: session?.userId,
                 action: 'SINGLE_RELEASE',
-                target: seatId,
+                target: targetSeatIds.join(','),
                 status: 'SUCCESS',
                 req
             });
@@ -395,7 +421,7 @@ export class SeatService {
                 await auditLog({
                     userId: session?.userId,
                     action: 'SINGLE_RELEASE',
-                    target: seatId,
+                    target: targetSeatIds.join(','),
                     status: 'FAILED',
                     details: { error: "[ P2025 ] Conflict: This seat state was modified. Refreshing dashboard." },
                     req
@@ -411,7 +437,7 @@ export class SeatService {
             await auditLog({
                 userId: session?.userId,
                 action: 'SINGLE_RELEASE',
-                target: seatId,
+                target: targetSeatIds.join(','),
                 status: 'FAILED',
                 details: { error: error.message },
                 req
@@ -422,7 +448,7 @@ export class SeatService {
 
     private async singleReleaseTransaction(
         tx: Omit<PrismaClient<Prisma.PrismaClientOptions, never, DefaultArgs>, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">,
-        seatId: string,
+        seatIds: string[],
         session: {
             userId: string;
         } | {
@@ -430,24 +456,26 @@ export class SeatService {
             email: any;
         } | any
     ) {
-        // check seat existing
-        const seat = await tx.seat.findUnique({ where: { id: seatId } });
-        if (!seat) throw new Error('Seat not found.');
-
-        // check booking
-        const booking = await tx.booking.findFirst({
-            where: { seatId: seatId, userId: session?.userId, status: 'PENDING' },
-        });
-        if (!booking) throw new Error('No active reservation found under your account.');
-
         // 💡 SOLUTION Optimistic Concurrency Control OCC: Reset `AVAILABLE` seat
-        await tx.seat.update({
-            where: { id: seatId, version: seat.version },
-            data: { status: 'AVAILABLE', version: seat.version + 1 },
-        });
+        for (const seatId of seatIds) {
+            // check seat existing
+            const seat = await tx.seat.findUnique({ where: { id: seatId } });
+            if (!seat) throw new Error(`Seat ${seatId} not found.`);
 
-        // delete temporary booking
-        await tx.booking.delete({ where: { id: booking.id } });
+            // check booking
+            const booking = await tx.booking.findFirst({
+                where: { seatId: seatId, userId: session?.userId, status: 'PENDING' },
+            });
+            if (!booking) throw new Error('No active reservation found under your account.');
+
+            await tx.seat.update({
+                where: { id: seatId, version: seat.version },
+                data: { status: 'AVAILABLE', version: seat.version + 1 },
+            });
+
+            // delete temporary booking
+            await tx.booking.delete({ where: { id: booking.id } });
+        }
     }
 
     // -------------------------------------------------
