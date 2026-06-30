@@ -10,6 +10,7 @@
  */
 
 import { chromium, LocatorScreenshotOptions, Page, PageScreenshotOptions } from 'playwright';
+import * as fs from 'fs';
 
 interface ScreenshotOptions {
     url: string;
@@ -19,6 +20,8 @@ interface ScreenshotOptions {
     wholePageIfNotFoundElement?: boolean, // capture whole page if not found element
     pageScreenshotOptions?: PageScreenshotOptions;
     elementScreenShotOptions?: LocatorScreenshotOptions;
+    // fallback image path to copy to output if executing failed
+    defaultFallbackImagePath?: string;
 }
 
 /**
@@ -26,7 +29,12 @@ interface ScreenshotOptions {
  * Automatically falls back to capturing the full page if the specified element is not found.
  */
 export async function captureWebpage(options: ScreenshotOptions): Promise<void> {
-    const { url, output, element, elementScreenShotOptions, pageScreenshotOptions, wholePageIfNotFoundElement, timeout } = options;
+    const {
+        url, output, element,
+        elementScreenShotOptions, pageScreenshotOptions,
+        wholePageIfNotFoundElement, timeout,
+        defaultFallbackImagePath
+    } = options;
 
     try {
         // 1. Launch a headless browser instance
@@ -79,6 +87,14 @@ export async function captureWebpage(options: ScreenshotOptions): Promise<void> 
 
         } catch (error: any) {
             console.error(`- ❌ Critical error during execution: ${error.message}`);
+
+            if (defaultFallbackImagePath && fs.existsSync(defaultFallbackImagePath)) {
+                console.log(`- 🔄 Capture failed. Executing fallback: Copying default image from ${defaultFallbackImagePath} to ${output}`);
+                fs.copyFileSync(defaultFallbackImagePath, output);
+                console.log(`--- 💯 Successfully copied default backup image: ${defaultFallbackImagePath} to ${output}`);
+            } else {
+                throw error; // Nếu không có ảnh dự phòng thì tiếp tục ném lỗi ra ngoài
+            }
             throw error;
         } finally {
             // 5. Always close the browser instance to release system memory and resources
