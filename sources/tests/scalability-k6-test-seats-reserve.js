@@ -44,7 +44,7 @@ export default function () {
     [loginChecker]: (r) => {
       const isOk = [200, 201].includes(r.status);
       if (!isOk) {
-        console.log(`[ 🤖 ${testUser} ] Login Response: ${r?.body | 'Response No Data'}`);
+        console.log(`[ 🤖 ${testUser} ] Login Response: ${r?.body || 'Response No Data'}`);
       }
       return isOk;
     },
@@ -88,7 +88,7 @@ export default function () {
     paymentPayload,
     authParams
   );
-  const paymentChecker = `[ 🤖 ${testUser} ] Step 3 - Final Payment Successful (HTTP 200)`;
+  const paymentChecker = `🏆 [ 🤖 ${testUser} ] Step 3 - Final Payment Successful (HTTP 200)`;
   check(paymentRes, {
     [paymentChecker]: (r) => r.status === 200,
   });

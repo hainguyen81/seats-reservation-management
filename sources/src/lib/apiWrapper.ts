@@ -9,7 +9,7 @@ type ApiHandler = (req: Request, session: {
 } | any, ...args: any[]) => Promise<NextResponse | Response | any>;
 
 export function withGlobalErrorHandler(handler: ApiHandler, authenticated: boolean = true) {
-    return async (req: Request, ...args: any[]) => {
+    return async (req: Request, ...args: any[]): Promise<Response> => {
         const session = await verifyAccessToken();
         if (authenticated && !session) {
             return NextResponse.json({ error: 'Unauthorized - Access Token Expired' }, { status: 401 });

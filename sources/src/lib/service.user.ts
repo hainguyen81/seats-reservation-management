@@ -19,6 +19,7 @@ export class UserService {
         user?: {
             id: string;
             username: string;
+            password?: string;
         }
     } | {
         status: number;
@@ -26,9 +27,34 @@ export class UserService {
         error?: string;
     }> {
         try {
-            const authData = await req.json();
+            let authData = await req.json();
+            let cleanPassword = '';
             const provider = AUTH_PROVIDER;
-            return await prisma.$transaction(async (tx) => this.authTransaction(tx, provider, authData));
+            // hash password
+            if (provider !== 'firebase') {
+                cleanPassword = (authData['password'] || '').trim();
+                authData['hashedPassword'] = await hashPassword(cleanPassword);
+                authData['password'] = cleanPassword;
+            }
+
+            // authenticate
+            const result: any = await prisma.$transaction(async (tx) => this.authTransaction(tx, provider, authData));
+
+            // check password matching if login, not registering new user
+            if (provider !== 'firebase' && result?.success) {
+                // not registering new user
+                if (result?.status === 200) {
+                    const isMatchedPassword = await comparePassword(cleanPassword, result?.user?.password);
+                    if (!isMatchedPassword) {
+                        return { error: 'Invalid credentials. Please verify your password and try again.', status: 401 };
+                    }
+                }
+
+                // 💡 Generate DUAL-TOKEN: Access Token + Refresh Token
+                await createTokensSession(result?.user?.id);
+                result.user && result.user.password && delete result.user.password;
+            }
+            return result;
         } catch (error: any) {
             return { error: error.message, status: 500, stack: error };
         }
@@ -43,6 +69,7 @@ export class UserService {
         user?: {
             id: string;
             username: string;
+            password?: string;
         }
     } | {
         status: number;
@@ -56,10 +83,10 @@ export class UserService {
             if (!idToken) return { error: 'Identity token is missing', status: 400 };
 
             // handle DB
-            let user = await prisma.user.findUnique({ where: { username } });
+            let user = await tx.user.findUnique({ where: { username } });
             let status: number = 200;
             if (!user) {
-                user = await prisma.user.create({
+                user = await tx.user.create({
                     data: { username, password: 'EXTERNAL_FIREBASE_AUTH' }
                 });
                 status = 201;
@@ -70,41 +97,32 @@ export class UserService {
         }
 
         // custom
-        const { username, password } = authData;
+        const { username, password, hashedPassword } = authData;
 
         // 🕵️ Validate
-        if (!username || !password) {
+        if (!username || !password || !hashedPassword) {
             return { error: 'Both username and password fields are strictly required.', status: 400 };
         }
 
         const cleanUsername = username.trim();
-        const cleanPassword = password.trim();
+        const cleanHashedPassword = (hashedPassword || '').trim();
 
         // check from database (Postgres / SQLite)
-        let user = await prisma.user.findUnique({
+        let user = await tx.user.findUnique({
             where: { username: cleanUsername },
         });
         let status: number = 200;
 
         // 💡 FIXME Auto creating user if not found, should removing on PROD
         if (!user) {
-            user = await prisma.user.create({
+            user = await tx.user.create({
                 data: {
                     username: cleanUsername,
-                    password: await hashPassword(cleanPassword), // hash password
+                    password: cleanHashedPassword, // hash password
                 },
             });
             status = 201;
-        } else {
-            // 💡 check by password
-            const isPasswordValid = await comparePassword(cleanPassword, user.password);
-            if (!isPasswordValid) {
-                return { error: 'Invalid credentials. Please verify your password and try again.', status: 401 };
-            }
         }
-
-        // 💡 Generate DUAL-TOKEN: Access Token + Refresh Token
-        await createTokensSession(user.id);
 
         // Response to front-end
         return {
@@ -113,6 +131,7 @@ export class UserService {
             user: {
                 id: user.id,
                 username: user.username,
+                password: user.password
             },
         };
     }
