@@ -97,7 +97,13 @@ export function generateDynamicK6TestOptions() {
 
 // Re-usable helper function to inject default JSON headers
 export function getBaseParams(token = null) {
-  const headers = { "Content-Type": "application/json" };
+  const headers = {
+    "Content-Type": "application/json",
+    // 🔥 simulate user agent: avoid Bot/CORS filter of Next.js Middleware
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    Accept: "application/json",
+  };
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
   }
