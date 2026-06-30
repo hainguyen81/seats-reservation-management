@@ -300,6 +300,9 @@ jobs:
           K6_OTEL_HTTP_EXPORTER_ENDPOINT: ${{ secrets.GRAFANA_PROMETHEUS_OTLP_HOST }}
           K6_OTEL_HTTP_EXPORTER_URL_PATH: ${{ secrets.GRAFANA_PROMETHEUS_OTLP_API }}
         run: |
+          # turn off auto break pipeline of GitHub Action Runner to check via k6 exit code
+          set +e
+          
           echo "========================================================================="
           echo "🎯 TARGET URL DEPLOYED OUTSIDE: $TARGET_URL"
           echo "👥 SIMULATING MAXIMUM ATTACK VUs: $CONCURRENT_USERS"
@@ -395,6 +398,9 @@ jobs:
             echo "========================================================================="
             exit "$K6_EXIT_CODE" # force stop pipeline
           fi
+          
+          # turn on auto break pipeline of GitHub Action Runner again
+          set -e
             
           # force CI/CD waiting k6
           echo "⏳ Test process almost done. Keep waiting in 20 seconds to flush metrics to Grafana Cloud..."
