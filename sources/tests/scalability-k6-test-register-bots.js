@@ -49,7 +49,7 @@ export function registerBots(opts) {
   for (let i = 1; i <= vus; i++) {
     const botUser = `k6-bot-user-${i}@seats-reservation.com`;
     const registerPayload = JSON.stringify({
-      email: botUser,
+      username: botUser,
       password: `k6-bot-user-${i}@123`,
     });
 
@@ -57,7 +57,7 @@ export function registerBots(opts) {
     const res = http.post(`${baseUrl}/api/auth/login`, registerPayload, params);
 
     // debug
-    if (res.status === 200) {
+    if (res.status === 200 || res.status === 201) {
       console.log(
         `✅ [ ${botUser} Provisioning] Successfully materialized data for Bot User [${i}/${vus}]`
       );

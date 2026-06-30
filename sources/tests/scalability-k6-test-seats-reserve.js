@@ -28,11 +28,13 @@ export function setup() {
 export default function () {
   const baseUrl = options?.baseUrl || "http://localhost:3000";
   const params = getBaseParams();
-  const TARGET_SEATS = (options?.data || "A5,A6").split(",").map((s) => s.trim());
+  const TARGET_SEATS = (options?.data || "A5,A6")
+    .split(",")
+    .map((s) => s.trim());
 
   const testUser = `k6-bot-user-${__VU}@seats-reservation.com`;
   const loginPayload = JSON.stringify({
-    email: testUser,
+    username: testUser,
     password: `k6-bot-user-${__VU}@123`,
   });
 
@@ -44,11 +46,21 @@ export default function () {
     [loginChecker]: (r) => {
       const isOk = [200, 201].includes(r.status);
       if (!isOk) {
-        console.log(`[ 🤖 ${testUser} ] Login Response: ${r?.body || 'Response No Data'}`);
+        console.log(
+          `[ 🤖 ${testUser} ${r.status} ] Login Response: ${
+            r?.body || "Response No Data"
+          }`
+        );
       }
       return isOk;
     },
-    [tokenChecker]: (r) => r.json("accessToken") !== undefined,
+    [tokenChecker]: (r) => {
+      const cookiesReceived = r.cookies;
+      return (
+        (cookiesReceived["seat-access-token"] || "").length ||
+        (cookiesReceived["seat-firebase-session"] || "").length
+      );
+    },
   });
 
   if (!loginPassed) {
