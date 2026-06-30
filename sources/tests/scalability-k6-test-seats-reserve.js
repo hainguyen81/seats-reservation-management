@@ -15,7 +15,7 @@ export const options = generateDynamicK6TestOptions();
 // =========================================================================
 export function setup() {
   // register bots for testing
-  registerBots(options);
+  // registerBots(options);
 
   // debug target URL from __ENV
   debugUniversalValue("Target Deployed URL Endpoint", options.baseUrl);
