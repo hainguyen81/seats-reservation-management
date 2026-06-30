@@ -581,7 +581,7 @@ jobs:
           DASHBOARD_URL: ${{ steps.grafana-prometheus-api-gateway.outputs.original_prometheus_dashboard_url }}
           CAPTURED_IMAGE_PATH: "sources/.assets/.prometheus/prometheus_dashboard.png"
           FALLBACK_IMAGE_PATH: "sources/.assets/comming_soon-107x20.png"
-          ELEMENT_SELECTOR: "div.react-grid-layout"
+          ELEMENT_SELECTOR: 'selection[data-testid*="data-testid"]'
           # force ts-node compile export to module.exports compatible with CommonJS
           TS_NODE_COMPILER_OPTIONS: '{"module":"commonjs"}'
         run: |
