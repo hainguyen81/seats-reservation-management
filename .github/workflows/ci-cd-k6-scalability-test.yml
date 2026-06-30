@@ -49,7 +49,7 @@ on:
         required: false
         type: string
       concurrent_users:
-        description: "👷 Maximum virtual users (VUs) to simulate simultaneously"
+        description: "🤖 Maximum virtual users (VUs) to simulate simultaneously"
         required: false
         type: number
         default: 50
@@ -94,7 +94,7 @@ on:
         required: false
         type: string
       concurrent_users:
-        description: "👷 Maximum virtual users (VUs) to simulate simultaneously"
+        description: "🤖 Maximum virtual users (VUs) to simulate simultaneously"
         required: false
         type: number
         default: 50
