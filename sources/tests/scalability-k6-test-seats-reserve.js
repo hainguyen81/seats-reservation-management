@@ -38,14 +38,14 @@ export default function () {
 
   // Execute authentic user credentials evaluation flow
   const loginRes = http.post(`${baseUrl}/api/auth/login`, loginPayload, params);
-  const loginChecker = `[ 🤖 ${testUser} ] Step 1 - Login Status is 200/201`;
-  const tokenChecker = `[ 🤖 ${testUser} ] Step 1 - Token Received`;
+  const loginChecker = `[ 🤖 ${username} ] Step 1 - Login Status is 200/201`;
+  const tokenChecker = `[ 🤖 ${username} ] Step 1 - Token Received`;
   const loginPassed = check(loginRes, {
     [loginChecker]: (r) => {
       const isOk = [200, 201].includes(r.status);
       if (!isOk) {
         console.log(
-          `[ 🤖 ${testUser} ${r.status} ] Login Response: ${
+          `[ 🤖 ${username} ${r.status} ] Login Response: ${
             r?.body || "Response No Data"
           }`
         );
@@ -62,7 +62,7 @@ export default function () {
   });
 
   if (!loginPassed) {
-    console.error(`❌ ${testUser} logged in FAILED!`);
+    console.error(`❌ ${username} logged in FAILED!`);
     return;
   }
 
@@ -79,7 +79,7 @@ export default function () {
   );
   const isWinnerOfHold = holdRes.status === 200 || holdRes.status === 201;
 
-  const holdChecker = `[ 🤖 ${testUser} ] Step 2 - Hold Concurrency Handled (200/201/400 or 409)`;
+  const holdChecker = `[ 🤖 ${username} ] Step 2 - Hold Concurrency Handled (200/201/400 or 409)`;
   check(holdRes, {
     [holdChecker]: (r) => [200, 201, 400, 409].includes(r.status),
   });
@@ -97,7 +97,7 @@ export default function () {
     paymentPayload,
     authParams
   );
-  const paymentChecker = `🏆 [ 🤖 ${testUser} ] Step 3 - Final Payment Successful (HTTP 200)`;
+  const paymentChecker = `🏆 [ 🤖 ${username} ] Step 3 - Final Payment Successful (HTTP 200)`;
   check(paymentRes, {
     [paymentChecker]: (r) => r.status === 200,
   });

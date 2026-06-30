@@ -47,11 +47,9 @@ export function registerBots(opts) {
   // 🏁 Sequential loop to register bots:
   // - Loop to avoid CPU down by Bcrypt
   for (let i = 1; i <= vus; i++) {
-    const botUser = `k6-bot-user-${i}@seats-reservation.com`;
-    const registerPayload = JSON.stringify({
-      username: botUser,
-      password: `k6-bot-user-${i}@123`,
-    });
+    const username = `k6-bot-user-${i}@seats-reservation.com`;
+    const password = `k6-bot-user-${i}@123`;
+    const registerPayload = JSON.stringify({ username, password });
 
     // login if not found bot will be created automatically
     const res = http.post(`${baseUrl}/api/auth/login`, registerPayload, params);
@@ -59,11 +57,11 @@ export function registerBots(opts) {
     // debug
     if (res.status === 200 || res.status === 201) {
       console.log(
-        `✅ [ ${botUser} Provisioning] Successfully materialized data for Bot User [${i}/${vus}]`
+        `✅ [ ${username} Provisioning] Successfully materialized data for Bot User [${i}/${vus}]`
       );
     } else {
       console.error(
-        `🚨 [ ${botUser} Critical Provisioning Error] Bot User [${i}] failed with status: ${res.status}`
+        `🚨 [ ${username} Critical Provisioning Error] Bot User [${i}] failed with status: ${res.status}`
       );
     }
 

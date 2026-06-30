@@ -28,9 +28,6 @@ export function setup() {
 export default function () {
   const baseUrl = options?.baseUrl || "http://localhost:3000";
   const params = getBaseParams();
-  const TARGET_SEATS = (options?.data || "A5,A6")
-    .split(",")
-    .map((s) => s.trim());
 
   const username = `k6-bot-user-${__VU}@seats-reservation.com`;
   const password = `k6-bot-user-${__VU}@123`;
@@ -38,14 +35,14 @@ export default function () {
 
   // Execute authentic user credentials evaluation flow
   const loginRes = http.post(`${baseUrl}/api/auth/login`, loginPayload, params);
-  const loginChecker = `[ 🤖 ${testUser} ] Step 1 - Login Status is 200/201`;
-  const tokenChecker = `[ 🤖 ${testUser} ] Step 1 - Token Received`;
+  const loginChecker = `[ 🤖 ${username} ] Step 1 - Login Status is 200/201`;
+  const tokenChecker = `[ 🤖 ${username} ] Step 1 - Token Received`;
   const loginPassed = check(loginRes, {
     [loginChecker]: (r) => {
       const isOk = [200, 201].includes(r.status);
       if (!isOk) {
         console.log(
-          `[ 🤖 ${testUser} ${r.status} ] Login Response: ${
+          `[ 🤖 ${username} ${r.status} ] Login Response: ${
             r?.body || "Response No Data"
           }`
         );
@@ -62,7 +59,7 @@ export default function () {
   });
 
   if (!loginPassed) {
-    console.error(`❌ ${testUser} logged in FAILED!`);
+    console.error(`❌ ${username} logged in FAILED!`);
     return;
   }
 }
