@@ -13,7 +13,7 @@
 #     This token has been used to share the prometheus dashboard public
 # -------------------------------------------------
 
-name: 📈 [ TEST ] Scalability k6 Stress Testing (Pure k6 Load Injector)
+name: 📈 [ k6 TEST ] Scalability k6 Stress Testing (Pure k6 Load Injector)
 
 on:
   # Allows manual triggering of this workflow directly from the GitHub Actions UI
