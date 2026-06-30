@@ -40,10 +40,10 @@ on:
         type: string
         default: "http://localhost:3000"
       k6_test_file:
-        description: "🤖 K6 Testing File (Ex: ./sources/tests/scalability-k6-test.js)"
+        description: "🤖 K6 Testing File (Ex: ./sources/tests/scalability-k6-test-health-check.js)"
         required: false
         type: string
-        default: "./sources/tests/scalability-k6-test.js"
+        default: "./sources/tests/scalability-k6-test-health-check.js"
       concurrent_users:
         description: "👷 Maximum virtual users (VUs) to simulate simultaneously"
         required: false
@@ -81,10 +81,10 @@ on:
         required: true
         type: string
       k6_test_file:
-        description: "🤖 K6 Testing File (Ex: ./sources/tests/scalability-k6-test.js)"
+        description: "🤖 K6 Testing File (Ex: ./sources/tests/scalability-k6-test-health-check.js)"
         required: false
         type: string
-        default: "./sources/tests/scalability-k6-test.js"
+        default: "./sources/tests/scalability-k6-test-health-check.js"
       concurrent_users:
         description: "👷 Maximum virtual users (VUs) to simulate simultaneously"
         required: false
