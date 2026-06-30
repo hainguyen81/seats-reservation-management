@@ -28,7 +28,7 @@ export function setup() {
 export default function () {
   const baseUrl = options?.baseUrl || "http://localhost:3000";
   const params = getBaseParams();
-  const TARGET_SEATS = (options?.data || "").split(",").map((s) => s.trim());
+  const TARGET_SEATS = (options?.data || "A5,A6").split(",").map((s) => s.trim());
 
   const testUser = `k6-bot-user-${__VU}@seats-reservation.com`;
   const loginPayload = JSON.stringify({

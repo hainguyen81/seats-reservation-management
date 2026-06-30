@@ -10,7 +10,7 @@ export function generateDynamicK6TestOptions() {
   const TARGET_URL = (__ENV.TARGET_URL || "http://localhost:3000")
     .trim()
     .replace(/\/$/, "");
-  const TEST_DATA = __ENV.TEST_DATA || "A5,A6";
+  const TEST_DATA = __ENV.TEST_DATA;
   const MAX_VUS = __ENV.CONCURRENT_USERS
     ? parseInt(__ENV.CONCURRENT_USERS)
     : 50;
