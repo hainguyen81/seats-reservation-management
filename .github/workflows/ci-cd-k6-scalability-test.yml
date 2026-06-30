@@ -583,7 +583,7 @@ jobs:
           CAPTURED_IMAGE_PATH: "sources/.assets/.prometheus/prometheus_dashboard.png"
         run: |
           npx ts-node -e "
-            import { captureWebpage } from './sources/src/lib/utilities/screenshot.ts';
+            import { captureWebpage } from './sources/src/lib/utilities/screenshot';
             await captureWebpage({
               url: process.env.DASHBOARD_URL!,
               output: process.env.CAPTURED_IMAGE_PATH!,
