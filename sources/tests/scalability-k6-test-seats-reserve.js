@@ -32,11 +32,9 @@ export default function () {
     .split(",")
     .map((s) => s.trim());
 
-  const testUser = `k6-bot-user-${__VU}@seats-reservation.com`;
-  const loginPayload = {
-    username: testUser,
-    password: `k6-bot-user-${__VU}@123`,
-  };
+  const username = `k6-bot-user-${__VU}@seats-reservation.com`;
+  const password = `k6-bot-user-${__VU}@123`;
+  const loginPayload = JSON.stringify({ username, password });
 
   // Execute authentic user credentials evaluation flow
   const loginRes = http.post(`${baseUrl}/api/auth/login`, loginPayload, params);
@@ -69,7 +67,6 @@ export default function () {
   }
 
   // Inject token dynamically using our helper utility mapping
-  const authParams = getBaseParams(loginRes.json("accessToken"));
   sleep(1);
 
   // Synchronized aggressive memory-lock placement blast
