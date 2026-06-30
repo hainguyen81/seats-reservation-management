@@ -581,6 +581,7 @@ jobs:
         env:
           DASHBOARD_URL: ${{ steps.grafana-prometheus-api-gateway.outputs.original_prometheus_dashboard_url }}
           CAPTURED_IMAGE_PATH: "sources/.assets/.prometheus/prometheus_dashboard.png"
+          FALLBACK_IMAGE_PATH: "sources/.assets/comming_soon-107x20.png"
           ELEMENT_SELECTOR: "div.react-grid-layout"
           # force ts-node compile export to module.exports compatible with CommonJS
           TS_NODE_COMPILER_OPTIONS: '{"module":"commonjs"}'
@@ -588,8 +589,9 @@ jobs:
           npx ts-node --skip-project -e "
             const { captureWebpage } = require('./sources/src/lib/utilities/screenshot');
             captureWebpage({
-              url: process.env.DASHBOARD_URL!,
-              output: process.env.CAPTURED_IMAGE_PATH!,
+              url: process.env.DASHBOARD_URL,
+              output: process.env.CAPTURED_IMAGE_PATH,
+              defaultFallbackImagePath: process.env.FALLBACK_IMAGE_PATH,
               element: 'div.react-grid-layout',
               timeout: 10000,
               wholePageIfNotFoundElement: true,
