@@ -4,8 +4,8 @@
 
 | Demo Version(s) | Demo Link(s) |
 | :--- | :--- |
-| **GCP SQLite** | <!-- START-gcp-seats-reservation-sqlite --> [https://seats-reservation-sqlite-2omkqplgya-uc.a.run.app](https://seats-reservation-sqlite-2omkqplgya-uc.a.run.app)<br> *(Last updated: 30/06/2026 12:56)* <!-- END-gcp-seats-reservation-sqlite --> |
-| **GCP Postgres** | <!-- START-gcp-seats-reservation-postgres --> [https://seats-reservation-postgres-2omkqplgya-uc.a.run.app](https://seats-reservation-postgres-2omkqplgya-uc.a.run.app)<br> *(Last updated: 30/06/2026 12:56)* <!-- END-gcp-seats-reservation-postgres --> |
+| **GCP SQLite** | <!-- START-gcp-seats-reservation-sqlite --> [https://seats-reservation-sqlite-2omkqplgya-uc.a.run.app](https://seats-reservation-sqlite-2omkqplgya-uc.a.run.app)<br> *(Last updated: 30/06/2026 14:33)* <!-- END-gcp-seats-reservation-sqlite --> |
+| **GCP Postgres** | <!-- START-gcp-seats-reservation-postgres --> [https://seats-reservation-postgres-2omkqplgya-uc.a.run.app](https://seats-reservation-postgres-2omkqplgya-uc.a.run.app)<br> *(Last updated: 30/06/2026 14:33)* <!-- END-gcp-seats-reservation-postgres --> |
 | &nbsp; | &nbsp; |
 | **GKE SQLite** | <!-- START-gke-seats-reservation-sqlite --> [http://35.226.149.88:80](http://35.226.149.88:80)<br> *(Last updated: 30/06/2026 13:19)* <!-- END-gke-seats-reservation-sqlite --> |
 | **GKE Postgres** | <!-- START-gke-seats-reservation-postgres --> [http://136.114.146.251:80](http://136.114.146.251:80)<br> *(Last updated: 30/06/2026 13:19)* <!-- END-gke-seats-reservation-postgres --> |
