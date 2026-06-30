@@ -269,7 +269,7 @@ jobs:
       
       # 4. Execute k6 test
       - name: 🏹 Launch Synchronized Concurrency Attack Loop
-        if: false # success()                 # if previous step is successful
+        if: success()                 # if previous step is successful
         env:
           TARGET_URL: ${{ inputs.target_url }}
           CONCURRENT_USERS: ${{ inputs.concurrent_users }}
@@ -439,8 +439,7 @@ jobs:
       
       # 6. Connect grafana to capture prometheus metrics graph for showing on README
       - name: 📡 Dynamically Provision and Fetch Grafana Public External Link
-        # if: success() && (steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'prometheus')
-        if: always()
+        if: success() && (steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'prometheus')
         env:
           PROMETHEUS_SERVICE_ACCOUNT_TOKEN: ${{ secrets.GRAFANA_PROMETHEUS_SERVICE_ACCOUNT_TOKEN }}
           PROMETHEUS_DASHBOARD_UID: ${{ secrets.GRAFANA_PROMETHEUS_METRICS_DASHBOARD_ID }}
@@ -568,7 +567,7 @@ jobs:
       
       # Optional: Due to README could not showing the embeded dashboard, so capture the dashboard as asset image to show
       - name: 💻 Install Playwright and Dependencies to capture Prometheus Dashboard
-        if: ${{ steps.grafana-prometheus-api-gateway.outputs.original_prometheus_dashboard_url != '' }}
+        if: success() && (steps.grafana-prometheus-api-gateway.outputs.original_prometheus_dashboard_url != '')
         continue-on-error: true
         run: |
           npm install playwright
@@ -576,7 +575,7 @@ jobs:
       
       # capture prometheus metrics dashboard
       - name: 📸 Capture Prometheus Dashboard Using Playwright
-        if: ${{ steps.grafana-prometheus-api-gateway.outputs.original_prometheus_dashboard_url != '' }}
+        if: success() && (steps.grafana-prometheus-api-gateway.outputs.original_prometheus_dashboard_url != '')
         continue-on-error: true
         env:
           DASHBOARD_URL: ${{ steps.grafana-prometheus-api-gateway.outputs.original_prometheus_dashboard_url }}
@@ -608,7 +607,7 @@ jobs:
 
       # Optional: Commit and push captured images to repository
       - name: 🚀 Auto Commit and Push Asserts
-        if: success() && (steps.k6-rpt-gateway.outputs.rptTypeShortValue == 'prometheus')
+        if: success() && (steps.grafana-prometheus-api-gateway.outputs.original_prometheus_dashboard_url != '')
         uses: stefanzweifel/git-auto-commit-action@v5
         continue-on-error: true     # no problem if error
         with:

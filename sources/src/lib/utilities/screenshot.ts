@@ -62,9 +62,28 @@ export async function captureWebpage(options: ScreenshotOptions): Promise<void> 
                     const pageElement = await page.locator(element || '').first();
                     if (pageElement) {
                         console.log(`- 📸 Capturing element: ${element}`);
-                        let opts = elementScreenShotOptions || { path: output };
-                        opts.path = output;
-                        await pageElement.screenshot(opts);
+                        // calculate the bounding box of element to avoid captured viewport size
+                        const boundingBox = await pageElement.boundingBox();
+                        if (boundingBox) {
+                            console.log(`--- 📐 Clipped bounds to size: ${boundingBox.width}x${boundingBox.height}`);
+                            await page.screenshot({
+                                ...pageScreenshotOptions,
+                                ...elementScreenShotOptions,
+                                path: output,
+                                clip: {
+                                    x: boundingBox.x,
+                                    y: boundingBox.y,
+                                    width: boundingBox.width,
+                                    height: boundingBox.height
+                                }
+                            });
+
+                        } else {
+                            await pageElement.screenshot({
+                                ...elementScreenShotOptions,
+                                path: output
+                            });
+                        }
                         console.log(`--- 💯 Success: Captured specific element '${element}'`);
                         elementCaptured = true;
                     } else {
@@ -78,11 +97,12 @@ export async function captureWebpage(options: ScreenshotOptions): Promise<void> 
             // 4. Fallback Mechanism: Capture the full webpage if no selector was specified or if the element target was missing
             if (!(element || '').length || (!elementCaptured && wholePageIfNotFoundElement)) {
                 console.log('- 📸 Proceeding to capture the full page as a fallback option...');
-                let opts = pageScreenshotOptions || { path: output, fullPage: true };
-                opts.path = output;
-                opts.fullPage = true;
-                await page.screenshot(opts);
-                console.log('--- 💯 Full page screenshot captured successfully!');
+                await page.screenshot({
+                    ...pageScreenshotOptions,
+                    path: output,
+                    fullPage: pageScreenshotOptions?.clip ? false : true
+                });
+                console.log('--- 💯 Page screenshot captured successfully!');
             }
 
         } catch (error: any) {
