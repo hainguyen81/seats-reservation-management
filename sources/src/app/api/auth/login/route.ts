@@ -49,12 +49,12 @@ export async function POST(req: Request) {
             user = await prisma.user.create({
                 data: {
                     username: cleanUsername,
-                    password: hashPassword(cleanPassword), // hash password
+                    password: await hashPassword(cleanPassword), // hash password
                 },
             });
         } else {
             // 💡 check by password
-            const isPasswordValid = comparePassword(cleanPassword, user.password);
+            const isPasswordValid = await comparePassword(cleanPassword, user.password);
             if (!isPasswordValid) {
                 return NextResponse.json(
                     { error: 'Invalid credentials. Please verify your password and try again.' },
