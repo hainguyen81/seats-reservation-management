@@ -239,7 +239,7 @@ export class SeatService {
             // =========================================================================
             // STEP 2: TRANSACTION VIA OCC
             // =========================================================================
-            const result = await prisma.$transaction(async (tx) => seatService.holdTransaction(tx, targetSeatIds, session));
+            const result = await prisma.$transaction(async (tx) => this.holdTransaction(tx, targetSeatIds, session));
 
             // cache invalidation
             try {

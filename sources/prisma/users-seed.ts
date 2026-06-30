@@ -10,11 +10,11 @@ export async function seedUsers(prisma: PrismaClient) {
     const user = await prisma.user.upsert({
         where: { username: testUsername },
         update: {
-            password: hashPassword(testPassword),
+            password: await hashPassword(testPassword),
         },
         create: {
             username: testUsername,
-            password: hashPassword(testPassword),
+            password: await hashPassword(testPassword),
         },
     });
 
