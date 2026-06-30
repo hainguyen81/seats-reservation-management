@@ -1,6 +1,6 @@
 import http from "k6/http";
 import { check, sleep } from "k6";
-import { k6TestOptions } from "./scalability-k6-test";
+import { k6TestOptions } from "./scalability-k6-test.js";
 
 // =========================================================================
 // 🏹 HIGH CONCURRENCY ATTACK PAYLOAD LOOP

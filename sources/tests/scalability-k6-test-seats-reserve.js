@@ -1,6 +1,6 @@
 import http from "k6/http";
 import { check, sleep } from "k6";
-import { k6TestOptions, getBaseParams } from "./scalability-k6-test";
+import { k6TestOptions, getBaseParams } from "./scalability-k6-test.js";
 
 // =========================================================================
 // 📈 INJECTING DYNAMIC LIFECYCLE CONFIGURATIONS VIA GITHUB ACTIONS env
