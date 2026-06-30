@@ -159,7 +159,7 @@ jobs:
             # 3.1. Define your deployment variables
             SERVICE_NAME=$(echo "$line" | cut -d'|' -f1)
             PUBLIC_URL=$(echo "$line" | cut -d'|' -f2)
-            TIME_STAMP="*(Last updated: $(date -u))*"
+            TIME_STAMP="*(Last updated: $(date -u +'%d/%m/%Y %H:%M'))*"
             
             # 2. Create the Markdown to update README
             PLACEHOLDER_START="<!-- START-${SERVICE_NAME} -->"
