@@ -75,7 +75,7 @@ export default function () {
   const holdRes = http.post(
     `${baseUrl}/api/reserve/hold`,
     holdPayload,
-    authParams
+    params
   );
   const isWinnerOfHold = holdRes.status === 200 || holdRes.status === 201;
 
@@ -95,7 +95,7 @@ export default function () {
   const paymentRes = http.post(
     `${baseUrl}/api/reserve`,
     paymentPayload,
-    authParams
+    params
   );
   const paymentChecker = `🏆 [ 🤖 ${username} ] Step 3 - Final Payment Successful (HTTP 200)`;
   check(paymentRes, {
