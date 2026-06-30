@@ -7,7 +7,9 @@
  * @returns {object} Pristine, fully-mapped k6 core configuration options block [3.2].
  */
 export function generateDynamicK6TestOptions() {
-  const TARGET_URL = __ENV.TARGET_URL || "http://localhost:3000";
+  const TARGET_URL = (__ENV.TARGET_URL || "http://localhost:3000")
+    .trim()
+    .replace(/\/$/, "");
   const TEST_DATA = __ENV.TEST_DATA || "A5,A6";
   const MAX_VUS = __ENV.CONCURRENT_USERS
     ? parseInt(__ENV.CONCURRENT_USERS)
