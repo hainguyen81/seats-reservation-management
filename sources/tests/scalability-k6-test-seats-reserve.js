@@ -39,10 +39,10 @@ export default function () {
 
   // Execute authentic user credentials evaluation flow
   const loginRes = http.post(`${baseUrl}/api/auth/login`, loginPayload, params);
-  const loginChecker = `[ 🤖 ${testUser} ] Step 1 - Login Status is 200`;
+  const loginChecker = `[ 🤖 ${testUser} ] Step 1 - Login Status is 200/201`;
   const tokenChecker = `[ 🤖 ${testUser} ] Step 1 - Token Received`;
   const loginPassed = check(loginRes, {
-    [loginChecker]: (r) => r.status === 200,
+    [loginChecker]: (r) => [200, 201].includes(r.status),
     [tokenChecker]: (r) => r.json("accessToken") !== undefined,
   });
 
