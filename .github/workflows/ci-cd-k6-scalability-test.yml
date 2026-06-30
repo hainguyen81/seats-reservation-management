@@ -596,12 +596,10 @@ jobs:
               timeout: 10000,
               wholePageIfNotFoundElement: true,
               elementScreenShotOptions: {
-                quality: 100,
                 timeout: 5000,
                 type: 'png'
               },
               pageScreenshotOptions: {
-                quality: 100,
                 timeout: 5000,
                 type: 'png'
               }

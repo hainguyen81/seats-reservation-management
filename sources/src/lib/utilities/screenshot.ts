@@ -59,7 +59,7 @@ export async function captureWebpage(options: ScreenshotOptions): Promise<void> 
             if ((element || '').length) {
                 console.log(`- 🔍 Searching for element: ${element}`);
                 try {
-                    const pageElement = await page.locator(element || '');
+                    const pageElement = await page.locator(element || '').first();
                     if (pageElement) {
                         console.log(`- 📸 Capturing element: ${element}`);
                         let opts = elementScreenShotOptions || { path: output };
