@@ -41,7 +41,13 @@ export default function () {
   const loginChecker = `[ 🤖 ${testUser} ] Step 1 - Login Status is 200/201`;
   const tokenChecker = `[ 🤖 ${testUser} ] Step 1 - Token Received`;
   const loginPassed = check(loginRes, {
-    [loginChecker]: (r) => [200, 201].includes(r.status),
+    [loginChecker]: (r) => {
+      const isOk = [200, 201].includes(r.status);
+      if (!isOk) {
+        console.log(`[ 🤖 ${testUser} ] Login Response: ${r?.body | 'Response No Data'}`);
+      }
+      return isOk;
+    },
     [tokenChecker]: (r) => r.json("accessToken") !== undefined,
   });
 
