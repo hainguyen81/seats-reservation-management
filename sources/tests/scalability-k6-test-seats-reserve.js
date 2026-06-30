@@ -5,7 +5,6 @@ import {
   getBaseParams,
   debugUniversalValue,
 } from "./scalability-k6-test.js";
-import { registerBots } from "./scalability-k6-test-register-bots.js";
 
 // k6 test options
 export const options = generateDynamicK6TestOptions();
@@ -14,8 +13,8 @@ export const options = generateDynamicK6TestOptions();
 // 🧪 LIFECYCLE HOOK: DEBUG CẤU HÌNH ĐÃ NUỐT BIẾN __ENV THÀNH CÔNG VÂN VỨC [3.2]
 // =========================================================================
 export function setup() {
-  // register bots for testing
-  // registerBots(options);
+  // debug test config
+  debugUniversalValue("Compiled K6 Real-time Options Struct", options);
 
   // debug target URL from __ENV
   debugUniversalValue("Target Deployed URL Endpoint", options.baseUrl);
