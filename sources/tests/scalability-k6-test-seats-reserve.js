@@ -5,6 +5,7 @@ import {
   getBaseParams,
   debugUniversalValue,
 } from "./scalability-k6-test.js";
+import { registerBots } from "./scalability-k6-test-register-bots.js";
 
 // k6 test options
 export const options = generateDynamicK6TestOptions();
@@ -13,10 +14,10 @@ export const options = generateDynamicK6TestOptions();
 // 🧪 LIFECYCLE HOOK: DEBUG CẤU HÌNH ĐÃ NUỐT BIẾN __ENV THÀNH CÔNG VÂN VỨC [3.2]
 // =========================================================================
 export function setup() {
-  // Thử ném nguyên cái options động vừa compile ra ngoài màn hình Console để rà soát
-  debugUniversalValue("Compiled Real-time K6 Options Struct", options);
-  
-  // Trích xuất thử biến URL động từ __ENV xem có thông mạng không [3.2]
+  // register bots for testing
+  registerBots(options);
+
+  // debug target URL from __ENV
   debugUniversalValue("Target Deployed URL Endpoint", options.baseUrl);
 
   return { debugPipelineTerminated: false };
@@ -39,8 +40,10 @@ export default function () {
   // Execute authentic user credentials evaluation flow
   const loginRes = http.post(`${baseUrl}/api/auth/login`, loginPayload, params);
   const loginChecker = `[ 🤖 ${testUser} ] Step 1 - Login Status is 200`;
+  const tokenChecker = `[ 🤖 ${testUser} ] Step 1 - Token Received`;
   const loginPassed = check(loginRes, {
     [loginChecker]: (r) => r.status === 200,
+    [tokenChecker]: (r) => r.json("accessToken") !== undefined,
   });
 
   if (!loginPassed) {
