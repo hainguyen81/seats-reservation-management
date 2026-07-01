@@ -79,7 +79,6 @@ metadata:
   name: redis-webdis
   namespace: gke-seats-reservation-sqlite
 spec:
-  serviceName: webdis-service
   replicas: 1
   selector:
     matchLabels:

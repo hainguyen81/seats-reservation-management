@@ -80,7 +80,6 @@ metadata:
   name: redis-webdis
   namespace: default
 spec:
-  serviceName: webdis-service
   replicas: 1
   selector:
     matchLabels:
