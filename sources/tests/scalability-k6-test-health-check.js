@@ -51,7 +51,9 @@ export default function () {
       (r) =>
         (options?.thresholdsConditions?.acceptedRespInMs || 0) <= 0 ||
         r.timings.duration <=
-          (options?.thresholdsConditions?.acceptedRespInMs || 0)
+          (options?.thresholdsConditions?.acceptedRespInMs || 0),
+      (r) => {},
+      (r) => { console.log(`💥 Response Duration: ${r?.timings?.duration || 0}ms`); }
     ),
   });
 
