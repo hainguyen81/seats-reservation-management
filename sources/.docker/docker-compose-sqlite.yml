@@ -69,7 +69,7 @@ services:
       - RAM_RATE_LIMIT_TIMEOUT_PER_REQUEST=10
       # Upstash Rate Limiter
       - UPSTASH_RATE_LIMITER=true
-      - UPSTASH_RATE_LIMIT_URL=http://localhost:7379
+      - UPSTASH_RATE_LIMIT_URL=http://webdis-gateway:7379
       - UPSTASH_RATE_LIMIT_TOKEN=
       - UPSTASH_RATE_LIMIT_REQUESTS=10
       - UPSTASH_RATE_LIMIT_TIMEOUT_PER_REQUEST=10
