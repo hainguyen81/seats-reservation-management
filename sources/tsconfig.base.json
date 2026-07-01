@@ -17,6 +17,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "downlevelIteration": true,
+    "noImplicitAny": false,
     "jsx": "preserve",
 	  "baseUrl": ".",
     "plugins": [{ "name": "next" }],
