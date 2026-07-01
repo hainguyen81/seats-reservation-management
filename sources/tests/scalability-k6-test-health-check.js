@@ -42,7 +42,7 @@ export default function () {
   const response = http.get(url, params);
 
   // Validate transactional status response maps
-  const responseDurationChecker = `packet integrity network response time < ${options?.thresholdsConditions?.acceptedRespInMs}ms`;
+  const responseDurationChecker = `packet integrity network response time > ${options?.thresholdsConditions?.acceptedRespInMs}ms`;
   const responseStatusChecker = "http transmission status is 200";;
   check(response, {
     ...httpStatusChecker(responseStatusChecker, 200),
@@ -50,7 +50,7 @@ export default function () {
       responseDurationChecker,
       (r) =>
         (options?.thresholdsConditions?.acceptedRespInMs || 0) <= 0 ||
-        r.timings.duration <=
+        r.timings.duration >
           (options?.thresholdsConditions?.acceptedRespInMs || 0)
     ),
   });

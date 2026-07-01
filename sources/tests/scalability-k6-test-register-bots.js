@@ -53,17 +53,22 @@ export function registerBots(opts) {
 
     // login if not found bot will be created automatically
     const res = http.post(`${baseUrl}/api/auth/login`, registerPayload, params);
-
-    // debug
-    if (res.status === 200 || res.status === 201) {
-      console.log(
-        `✅ [ ${username} Provisioning] Successfully materialized data for Bot User [${i}/${vus}]`
-      );
-    } else {
-      console.error(
-        `🚨 [ ${username} Critical Provisioning Error] Bot User [${i}] failed with status: ${res.status}`
-      );
-    }
+    // Validate transactional status response maps
+    const responseStatusChecker = "http transmission status is 200";
+    check(res, {
+      ...httpStatusChecker(
+        responseStatusChecker,
+        [200, 201],
+        (r) =>
+          console.log(
+            `✅ [ ${username} Provisioning] Successfully materialized data for Bot User [${i}/${vus}]`
+          ),
+        (r) =>
+          console.log(
+            `🚨 [ ${username} Critical Provisioning Error] Bot User [${i}] failed with status: ${res.status}`
+          )
+      ),
+    });
 
     // wait 10 miliseconds before continue
     sleep(0.01);

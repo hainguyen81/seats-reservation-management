@@ -146,22 +146,38 @@ export function debugUniversalValue(label, targetPayload) {
   );
 }
 
-export function httpChecker(checkerDescription, checkerCondition) {
+export function httpChecker(checkerDescription, checkerCondition, successCallback, failureCallback) {
   return {
     [checkerDescription]: (r) => {
       const isOk = checkerCondition(r);
       if (!isOk) {
         console.log(
-          `[ ❌ 🤖 ${r.status} ] Response: ${r?.body || "Response No Data"}`
+          `[ ❌ 🤖 ${r.status} ] Failed due to ${checkerDescription}. Response: ${
+            r?.body || "Response No Data"
+          }`
         );
+        failureCallback &&
+          typeof failureCallback === "function" &&
+          failureCallback(r);
+      } else {
+        successCallback &&
+          typeof successCallback === "function" &&
+          successCallback(r);
       }
       return isOk;
     },
   };
 }
 
-export function httpStatusChecker(checkerDescription, status) {
-  return httpChecker(checkerDescription, (r) =>
-    (Array.isArray(status) ? status : [status]).includes(r?.status || 0)
+export function httpStatusChecker(
+  checkerDescription,
+  status,
+  successCallback,
+  failureCallback
+) {
+  return httpChecker(
+    checkerDescription,
+    (r) => (Array.isArray(status) ? status : [status]).includes(r?.status || 0),
+    successCallback, failureCallback
   );
 }
