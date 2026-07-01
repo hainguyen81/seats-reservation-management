@@ -23,7 +23,7 @@ spec:
 # ===================================================
 # 2. REDIS CACHE
 # ===================================================
-apiVersion: apps/v1
+apiVersion: v1
 kind: StatefulSet
 metadata:
   name: redis-cache
@@ -64,7 +64,7 @@ spec:
 # ===================================================
 # 2.1 WEBDIS-REDIS
 # ===================================================
-apiVersion: apps/v1
+apiVersion: v1
 kind: Deployment
 metadata:
   name: redis-webdis
@@ -201,7 +201,7 @@ data:
 # ===================================================
 # 5. RESOURCE DEPLOYMENT: Manage Pod is running Next.js
 # ===================================================
-apiVersion: apps/v1
+apiVersion: v1
 kind: Deployment
 metadata:
   name: seats-reservation-deployment
