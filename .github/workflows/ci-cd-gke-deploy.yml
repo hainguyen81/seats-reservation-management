@@ -47,7 +47,7 @@
 # - Back to GitHub and input the secret GCP_WORKLOAD_PROVIDER value that received from previous steps
 # -------------------------------------------------
 
-name: ☸️ [ GKE Deployment ] Seats Reservation Platform CI/CD Pipeline
+name: ☸️ [ GKE Deployment ] Deploy Seats Reservation Platform GKE
 
 on:
   # auto trigger workflow

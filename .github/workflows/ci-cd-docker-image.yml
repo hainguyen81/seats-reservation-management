@@ -1,4 +1,4 @@
-name: 🐳 [ DOCKER ] Seats Reservation Platform CI/CD Pipeline
+name: 🐳 [ DOCKER ] Build Seats Reservation Docker Image
 
 on:
   # auto trigger workflow
