@@ -69,7 +69,7 @@ on:
         type: number
         default: 3000
       debug_mode:
-        description: "🐜 Debug mode"
+        description: "🐜 Verbose"
         required: false
         type: boolean
         default: false
@@ -119,7 +119,7 @@ on:
         type: number
         default: 3000
       debug_mode:
-        description: "🐜 Debug mode"
+        description: "🐜 Verbose"
         required: false
         type: boolean
         default: false
