@@ -24,9 +24,17 @@ export const middleware = withGlobalErrorHandler(async (req) => {
  * Next.js Engine only activate Middleware when request matched patterns
  */
 export const config = {
-    // Only scan `/api`
-    // Save 100% CPU for server, because it ignored static assets, css, js requests
+    // 🎯 THE EXCLUSION MATRIX: Using native Negative Lookahead Regex syntax
+    // The '(?!...)' syntax instructs the compiler: "Intercept ALL routes EXCEPT these specific boundaries"
     matcher: [
-        "/api/:path*"
+        /*
+         * Match all request paths except for the ones starting with:
+         * - _next/static (static production assets files)
+         * - _next/image (image optimization metadata pipelines)
+         * - favicon.ico (system browser icon requests)
+         * - assets (your custom project static media directory)
+         * - (/api/health).*
+         */
+        '/((?!_next/static|_next/image|favicon.ico|assets|api/health).*)',
     ],
 };
