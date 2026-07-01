@@ -1,3 +1,6 @@
+// Enforce Next.js Server to treat this controller as an uncacheable, purely runtime dynamic route
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
@@ -7,6 +10,7 @@ import { withGlobalErrorHandler } from '@/lib/apiWrapper';
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'linkz-secure-secret-key');
 
+// API
 export const POST = withGlobalErrorHandler(async () => {
     try {
         const cookieStore = await cookies();

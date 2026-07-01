@@ -1,8 +1,12 @@
+// Enforce Next.js Server to treat this controller as an uncacheable, purely runtime dynamic route
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from 'next/server';
 import { verifyAccessToken } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { withGlobalErrorHandler } from '@/lib/apiWrapper';
 
+// API
 export const GET = withGlobalErrorHandler(async () => {
     // 1. Check Access Token
     let session = await verifyAccessToken();

@@ -12,48 +12,66 @@ const buildStandalone = standalone === "true";
 console.warn(`Next.js: PRODUCTION Mode ?. ${productionMode} - MOBILE (APK/iOS) Mode?. ${mobileMode ? "true" : "false"}`);
 
 /** @type {import('next').NextConfig} */
-const nextConfig = mobileMode
-  ? {
-      // 🔥 THE CRITICAL MOBILE SWITCH: Force Next.js compiler to generate flat static files
-      output: "export",
-      // Disable image optimization because mobile runtime nodes lack a running server-side sharp engine
-      images: {
-        unoptimized: true,
-      },
-      typescript: {
-        // !!!WARNING!!!
-        // Ignore TypeScript Errors to force Next.js build export successfully
-        ignoreBuildErrors: true,
-      },
+
+// Next.js Mobile App Configuration
+const nextMobileConfig = {
+  // 🔥 THE CRITICAL MOBILE SWITCH: Force Next.js compiler to generate flat static files
+  output: "export",
+  // Disable image optimization because mobile runtime nodes lack a running server-side sharp engine
+  images: {
+    unoptimized: true,
+  },
+  typescript: {
+    // !!!WARNING!!!
+    // Ignore TypeScript Errors to force Next.js build export successfully
+    ignoreBuildErrors: true,
+  },
+  
+  // =========================================================================
+  // 🔥 THE CRITICAL IMMUNITY SHIELD: EXCLUDE BACKEND API ROUTES FROM STATIC EXPORT
+  // =========================================================================
+  // Instructs the Webpack / Turbopack compiler matrix to completely ignore the server-side
+  // api subdirectories during 'npm run build', eliminating dynamic 'cookies()' compilation faults!
+  distDir: ".next",
+  // Custom Webpack hook to exclude api files from static bundle asset tracking
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      // Prevent client-side compiler from mapping backend api controllers into the final mobile package
+      config.resolve.alias["@/app/api"] = false;
     }
-  : {
-      output: productionMode || buildStandalone ? "standalone" : undefined,
-      images: {
-        unoptimized: !productionMode,
-      },
-      typescript: {
-        ignoreBuildErrors: true,
-      },
-      eslint: {
-        ignoreDuringBuilds: true,
-      },
-      // for hot-reload
-      productionBrowserSourceMaps: !productionMode,
-      // debugging
-      logging: {
-        fetches: {
-          fullUrl: !productionMode,
-        },
-      },
-      experimental: {
-        instrumentationHook: true,
-      },
+    return config;
+  },
+};
 
-      // 💡 alias webpack because docker build for production
-      webpack: (config) => {
-        config.resolve.alias["@"] = path.resolve(__dirname, "src");
-        return config;
-      },
-    };
+// Next.js Web App Configuration
+const nextWebAppConfig = {
+  output: productionMode || buildStandalone ? "standalone" : undefined,
+  images: {
+    unoptimized: !productionMode,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  // for hot-reload
+  productionBrowserSourceMaps: !productionMode,
+  // debugging
+  logging: {
+    fetches: {
+      fullUrl: !productionMode,
+    },
+  },
+  experimental: {
+    instrumentationHook: true,
+  },
 
-export default nextConfig;
+  // 💡 alias webpack because docker build for production
+  webpack: (config) => {
+    config.resolve.alias["@"] = path.resolve(__dirname, "src");
+    return config;
+  },
+};
+
+export default nextConfig = mobileMode ? nextMobileConfig : nextWebAppConfig;
