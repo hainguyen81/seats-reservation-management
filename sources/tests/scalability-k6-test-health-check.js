@@ -50,7 +50,7 @@ export default function () {
       responseDurationChecker,
       (r) =>
         (options?.thresholdsConditions?.acceptedRespInMs || 0) <= 0 ||
-        r.timings.duration >
+        r.timings.duration <=
           (options?.thresholdsConditions?.acceptedRespInMs || 0)
     ),
   });
