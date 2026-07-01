@@ -75,6 +75,7 @@ export class UpstashRedisRateLimiterService {
                     'X-RateLimit-Limit': limit.toString(),
                     'X-RateLimit-Remaining': remaining.toString(),
                     'X-RateLimit-Reset': reset.toString(),
+                    'X-RateLimit-Address': ip,
                 }
             }
         };

@@ -73,7 +73,8 @@ export class MemoryRateLimiterService {
                     headers: {
                         'Retry-After': retryAfterSeconds.toString(),
                         'X-RateLimit-Limit': this.maxRequests.toString(),
-                        'X-RateLimit-Remaining': '0'
+                        'X-RateLimit-Remaining': '0',
+                        'X-RateLimit-Address': ip,
                     }
                 }
             };
