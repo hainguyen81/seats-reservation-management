@@ -87,7 +87,6 @@ jobs:
         run: |
           cd sources
           cp tsconfig.prod.json tsconfig.json
-          cp next.config.mobile.mjs next.config.mjs
           npm ci
           npm install @capacitor/core @capacitor/cli @capacitor/android  @capacitor/preferences --save-optional
       
