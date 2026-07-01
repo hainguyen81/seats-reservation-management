@@ -4,6 +4,7 @@
 # ===================================================
 
 ---
+
 # ===================================================
 # 1. PERSISTENT VOLUME CLAIM - SQLite Database Storage
 # ===================================================
@@ -20,7 +21,6 @@ spec:
       storage: 1Gi
 
 ---
-
 # ===================================================
 # 2. REDIS CACHE
 # ===================================================
@@ -45,6 +45,7 @@ spec:
         image: redis:7-alpine
         ports:
         - containerPort: 6379
+
 ---
 apiVersion: v1
 kind: Service
@@ -59,8 +60,71 @@ spec:
       nodePort: 32379   # Port for external host. Valid range: 30000-32767
   selector:
     app: redis-cache
----
 
+---
+# ===================================================
+# 2.1 WEBDIS-REDIS
+# ===================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-webdis
+  namespace: default
+spec:
+  serviceName: webdis-service
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis-webdis
+  template:
+    metadata:
+      labels:
+        app: redis-webdis
+    spec:
+      containers:
+      - name: webdis-gateway
+        image: anapsix/webdis
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 7379
+          name: webdis
+        env:
+        - REDIS_HOST=redis-service
+        - REDIS_PORT=6379
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - curl -f http://localhost:7379/ping
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - curl -f http://localhost:7379/ping
+          initialDelaySeconds: 5
+          periodSeconds: 5
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webdis-service
+  namespace: default
+spec:
+  type: NodePort        # Force K8s open port to external host
+  ports:
+    - protocol: TCP
+      port: 7379        # Internal communication port between container in K8s
+      targetPort: 7379  # Listen Port that Spring Boot Service is using
+      nodePort: 32479   # Port for external host. Valid range: 30000-32767
+  selector:
+    app: redis-webdis
+
+---
 # ===================================================
 # 3. RESOURCE CONFIGMAP
 # ===================================================
@@ -76,14 +140,10 @@ data:
   HOSTNAME: "0.0.0.0"
   
   DATABASE_PROVIDER: "sqlite"             # postgres/sqlite
-  REDIS_URL: "redis://redis-service:6379" # to K8s Service Redis
   AUTH_PROVIDER: "custom"                 # firebase/custom
   RESERVE_EXPIRY: "15"
   ACCESS_TOKEN_EXPIRY: "15"
   REFRESH_TOKEN_EXPIRY: "1"
-  REDIS_TTL: "3"
-  TOTAL_SEATS: "15"
-  SHOULD_SEED: "true"                     # change to "false" after the first deployment for safe
   
   NEXT_PUBLIC_AUTH_PROVIDER: "custom"
   NEXT_PUBLIC_FIREBASE_API_KEY: "YOUR_FIREBASE_API_KEY"
@@ -94,8 +154,28 @@ data:
   NEXT_PUBLIC_FIREBASE_APP_ID: "1:000000000000:web:0000000000000000000000"
   NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: "G-0000000000"
   NEXT_PUBLIC_FIREBASE_DB_URL: "https://your-project.firebaseio.com"
----
+  
+  # Redis Cache
+  REDIS_URL: "redis://redis-cache:6379" # to K8s Service Redis
+  REDIS_TTL: "3"
+  REDIS_RETIES_PER_REQUEST: "1"
+  REDIS_CONN_TIMEOUT: "2000" # in seconds
+  # LRU Rate Limiter
+  RAM_RATE_LIMITER: "false"
+  RAM_RATE_LIMIT_REQUESTS: "5"
+  RAM_RATE_LIMIT_TIMEOUT_PER_REQUEST: "10"
+  # Upstash Rate Limiter
+  UPSTASH_RATE_LIMITER: "true"
+  UPSTASH_RATE_LIMIT_URL: "http://webdis-gateway:7379"  # to K8s Service Webdis
+  UPSTASH_RATE_LIMIT_TOKEN: ""
+  UPSTASH_RATE_LIMIT_REQUESTS: "10"
+  UPSTASH_RATE_LIMIT_TIMEOUT_PER_REQUEST: "10"
+  
+  # Sample data
+  TOTAL_SEATS: "9"
+  SHOULD_SEED: "true"                     # change to "false" after the first deployment for safe
 
+---
 # ===================================================
 # 4. RESOURCE SECRET: encrypt Base64
 # ===================================================
@@ -106,8 +186,10 @@ metadata:
   namespace: default
 type: Opaque
 data:
-  # 💡 original: file:./app/prisma/data/seats-reservation.db
-  DATABASE_URL: ZmlsZTouL2FwcC9wcmlzbWEvZGF0YS9zZWF0cy1yZXNlcnZhdGlvbi5kYg==
+  # 💡 original: file:./app/prisma/data/seats-reservation.db?connection_limit=1&socket_timeout=30
+  DATABASE_URL: ZmlsZTouL2FwcC9wcmlzbWEvZGF0YS9zZWF0cy1yZXNlcnZhdGlvbi5kYj9jb25uZWN0aW9uX2xpbWl0PTEmc29ja2V0X3RpbWVvdXQ9MzA=
+  # 💡 original: file:./app/prisma/data/seats-reservation.db?connection_limit=1&socket_timeout=30
+  DIRECT_DATABASE_URL: ZmlsZTouL2FwcC9wcmlzbWEvZGF0YS9zZWF0cy1yZXNlcnZhdGlvbi5kYj9jb25uZWN0aW9uX2xpbWl0PTEmc29ja2V0X3RpbWVvdXQ9MzA=
   # original: k8s-seats-reservation-management-secret-key-2026-v1.0
   JWT_SECRET: azhzLXNlYXRzLXJlc2VydmF0aW9uLW1hbmFnZW1lbnQtc2VjcmV0LWtleS0yMDI2LXYxLjA= # encryped to base64
 ---
@@ -138,6 +220,10 @@ spec:
         image: busybox:1.28
         command: ['sh', '-c', 'until nc -z redis-service 6379; do echo waiting for redis; sleep 2; done']
       
+      - name: wait-for-webdis
+        image: busybox:1.28
+        command: ['sh', '-c', 'until nc -z webdis-service 7379; do echo waiting for webdis; sleep 2; done']
+      
       # container template
       containers:
       - name: seats-reservation-app
@@ -145,36 +231,6 @@ spec:
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 3000
-        
-        # enviroment variables
-        env:
-          - name: DATABASE_PROVIDER
-            value: "sqlite"
-          - name: AUTH_PROVIDER
-            value: "custom"
-          - name: NEXT_PUBLIC_AUTH_PROVIDER
-            value: "custom"
-          - name: DATABASE_URL
-            valueFrom:
-              secretKeyRef:
-                name: seats-reservation-secret      # Secret Variable
-                key: DATABASE_URL                   # Secret Variable Value
-          - name: DIRECT_DATABASE_URL
-            valueFrom:
-              secretKeyRef:
-                name: seats-reservation-secret      # Secret Variable
-                key: DATABASE_URL                   # Secret Variable Value
-          - name: JWT_SECRET
-            valueFrom:
-              secretKeyRef:
-                name: seats-reservation-secret      # Secret Variable
-                key: JWT_SECRET                     # Secret Variable Value
-          - name: REDIS_URL
-            value: "redis://redis-cache:6379"
-          - name: TOTAL_SEATS
-            value: "9"
-          - name: SHOULD_SEED
-            value: "true"
         
         # reference to configuration for environment variables
         envFrom:
@@ -297,6 +353,11 @@ spec:
     ports:
     - protocol: TCP
       port: 6379          # Port Redis
+  - to:
+    - podSelector: {}     # 🔓 Allow all Pod Webdis in namespace
+    ports:
+    - protocol: TCP
+      port: 7379          # Port Webdis
   - to:
     - podSelector: {}     # 🔓 Allow all Pod Next.js in namespace
     ports:
