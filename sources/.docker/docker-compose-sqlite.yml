@@ -16,6 +16,27 @@ services:
       retries: 5
     networks:
       - seats-reservation-network
+  
+  # ===================================================
+  # 1.1. Webdis Gateway to change protocol/port from HTTP/80 to REDIS CACHE for Upstash Redis Rate Limiter
+  # If not using, could register Upstash Account Free Tier for using Rate Limiter
+  # ===================================================
+  webdis-gateway:
+    image: anapsix/webdis
+    container_name: webdis-gateway
+    ports:
+      - "7379:7379"
+    depends_on:
+      redis-cache:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7379/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: always
+    networks:
+      - seats-reservation-network
 
   # ===================================================
   # 2. NEXT.JS
@@ -42,11 +63,23 @@ services:
       - JWT_SECRET=linkz-assessment-senior-lead-secret-key-2026
       - TOTAL_SEATS=15
       - SHOULD_SEED=true
+      # LRU Rate Limiter
+      - RAM_RATE_LIMITER=false
+      - RAM_RATE_LIMIT_REQUESTS=5
+      - RAM_RATE_LIMIT_TIMEOUT_PER_REQUEST=10
+      # Upstash Rate Limiter
+      - UPSTASH_RATE_LIMITER=true
+      - UPSTASH_RATE_LIMIT_URL=http://localhost:7379
+      - UPSTASH_RATE_LIMIT_TOKEN=
+      - UPSTASH_RATE_LIMIT_REQUESTS=10
+      - UPSTASH_RATE_LIMIT_TIMEOUT_PER_REQUEST=10
       # make docker console utf8
       - LANG=C.UTF-8
       - LC_ALL=C.UTF-8
     depends_on:
       redis-cache:
+        condition: service_healthy
+      webdis-gateway:
         condition: service_healthy
     networks:
       - seats-reservation-network
