@@ -21,7 +21,7 @@ on:
   workflow_dispatch:
     inputs:
       sign:
-        description: "🔧 Sign APK"
+        description: "✍️ Sign APK"
         required: false   # not require, due to be triggered standalone
         type: boolean     # receive enviroment from parent workflow under JSON string
         default: false
@@ -30,7 +30,7 @@ on:
   workflow_call:
     inputs:
       sign:
-        description: "🔧 Sign APK"
+        description: "✍️ Sign APK"
         required: false   # not require, due to be triggered standalone
         type: boolean     # receive enviroment from parent workflow under JSON string
         default: false
