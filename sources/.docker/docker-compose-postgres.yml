@@ -51,6 +51,9 @@ services:
     depends_on:
       redis-cache:
         condition: service_healthy
+    environment:
+      - REDIS_HOST=redis-cache
+      - REDIS_PORT=6379
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:7379/ping"]
       interval: 10s
