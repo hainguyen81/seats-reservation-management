@@ -8,7 +8,7 @@
 #   - KEYSTORE_APK_KEY_PWD: password of key
 # -------------------------------------------------
 
-name: 🐳 [ APK ] Build Seats Reservation Mobile App - Android APK
+name: 📲 [ APK ] Build Seats Reservation Mobile App - Android APK
 
 on:
   # auto trigger workflow
