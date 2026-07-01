@@ -68,6 +68,11 @@ on:
         required: false
         type: number
         default: 3000
+      debug_mode:
+        description: "🐜 Debug mode"
+        required: false
+        type: boolean
+        default: false
   
   # allow other workflow call into (inputs same as workflow_dispatch but required)
   workflow_call:
@@ -113,6 +118,11 @@ on:
         required: false
         type: number
         default: 3000
+      debug_mode:
+        description: "🐜 Debug mode"
+        required: false
+        type: boolean
+        default: false
 
 # permissions for GitHub Actions READ/WRITE
 permissions:
@@ -281,6 +291,7 @@ jobs:
         env:
           TARGET_URL: ${{ inputs.target_url }}
           # k6 test parameters
+          DEBUG_MODE: ${{ inputs.debug_mode }}
           TEST_DATA: ${{ inputs.k6_test_data }}
           CONCURRENT_USERS: ${{ inputs.concurrent_users }}
           TEST_DURATION: ${{ inputs.test_duration }}
@@ -314,10 +325,7 @@ jobs:
           # k6 run $K6_TEST_FILE
           # available output types: cloud (maybe charged fee), csv, experimental-opentelemetry, experimental-prometheus-rw, influxdb, json, opentelemetry, statsd, web-dashboard
           if [ "$K6_RPT_TYPE" == "console" ]; then
-            k6 run \
-              --http-debug="full" \
-              --verbose \
-              $K6_TEST_FILE
+            [ "$DEBUG_MODE" == "true" ] && k6 run $K6_TEST_FILE --http-debug="full" --verbose || k6 run $K6_TEST_FILE
           
           elif [ "$K6_RPT_TYPE" == "prometheus" ]; then
             # ⚙️ Calculate and encode AUTHORIZATION HEADER by BASIC AUTH STANDARDS
@@ -326,68 +334,36 @@ jobs:
             export K6_OTEL_HEADERS="Authorization=Basic $ENCODED_AUTH"
             export GRACEFUL_STOP=5 # keep k6 waiting for pushing metrics finished
             
-            k6 run \
-              --out opentelemetry \
-              --tag test_env=seats-reservation-k6-test \
-              --http-debug="full" \
-              --verbose \
-              $K6_TEST_FILE
+            [ "$DEBUG_MODE" == "true" ] && k6 run --out opentelemetry --tag test_env=seats-reservation-k6-test $K6_TEST_FILE --http-debug="full" --verbose \
+                || k6 run --out opentelemetry --tag test_env=seats-reservation-k6-test $K6_TEST_FILE
           
           elif [ "$K6_RPT_TYPE" == "otlp" ]; then
-            k6 run \
-              --out opentelemetry \
-              --tag test_env=seats-reservation-k6-test \
-              --http-debug="full" \
-              --verbose \
-              $K6_TEST_FILE
+            [ "$DEBUG_MODE" == "true" ] && k6 run --out opentelemetry --tag test_env=seats-reservation-k6-test $K6_TEST_FILE --http-debug="full" --verbose \
+                || k6 run --out opentelemetry --tag test_env=seats-reservation-k6-test $K6_TEST_FILE
           
           elif [ "$K6_RPT_TYPE" == "experimental-otlp" ]; then
-            k6 run \
-              --out experimental-opentelemetry \
-              --tag test_env=seats-reservation-k6-test \
-              --http-debug="full" \
-              --verbose \
-              $K6_TEST_FILE
+            [ "$DEBUG_MODE" == "true" ] && k6 run --out experimental-opentelemetry --tag test_env=seats-reservation-k6-test $K6_TEST_FILE --http-debug="full" --verbose \
+                || k6 run --out experimental-opentelemetry --tag test_env=seats-reservation-k6-test $K6_TEST_FILE
           
           elif [ "$K6_RPT_TYPE" == "influxdb" ]; then
-            k6 run \
-              --out influxdb=http://localhost:8086/k6-test-report \
-              --tag test_env=seats-reservation-k6-test \
-              --http-debug="full" \
-              --verbose \
-              $K6_TEST_FILE
+            [ "$DEBUG_MODE" == "true" ] && k6 run --out influxdb=http://localhost:8086/k6-test-report --tag test_env=seats-reservation-k6-test $K6_TEST_FILE --http-debug="full" --verbose \
+                || k6 run --out influxdb=http://localhost:8086/k6-test-report --tag test_env=seats-reservation-k6-test $K6_TEST_FILE
           
           elif [ "$K6_RPT_TYPE" == "datadog" ]; then
-            k6 run \
-              --out statsd \
-              --tag test_env=seats-reservation-k6-test \
-              --http-debug="full" \
-              --verbose \
-              $K6_TEST_FILE
+            [ "$DEBUG_MODE" == "true" ] && k6 run --out statsd --tag test_env=seats-reservation-k6-test $K6_TEST_FILE --http-debug="full" --verbose \
+                || k6 run --out statsd --tag test_env=seats-reservation-k6-test $K6_TEST_FILE
           
           elif [ "$K6_RPT_TYPE" == "json" ]; then
-            k6 run \
-              --out json=k6-test-report.json \
-              --tag test_env=seats-reservation-k6-test \
-              --http-debug="full" \
-              --verbose \
-              $K6_TEST_FILE
+            [ "$DEBUG_MODE" == "true" ] && k6 run --out json=k6-test-report.json --tag test_env=seats-reservation-k6-test $K6_TEST_FILE --http-debug="full" --verbose \
+                || k6 run --out json=k6-test-report.json --tag test_env=seats-reservation-k6-test $K6_TEST_FILE
           
           elif [ "$K6_RPT_TYPE" == "csv" ]; then
-            k6 run \
-              --out csv=k6-test-report.csv \
-              --tag test_env=seats-reservation-k6-test \
-              --http-debug="full" \
-              --verbose \
-              $K6_TEST_FILE
+            [ "$DEBUG_MODE" == "true" ] && k6 run --out csv=k6-test-report.csv --tag test_env=seats-reservation-k6-test $K6_TEST_FILE --http-debug="full" --verbose \
+                || k6 run --out csv=k6-test-report.csv --tag test_env=seats-reservation-k6-test $K6_TEST_FILE
           
           elif [ "$K6_RPT_TYPE" == "web-dashboard" ]; then
-            k6 run \
-              --out web-dashboard=report=k6-test-report.html \
-              --tag test_env=seats-reservation-k6-test \
-              --http-debug="full" \
-              --verbose \
-              $K6_TEST_FILE
+            [ "$DEBUG_MODE" == "true" ] && k6 run --out web-dashboard=report=k6-test-report.html --tag test_env=seats-reservation-k6-test $K6_TEST_FILE --http-debug="full" --verbose \
+                || k6 run --out web-dashboard=report=k6-test-report.html --tag test_env=seats-reservation-k6-test $K6_TEST_FILE
           
           else
             echo "❌ [ $K6_RPT_TYPE | $K6_RPT_TYPE_NAME ] is an UNSUPPORTED report type."
