@@ -96,6 +96,7 @@ jobs:
           NODE_ENV: 'mobile'
         run: |
           cd sources
+          cp tsconfig.prod.json tsconfig.json
           npm run build
       
       # 5. Sync Project Assets to Capacitor Android
