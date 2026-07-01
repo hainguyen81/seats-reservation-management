@@ -7,6 +7,21 @@ import { NextResponse } from 'next/server';
 // 🎛️ PIPELINE ORCHESTRATION LAYER: EXECUTE PLUGINS IN SEQUENTIAL ORDER
 // =========================================================================
 export const middleware = withGlobalErrorHandler(async (req) => {
+    // Handle preflight OPTIONS requests seamlessly for cross-origin handshakes
+    if (req.method === 'OPTIONS') {
+        const response = NextResponse.next();
+
+        // 🕵️ ANTI-CORS BOUNDARY LEAK DETECTOR:
+        // Allow standard localhost ports used natively by Capacitor WebView (Android/iOS) to fetch data
+        response.headers.set('Access-Control-Allow-Origin', 'http://localhost');
+        response.headers.set('Access-Control-Allow-Credentials', 'true'); // Require Cookie for authentication
+        response.headers.set('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+        response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+
+        // success OPTIONS method
+        return new NextResponse(null, { status: 200, headers: response.headers });
+    }
+
     // handle rate limit
     const rateLimitResult = await handleRateLimit(req);
     if (!rateLimitResult || (rateLimitResult?.status === 200)) {

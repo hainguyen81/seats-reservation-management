@@ -27,6 +27,11 @@ if /I "%iOS%"=="ios" (
 	npx cap add android
 )
 
+Rem !!!IMPORTANT!!! Due to mobile webview restrict authentication via cookie
+Rem because different domains between API and mobile app (policy: Cross-Origin Cookie Block)
+Rem so using this to break the policy
+npm install @capacitor/preferences
+
 echo.
 echo -------------------------------------------------
 echo ► 2. Initial SQLite Prisma database
