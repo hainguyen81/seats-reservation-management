@@ -241,6 +241,7 @@ spec:
         envFrom:
         - configMapRef:
             name: seats-reservation-config
+        # declare secrets after config to override if necessary
         - secretRef:
             name: seats-reservation-secret
         
