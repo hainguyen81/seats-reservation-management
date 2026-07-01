@@ -1,5 +1,8 @@
 export function register() {
-    // This hook runs exactly once when the Next.js runtime container boots up on the host pod node
+    // 🔥 PERIMETER SECURITY GATE:
+    // Only execute heavy monitoring instrumentation boot-ups if running on a live Node.js Node Server fabric
+    // This automatically blocks the script from executing and crashing during the GitHub APK static export phase!
+    // This hook runs exactly once when the Next.js runtime container boots up on the host pod node!
     if (process.env.NEXT_RUNTIME === 'nodejs') {
 
         // Catch uncaught exceptions happening anywhere inside the Node.js runtime process
