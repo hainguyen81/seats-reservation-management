@@ -56,12 +56,6 @@ jobs:
     name: 📱 Build Android Mobile App APK
     runs-on: ubuntu-latest
     # needs: [ postgres-e2e-test, sqlite-e2e-test ]     # not require test running, due to be triggered standalone
-    
-    strategy:
-      fail-fast: false
-      matrix:
-        # run parallel threads for services
-        service: ${{ fromJson(inputs.env_data) }}
         
     steps:
       # Check whether allow for running workflow
