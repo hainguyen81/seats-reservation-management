@@ -1,0 +1,190 @@
+# -------------------------------------------------
+# GUIDELINE: Need to do before deploying to GCP
+# -------------------------------------------------
+# - Require secrets:
+#   - KEYSTORE_APK: base64 of .keystore or .jks to sign APK
+#   - KEYSTORE_APK_KEYSTORE_PWD: password of keystore
+#   - KEYSTORE_APK_ALIAS: alias of keystore
+#   - KEYSTORE_APK_KEY_PWD: password of key
+# -------------------------------------------------
+
+name: 🐳 [ APK ] Build Seats Reservation Mobile App - Android APK
+
+on:
+  # auto trigger workflow
+  # push:
+  #  branches: [ "master" ] # active when merge code into master
+  # pull_request:
+  #  branches: [ "master" ]
+  
+  # manual trigger workflow
+  workflow_dispatch:
+    inputs:
+      sign:
+        description: "🔧 Sign APK"
+        required: false   # not require, due to be triggered standalone
+        type: boolean     # receive enviroment from parent workflow under JSON string
+        default: false
+  
+  # allow other workflow call into (inputs same as workflow_dispatch but required)
+  workflow_call:
+    inputs:
+      sign:
+        description: "🔧 Sign APK"
+        required: false   # not require, due to be triggered standalone
+        type: boolean     # receive enviroment from parent workflow under JSON string
+        default: false
+
+# permissions for GitHub Actions READ/WRITE
+permissions:
+  contents: write
+  packages: write
+
+# enviroment
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  LANG: 'C.UTF-8'
+  LC_ALL: 'C.UTF-8'
+
+# jobs
+jobs:
+  # ==============================================================================
+  # 🏗️ BUILD APK
+  # ==============================================================================
+  build-android:
+    name: 📱 Build Android Mobile App APK
+    runs-on: ubuntu-latest
+    # needs: [ postgres-e2e-test, sqlite-e2e-test ]     # not require test running, due to be triggered standalone
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        # run parallel threads for services
+        service: ${{ fromJson(inputs.env_data) }}
+        
+    steps:
+      # Check whether allow for running workflow
+      - name: 🛡️ Gatekeeper - Validate Administrative Access
+        env:
+          ALLOW_MOBILE_BUILD: ${{ secrets.ALLOW_MOBILE_BUILD }}
+        if: ${{ env.ALLOW_MOBILE_BUILD != 'true' }}
+        run: |
+          echo "❌ Deployment is administratively DISABLED via GitHub Secrets (secrets.ALLOW_MOBILE_BUILD is not true)."
+          echo "Terminating pipeline execution immediately to protect production infrastructure."
+          exit 1 # Require Admin Rights
+      
+      # 1. Check out source code
+      - name: ⬇️ Checkout Source Code
+        if: success()                 # if previous step is successful
+        uses: actions/checkout@v4
+      
+      # 2. Setup node to build code
+      - name: ⚙️ Setup Node.js Environment
+        if: success()                 # if previous step is successful
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.14
+          # cache: 'npm'
+      
+      # 3. Install dependencies
+      - name: 📦 Install Package Dependencies
+        if: success()                 # if previous step is successful
+        run: |
+          cd sources
+          npm ci
+          npm install @capacitor/core @capacitor/cli @capacitor/android  @capacitor/preferences --save-optional
+      
+      # 4. Build project
+      - name: 🏗️ Build Next.js Project
+        if: success()                 # if previous step is successful
+        env:
+          NODE_ENV: 'mobile'
+        run: |
+          cd sources
+          npm run build
+      
+      # 5. Sync Project Assets to Capacitor Android
+      - name: 🔄 Sync Project Assets to Capacitor Android
+        if: success()                 # if previous step is successful
+        run: |
+          npx cap sync android
+      
+      # 6. Setup JDK (require to Gradle compiler package APK)
+      - name: ⚙️ Setup Java JDK
+        if: success()                 # if previous step is successful
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      # 7. Grant permission to Gradle to build Android
+      - name: 🛡️ Grant permissions for gradlew
+        if: success()                 # if previous step is successful
+        run: chmod +x android/gradlew
+
+      # 8. Chạy lệnh đóng gói thành file APK bản Release
+      - name: 🏗️ Build Android Release APK
+        if: success()                 # if previous step is successful
+        run: |
+          cd android
+          ./gradlew assembleRelease
+      
+      # 9. Sign APK
+      - name: ✍️ Sign APK
+        if: success() && inputs.sign == 'true'        # if previous step is successful
+        uses: r0adkll/sign-android-release@v1
+        id: sign_app
+        with:
+          releaseDirectory: android/app/build/outputs/apk/release
+          signingKeyBase64: ${{ secrets.KEYSTORE_APK }}
+          alias: ${{ secrets.KEYSTORE_APK_ALIAS }}
+          singleOp: true # only sign main APK
+        env:
+          BUILD_TOOLS_VERSION: "34.0.0"
+          STORE_PASS: ${{ secrets.KEYSTORE_APK_KEYSTORE_PWD }}
+          KEY_PASS: ${{ secrets.KEYSTORE_APK_KEY_PWD }}
+
+      # 9. Upload signed APK to GitHub Artifacts for download
+      - name: Upload RELEASED APK Artifact for Download
+        if: success() && inputs.sign == 'true'        # if previous step is successful
+        uses: actions/upload-artifact@v4
+        with:
+          name: seats-reservation-app
+          path: ${{ steps.sign_app.outputs.signedReleaseFile }}
+          retention-days: 3     # auto delete file on GitHub after 3 days to save resources
+
+      # 9.1. Upload unsigned APK to GitHub Artifacts for download
+      - name: Upload APK Artifact for Download
+        if: success() && inputs.sign != 'true'        # if previous step is successful
+        uses: actions/upload-artifact@v4
+        with:
+          name: seats-reservation-unsigned-app
+          path: android/app/build/outputs/apk/release/app-release-unsigned.apk
+          retention-days: 3     # auto delete file on GitHub after 3 days to save resources
+      
+      # Clean up
+      - name: ⚙️ Force Kill Orphan Processes
+        if: always()    # Always run to clean up
+        run: |
+          # Kill background node process
+          echo "--- 1. Cleaning background host processes ---"
+          pkill -f node || true
+          
+          # Clean all container sidecar (Postgres, Redis) and Volume to avoid cache port
+          echo "--- 2. Flushing dynamic docker infrastructure ---"
+          docker ps -aq | xargs -r docker rm -f || true
+          docker volume prune -f || true
+          
+          # !!!IMPORTANT!!!
+          # Use Prisma CLI to clean all data in Database Neon/Postgres Production
+          # Help next build to have clean database, not conflicting data
+          # Only running if database local (virtual local test).
+          # If DATABASE_URL is PRODUCTION (Neon / GCP Cloud SQL), skip to protect Production
+          if [[ "$DATABASE_URL" == *"localhost"* || "$DATABASE_URL" == *"127.0.0.1"* ]]; then
+            echo "⚠️ - Detected local test database. Running safe purge..."
+            npx prisma db purge --force || npx prisma migrate reset --force || true
+          else
+            echo "🔒 - !!!ATTENTION!!! Detected PRODUCTION Database. Skipping purge to protect live data!"
+          fi
+
