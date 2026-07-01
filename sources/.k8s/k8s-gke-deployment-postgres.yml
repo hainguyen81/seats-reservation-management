@@ -439,11 +439,11 @@ metadata:
   namespace: gke-seats-reservation-postgres
 spec:
   scaleTargetRef:
-    apiVersion: v1
+    apiVersion: apps/v1
     kind: Deployment
     name: seats-reservation-deployment      # Name of Next.js deployment to scale
   minReplicas: 2
-  maxReplicas: 5
+  maxReplicas: 10
   metrics:
   - type: Resource
     resource:
