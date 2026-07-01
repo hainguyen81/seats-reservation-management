@@ -74,4 +74,5 @@ const nextWebAppConfig = {
   },
 };
 
-export default nextConfig = mobileMode ? nextMobileConfig : nextWebAppConfig;
+const nextConfig = mobileMode ? nextMobileConfig : nextWebAppConfig;
+export default nextConfig;
