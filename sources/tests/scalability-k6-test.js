@@ -152,7 +152,7 @@ export function httpChecker(checkerDescription, checkerCondition, successCallbac
       const isOk = checkerCondition(r);
       if (!isOk) {
         console.log(
-          `[ ❌ 🤖 ${r.status} ] Failed due to ${checkerDescription}. Response: ${
+          `[ ❌ 🤖 ${r.status} ] Reason: ${checkerDescription}. Response: ${
             r?.body || "Response No Data"
           }`
         );
