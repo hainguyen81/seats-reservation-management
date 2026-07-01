@@ -86,6 +86,8 @@ jobs:
         if: success()                 # if previous step is successful
         run: |
           cd sources
+          cp tsconfig.prod.json tsconfig.json
+          cp next.config.mobile.mjs next.config.mjs
           npm ci
           npm install @capacitor/core @capacitor/cli @capacitor/android  @capacitor/preferences --save-optional
       
@@ -96,7 +98,6 @@ jobs:
           NODE_ENV: 'mobile'
         run: |
           cd sources
-          cp tsconfig.prod.json tsconfig.json
           npm run build
       
       # 5. Sync Project Assets to Capacitor Android
