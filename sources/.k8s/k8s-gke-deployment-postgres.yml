@@ -169,12 +169,17 @@ data:
 #  namespace: gke-seats-reservation-postgres
 #type: Opaque
 #data:
-#  # 💡 original: postgresql://postgres:postgres_secret_pass@postgres-service:5432/seats_reservation?schema=public&pgbouncer=true
-#  DATABASE_URL: cG9zdGdyZXNxbDovL3Bvc3RncmVzOnBvc3RncmVzX3NlY3JldF9wYXNzQHBvc3RncmVzLXNlcnZpY2U6NTQzMi9zZWF0c19yZXNlcnZhdGlvbj9zY2hlbWE9cHVibGljJnBnYm91bmNlcj10cnVl
-#  # 💡 original: postgresql://postgres:postgres_secret_pass@postgres-service:5432/seats_reservation?schema=public
-#  DIRECT_DATABASE_URL: cG9zdGdyZXNxbDovL3Bvc3RncmVzOnBvc3RncmVzX3NlY3JldF9wYXNzQHBvc3RncmVzLXNlcnZpY2U6NTQzMi9zZWF0c19yZXNlcnZhdGlvbj9zY2hlbWE9cHVibGlj
+#  # 💡 original: postgresql://postgres:postgres_secret_pass@postgres-service:5432/seats_reservation?schema=public&pgbouncer=true&connection_limit=100&pool_timeout=30
+#  DATABASE_URL: cG9zdGdyZXNxbDovL3Bvc3RncmVzOnBvc3RncmVzX3NlY3JldF9wYXNzQHBvc3RncmVzLXNlcnZpY2U6NTQzMi9zZWF0c19yZXNlcnZhdGlvbj9zY2hlbWE9cHVibGljJnBnYm91bmNlcj10cnVlJmNvbm5lY3Rpb25fbGltaXQ9MTAwJnBvb2xfdGltZW91dD0zMA==
+#  # 💡 original: postgresql://postgres:postgres_secret_pass@postgres-service:5432/seats_reservation?schema=public&connection_limit=25&pool_timeout=30
+#  DIRECT_DATABASE_URL: cG9zdGdyZXNxbDovL3Bvc3RncmVzOnBvc3RncmVzX3NlY3JldF9wYXNzQHBvc3RncmVzLXNlcnZpY2U6NTQzMi9zZWF0c19yZXNlcnZhdGlvbj9zY2hlbWE9cHVibGljJmNvbm5lY3Rpb25fbGltaXQ9MjUmcG9vbF90aW1lb3V0PTMw
 #  # original: k8s-seats-reservation-management-secret-key-2026-v1.0
 #  JWT_SECRET: azhzLXNlYXRzLXJlc2VydmF0aW9uLW1hbmFnZW1lbnQtc2VjcmV0LWtleS0yMDI2LXYxLjA= # encryped to base64
+#  
+#  # for NginX Rate Limiting
+#  NGINX_LIMIT_RPS: MzA= # original: 30
+#  NGINX_LIMIT_BURST: MTA= # orginal: 10
+#  NGINX_LIMIT_DELAY: MA== # original: 0
 #
 #---
 # ===================================================
@@ -380,6 +385,23 @@ kind: Ingress
 metadata:
   name: seats-reservation-ingress-postgres
   namespace: gke-seats-reservation-postgres
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    # Ingress call health check web-app
+    nginx.ingress.kubernetes.io/healthcheck-path: "/api/health"
+    
+    # 🔥 ANTI-SPOOFING RADAR: Force Nginx to pass the real edge client IP down to backend pods
+    nginx.ingress.kubernetes.io/enable-real-ip: "true"
+    
+    # =========================================================================
+    # 🎛️ VOLUMETRIC PERIMETER PROTECTION CEILING [3.2]
+    # =========================================================================
+    # Aggressive global boundary: Allow max 30 requests per second (30r/s) per unique IP
+    nginx.ingress.kubernetes.io/limit-rps: "$(NGINX_LIMIT_RPS)"
+    # Burst cushion buffer: Allow 10 extra requests to queue up before hard dropping
+    nginx.ingress.kubernetes.io/limit-burst: "$(NGINX_LIMIT_BURST)"
+    # Fail-fast setting: Drop over-quota packets instantly with HTTP 429
+    nginx.ingress.kubernetes.io/limit-delay: "$(NGINX_LIMIT_DELAY)"
 spec:
   # Use "gce" for external HTTP(S) LB or "gce-internal" for internal HTTP(S) LB
   ingressClassName: gce

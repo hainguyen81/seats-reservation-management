@@ -192,8 +192,13 @@ data:
   DIRECT_DATABASE_URL: ZmlsZTouL2FwcC9wcmlzbWEvZGF0YS9zZWF0cy1yZXNlcnZhdGlvbi5kYj9jb25uZWN0aW9uX2xpbWl0PTEmc29ja2V0X3RpbWVvdXQ9MzA=
   # original: k8s-seats-reservation-management-secret-key-2026-v1.0
   JWT_SECRET: azhzLXNlYXRzLXJlc2VydmF0aW9uLW1hbmFnZW1lbnQtc2VjcmV0LWtleS0yMDI2LXYxLjA= # encryped to base64
----
+  
+  # for NginX Rate Limiting
+  NGINX_LIMIT_RPS: MzA= # original: 30
+  NGINX_LIMIT_BURST: MTA= # orginal: 10
+  NGINX_LIMIT_DELAY: MA== # original: 0
 
+---
 # ===================================================
 # 5. RESOURCE DEPLOYMENT: Manage Pod is running Next.js
 # ===================================================
@@ -286,8 +291,8 @@ spec:
       - name: sqlite-storage
         persistentVolumeClaim:
           claimName: sqlite-db-pvc
----
 
+---
 # ===================================================
 # 6. RESOURCE SERVICE: Internal Network (ClusterIP)
 # ===================================================
@@ -303,8 +308,8 @@ spec:
   ports:
   - port: 3000          # port open for K8s Ingress calling to
     targetPort: 3000    # real port that Next.js listening in container
----
 
+---
 # ===================================================
 # 7. APPLICATION SERVICE LOADBALANCER
 # ===================================================
@@ -321,8 +326,8 @@ spec:
   - port: 3000        # port open for K8s Ingress calling to
     targetPort: 3000  # real port that Next.js listening in container
     protocol: TCP
----
 
+---
 # ===================================================
 # 8. NETWORK POLICY - Security
 # ===================================================
@@ -370,8 +375,8 @@ spec:
       port: 53
     - protocol: UDP
       port: 53
----
 
+---
 # ===================================================
 # 9. RESOURCE INGRESS: Traffic Router from external
 # ===================================================
@@ -385,6 +390,19 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-body-size: "10m"
     # Ingress call health check web-app
     nginx.ingress.kubernetes.io/healthcheck-path: "/api/health"
+    
+    # 🔥 ANTI-SPOOFING RADAR: Force Nginx to pass the real edge client IP down to backend pods
+    nginx.ingress.kubernetes.io/enable-real-ip: "true"
+    
+    # =========================================================================
+    # 🎛️ VOLUMETRIC PERIMETER PROTECTION CEILING [3.2]
+    # =========================================================================
+    # Aggressive global boundary: Allow max 30 requests per second (30r/s) per unique IP
+    nginx.ingress.kubernetes.io/limit-rps: "$(NGINX_LIMIT_RPS)"
+    # Burst cushion buffer: Allow 10 extra requests to queue up before hard dropping
+    nginx.ingress.kubernetes.io/limit-burst: "$(NGINX_LIMIT_BURST)"
+    # Fail-fast setting: Drop over-quota packets instantly with HTTP 429
+    nginx.ingress.kubernetes.io/limit-delay: "$(NGINX_LIMIT_DELAY)"
 spec:
   ingressClassName: nginx
   rules:

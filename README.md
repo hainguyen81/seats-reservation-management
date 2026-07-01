@@ -568,7 +568,7 @@ graph TD
     %% ----------------------------------------------------
     subgraph STAGE_3 ["☸️ EDGE 3: Google Kubernetes Engine (GKE Core)"]
         C1["🧭 GKE GCE Ingress Controller <br> (networking.k8s.io/v1)"]
-        C2["🎛️ GKE BackendConfig <br> (://google.com)"]
+        C2["🎛️ GKE Rate Limiting Nginx for Pod]
         C3["⚡ GKE Network Endpoint Groups (NEG) <br> (Container-Native Direct Routing)"]
     end
 
@@ -581,15 +581,17 @@ graph TD
         subgraph NS_SQLITE ["📁 Namespace: gke-seats-reservation-sqlite"]
             D1["⚙️ ClusterIP Service <br> (Port 80)"]
             D2["⚛️ Next.js Web App Pod <br> (Port 3000)"]
-            D3["📦 Redis Cache Pod <br> (Locking Engine)"]
-            D4["💾 Local Disk Storage <br> (Prisma SQLite: dev.db)"]
+			D3["🎛️ Next.js Web App Pod - Middleware Rate Limiting]
+            D4["📦 Redis Cache Pod <br> (Locking Engine)"]
+            D5["💾 Local Disk Storage <br> (Prisma SQLite: dev.db)"]
         end
 
         %% NS 2: POSTGRES ENGINE
         subgraph NS_POSTGRES ["📁 Namespace: gke-seats-reservation-postgres"]
             E1["⚙️ ClusterIP Service <br> (Port 80)"]
             E2["⚛️ Next.js Web App Pod <br> (Port 3000)"]
-            E3["📦 Redis Cache Pod <br> (Locking Engine)"]
+			E3["🎛️ Next.js Web App Pod - Middleware Rate Limiting]
+            E4["📦 Redis Cache Pod <br> (Locking Engine)"]
             
             %% SUB-STAGE 5: WORKLOAD IDENTITY BOUNDARY
             subgraph WI_GUARD ["🔐 GKE Workload Identity Boundary"]
