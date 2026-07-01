@@ -66,6 +66,11 @@ services:
       - JWT_SECRET=linkz-assessment-senior-lead-secret-key-2026
       - TOTAL_SEATS=15
       - SHOULD_SEED=true
+      # Redis Cache
+      - REDIS_URL=redis://redis-cache:6379
+      - REDIS_TTL=3
+      - REDIS_RETIES_PER_REQUEST=1
+      - REDIS_CONN_TIMEOUT=2000 # in seconds
       # LRU Rate Limiter
       - RAM_RATE_LIMITER=false
       - RAM_RATE_LIMIT_REQUESTS=5
