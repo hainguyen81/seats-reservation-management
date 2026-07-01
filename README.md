@@ -14,7 +14,7 @@
 
 - **Captured Prometheus Dashboard**: <!-- START-prometheus-metrics-dashboard-assets --><img src="sources/.assets/.prometheus/prometheus_dashboard.png" alt="Prometheus Dashboard"><!-- END-prometheus-metrics-dashboard-assets -->
 
-- **Prometheus Dashboard**: <!-- START-prometheus-metrics-dashboard --> [https://shortisthmus2724.grafana.net/public-dashboards/2b25c4d279144bcd82aec3f6d3328f80](https://shortisthmus2724.grafana.net/public-dashboards/2b25c4d279144bcd82aec3f6d3328f80)<br> *(Last updated: 30/06/2026 15:44)* <!-- END-prometheus-metrics-dashboard -->
+- **Prometheus Dashboard**: <!-- START-prometheus-metrics-dashboard --> [https://shortisthmus2724.grafana.net/public-dashboards/2b25c4d279144bcd82aec3f6d3328f80](https://shortisthmus2724.grafana.net/public-dashboards/2b25c4d279144bcd82aec3f6d3328f80)<br> *(Last updated: 01/07/2026 08:25)* <!-- END-prometheus-metrics-dashboard -->
 
 ## ⚙️ GitHub CI/CD Main Workflow
 
