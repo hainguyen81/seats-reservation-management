@@ -30,7 +30,12 @@
 ## 📂 1. Project Source Code Structure
 ```
 ├── prisma/
-│   └── schema.prisma					# SQLite schema
+│   ├── schema.postgres.prisma						# PostgreSQL schema
+│   ├── schema.sqlite.prisma						# SQLite schema
+│   ├── schema.prisma								# Prisma main schema
+│   ├── seats-seed.ts								# Sample Seats Data Seeding
+│   ├── users-seed.ts								# Sample User Data Seeding
+│   └── seed.ts										# Sample Data Seeding Entrypoint
 ├── src/
 │   ├── app/
 │   │   ├── api/
@@ -43,15 +48,35 @@
 │   │   │   ├── reserve/release-single/route.ts		# API to release the HOLD seats (Transaction)
 │   │   │   ├── reserve/route.ts      				# API to reserve seats and payment (Transaction)
 │   │   │   └── release/route.ts      				# API to release seats if expired/cancelled
+│   │   ├── error.tsx								# Error Boundary Trapped Page UI
+│   │   ├── global-error.tsx						# Global Error Boundary Trapped Page UI
 │   │   ├── layout.tsx
-│   │   └── page.tsx                  				# Main UI (Dashboard)
+│   │   ├── page.tsx                  				# Main UI (Dashboard)
+│   │   ├── middleware.ts							# Middleware (such as check rate limit, etc.)
+│   │   └── instrumentation.ts						# Next.js Instrumentation for Global Exception Handler
 │   └── lib/
 │       ├── db.ts           						# Initial Prisma Client
 │       ├── auth.ts           						# Authentication
 │       ├── audit.ts         						# Audit Log
+│       ├── mutexLock.ts							# Handle Mutex Lock in RAM
+│       ├── seat.mutexLock.ts						# Handle Seats Mutex Lock in RAM while reserving
+│       ├── redis.ts         						# Redis Seats Cache
 │       ├── firebase-admin.ts         				# Firebase Admin Integration
 │       ├── firebase-client.ts						# Firebase Client/Analytics Integration
+│       ├── memory-rate-limiter.ts					# LRU Rate Limiter Integration
+│       ├── redis-rate-limiter.ts					# Upstash Rate Limiter Integration
+│       ├── rate-limiter.ts							# Common Rate Limiter Integration
+│       ├── service.seat.ts							# Business Seats Logic Service
+│       ├── service.user.ts							# Business User Logic Service
 │       └── hash.ts         						# Hash/Encode Library
+├── tests/
+│   ├── reset-seats.spec.ts							# Playwright Automation E2E Test to reset all seats to `AVAILABLE` status
+│   ├── seat-reservation.spec.ts					# Playwright Automation E2E Test to reserve/book seats
+│   ├── scalability-k6-test-health-check.js			# K6 Automation E2E Test to test Cloud API Health Check
+│   ├── scalability-k6-test-login.js				# K6 Automation E2E Test to test Cloud API Login
+│   ├── scalability-k6-test-register-bots.js		# K6 Automation E2E Test to call Cloud API for registering users
+│   ├── scalability-k6-test-seats-reserve.js		# K6 Automation E2E Test to call Cloud API for reserving/booking seats
+│   └── scalability-k6-test.js						# K6 Automation E2E Test Main Configuration
 ├── .env
 ├── README.md
 └── package.json
