@@ -40,8 +40,8 @@ export default function () {
 
   // Execute authentic user credentials evaluation flow
   const loginRes = http.post(`${baseUrl}/api/auth/login`, loginPayload, params);
-  const loginChecker = `[ 🤖 ${username} ] Step 1 - Login Status is 200/201`;
-  const tokenChecker = `[ 🤖 ${username} ] Step 1 - Token Received`;
+  const loginChecker = `[ 🤖 ${username} ] Step 1 - Require status 200/201`;
+  const tokenChecker = `[ 🤖 ${username} ] Step 1 - Require accessToken`;
   const loginPassed = check(loginRes, {
     ...httpStatusChecker(loginChecker, [200, 201]),
     ...httpChecker(tokenChecker, (r) => {
@@ -71,7 +71,7 @@ export default function () {
   );
   const isWinnerOfHold = holdRes.status === 200 || holdRes.status === 201;
 
-  const holdChecker = `[ 🤖 ${username} ] Step 2 - Hold Concurrency Handled (200/201/400 or 409)`;
+  const holdChecker = `[ 🤖 ${username} HOLD_SEAT ] Step 2 - Require status 200/201/400/409`;
   check(holdRes, {
     ...httpStatusChecker(holdChecker, [200, 201, 400, 409]),
   });
@@ -89,7 +89,7 @@ export default function () {
     paymentPayload,
     params
   );
-  const paymentChecker = `🏆 [ 🤖 ${username} ] Step 3 - Final Payment Successful (HTTP 200)`;
+  const paymentChecker = `🏆 [ 🤖 ${username} PAYMENT ] Step 3 - Require status 200`;
   check(paymentRes, {
     ...httpStatusChecker(paymentChecker, 200),
   });

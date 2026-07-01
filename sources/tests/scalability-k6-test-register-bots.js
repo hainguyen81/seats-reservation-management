@@ -54,7 +54,7 @@ export function registerBots(opts) {
     // login if not found bot will be created automatically
     const res = http.post(`${baseUrl}/api/auth/login`, registerPayload, params);
     // Validate transactional status response maps
-    const responseStatusChecker = "http transmission status is 200";
+    const responseStatusChecker = "Require status 200";
     check(res, {
       ...httpStatusChecker(
         responseStatusChecker,
