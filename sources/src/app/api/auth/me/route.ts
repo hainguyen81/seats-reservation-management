@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { verifyAccessToken } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { withGlobalErrorHandler } from '@/lib/apiWrapper';
 
-export async function GET() {
+export const GET = withGlobalErrorHandler(async () => {
     // 1. Check Access Token
     let session = await verifyAccessToken();
     let isRefreshed = false;
@@ -60,4 +61,4 @@ export async function GET() {
         expiresAt: earliestExpiry,
         tokenRotated: isRefreshed
     });
-}
+}, false);

@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { logEvent } from 'firebase/analytics';
 import { firebaseClientAnalytics } from '../lib/firebase-client';
+import { nativeClient } from '@/lib/api-client';
 
 const REFRESH_TOKEN_EXPIRY = process.env.REFRESH_TOKEN_EXPIRY;
 const REFRESH_TOKEN_EXPIRY_DAYS = REFRESH_TOKEN_EXPIRY ? parseInt(REFRESH_TOKEN_EXPIRY, 10) : 1;
@@ -20,14 +21,12 @@ export default function Home() {
     const [isPaying, setIsPaying] = useState<boolean>(false);
 
     // 1. check Cookie for valid session and request seats
-    const fetchSeats = () => {
-        fetch('/api/seats')
-            .then((res) => res.json())
-            .then((data) => setSeats(data.data));
-    };
+    const fetchSeats = () => nativeClient.get('/api/seats')
+        .then((res) => res.json())
+        .then((data) => setSeats(data.data));
     useEffect(() => {
         // check session status
-        fetch('/api/auth/me')
+        nativeClient.get('/api/auth/me')
             .then((res) => (res.ok ? res.json() : null))
             .then((data) => {
                 if (data && data.loggedIn) {
@@ -46,7 +45,7 @@ export default function Home() {
                 }
                 setLoading(false);
             }).catch(() => setLoading(false));
-        
+
         // auto refresh seats matrix
         const interval = setInterval(fetchSeats, 5000);
         return () => clearInterval(interval);
@@ -73,7 +72,7 @@ export default function Home() {
             setMessage('⚠️ Reservation window expired! Your selected seats have been released.');
 
             // call API Backend to release expired seats
-            fetch('/api/release', { method: 'POST' }).then(() => fetchSeats());
+            nativeClient.post('/api/release').then(() => fetchSeats());
             return;
         }
 
@@ -153,31 +152,28 @@ export default function Home() {
                 // ===================================================
                 setMessage('⏳ Releasing seat reservation...');
                 unselectSeat(targetSeatString);
-                await fetch('/api/reserve/release-single', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ seatId: targetSeatString }),
-                }).then(res => {
+                await nativeClient.postIncludeCredentials(
+                    '/api/reserve/release-single', { seatId: targetSeatString }
+                ).then(res => {
                     if (!res?.ok) {
                         throw new Error(`Request Error - Status: ${res.status}`);
                     }
                     return res.json();
 
                 }).then(data => {
-                    fetch('/api/seats')
-                    .then(res => {
-                        if (!res?.ok) {
-                            throw new Error(`Request Error - Status: ${res.status}`);
-                        }
-                        return res.json();
-                    }).then(seats => {
-                        setSeats(seats.data);
-                        handleProcessSeat(data, targetSeatString, false);
+                    nativeClient.get('/api/seats')
+                        .then(res => {
+                            if (!res?.ok) {
+                                throw new Error(`Request Error - Status: ${res.status}`);
+                            }
+                            return res.json();
+                        }).then(seats => {
+                            setSeats(seats.data);
+                            handleProcessSeat(data, targetSeatString, false);
 
-                    }).catch(error2 => {
-                        handleProcessSeat({ error: error2 }, targetSeatString, false);
-                    });
+                        }).catch(error2 => {
+                            handleProcessSeat({ error: error2 }, targetSeatString, false);
+                        });
 
                 }).catch(error => {
                     handleProcessSeat({ error: error }, targetSeatString, false);
@@ -189,19 +185,16 @@ export default function Home() {
                 // ===================================================
                 setMessage('⏳ Holding seat...');
                 selectSeat(targetSeatString);
-                await fetch('/api/reserve/hold', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ seatId: targetSeatString }),
-                }).then(res => {
+                await nativeClient.postIncludeCredentials(
+                    '/api/reserve/hold', { seatId: targetSeatString }
+                ).then(res => {
                     if (!res?.ok) {
                         throw new Error(`Request Error - Status: ${res.status}`);
                     }
                     return res.json();
 
                 }).then(data => {
-                    fetch('/api/seats')
+                    nativeClient.get('/api/seats')
                         .then(res => {
                             if (!res?.ok) {
                                 throw new Error(`Request Error - Status: ${res.status}`);
@@ -214,7 +207,7 @@ export default function Home() {
                         }).catch(error2 => {
                             handleProcessSeat({ error: error2 }, targetSeatString, true);
                         });
-                
+
                 }).catch(error => {
                     handleProcessSeat({ error: error }, targetSeatString, true);
                 });
@@ -252,11 +245,7 @@ export default function Home() {
 
                 // check/store firebase login information to DB
                 const idToken = await userCredential.user.getIdToken();
-                const res = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ idToken, username: userCredential.user.email }),
-                });
+                const res = await nativeClient.post('/api/auth/login', { idToken, username: userCredential.user.email });
 
                 // login success
                 const data = await res.json();
@@ -272,11 +261,7 @@ export default function Home() {
         }
 
         // custom
-        const res = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password }),
-        });
+        const res = await nativeClient.post('/api/auth/login', { username, password });
         const data = await res.json();
         if (data.success) {
             setUser(data.user);
@@ -289,11 +274,7 @@ export default function Home() {
 
     // handle logout
     const handleLogout = async () => {
-        const res = await fetch('/api/auth/logout', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include'
-        });
+        const res = await nativeClient.postIncludeCredentials('/api/auth/logout');
         if (res.ok) {
             setUser(null);
             setSelectedSeats([]);
@@ -308,12 +289,8 @@ export default function Home() {
         setMessage('⏳ Processing payment transaction...');
 
         try {
-            const res = await fetch('/api/reserve', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ seatIds: selectedSeats, mockPaymentSuccess: mockSuccess }),
-            });
+            const res = await nativeClient.postIncludeCredentials(
+                '/api/reserve', { seatIds: selectedSeats, mockPaymentSuccess: mockSuccess });
 
             const data = await res.json();
             if (data.success) {
@@ -505,7 +482,7 @@ export default function Home() {
                             return (
                                 <button
                                     key={seat.id}
-                                    disabled={isTargetProcessing  || (seat.status !== 'AVAILABLE' && !isSelected)}
+                                    disabled={isTargetProcessing || (seat.status !== 'AVAILABLE' && !isSelected)}
                                     onClick={() => handleSeatClick(seat.id)}
                                     style={{
                                         padding: '12px 8px',
@@ -574,7 +551,7 @@ export default function Home() {
                     <p style={{ margin: '0 0 16px 0', fontSize: '0.875rem', color: '#9ca3af' }}>
                         Reserved Seats: <strong style={{ color: '#10b981', fontSize: '1.125rem' }}>
                             {selectedSeats.map(id => seats.find(s => s.id === id)?.number).join(', ')}
-                        </strong><br/>
+                        </strong><br />
                         Processing Seats: <strong style={{ color: '#10b981', fontSize: '1.125rem' }}>
                             {Array.from(processingSeats).map(id => seats.find(s => s.id === id)?.number).join(', ')}
                         </strong>

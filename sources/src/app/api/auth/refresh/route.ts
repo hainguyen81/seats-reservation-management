@@ -3,10 +3,11 @@ import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { prisma } from '@/lib/db';
 import { generateAccessToken, ACCESS_COOKIE, REFRESH_COOKIE } from '@/lib/auth';
+import { withGlobalErrorHandler } from '@/lib/apiWrapper';
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'linkz-secure-secret-key');
 
-export async function POST() {
+export const POST = withGlobalErrorHandler(async () => {
     try {
         const cookieStore = await cookies();
         const refreshToken = cookieStore.get(REFRESH_COOKIE)?.value;
@@ -42,4 +43,4 @@ export async function POST() {
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
-}
+}, false);

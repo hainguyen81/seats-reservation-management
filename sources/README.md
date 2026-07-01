@@ -55,6 +55,7 @@
 │   │   ├── middleware.ts							# Middleware (such as check rate limit, etc.)
 │   │   └── instrumentation.ts						# Next.js Instrumentation for Global Exception Handler
 │   └── lib/
+│       ├── api-client.ts           				# Helper to build API path for calling API from UI when building mobile app
 │       ├── db.ts           						# Initial Prisma Client
 │       ├── auth.ts           						# Authentication
 │       ├── audit.ts         						# Audit Log
