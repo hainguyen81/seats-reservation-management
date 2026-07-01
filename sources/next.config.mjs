@@ -9,7 +9,7 @@ const standalone = process.env.BUILD_STANDALONE;;
 const productionMode = nodeEnv === "production";
 const mobileMode = ["mobile", "android", "ios"].includes(nodeEnv);
 const buildStandalone = standalone === "true";
-console.warn(`Next.js: PRODUCTION Mode ?. ${productionMode} - MOBILE (APK/iOS) Mode?. ${mobileMode}`);
+console.warn(`Next.js: PRODUCTION Mode ?. ${productionMode} - MOBILE (APK/iOS) Mode?. ${mobileMode ? "true" : "false"}`);
 
 /** @type {import('next').NextConfig} */
 const nextConfig = mobileMode
