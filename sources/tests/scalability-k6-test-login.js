@@ -4,6 +4,8 @@ import {
   generateDynamicK6TestOptions,
   getBaseParams,
   debugUniversalValue,
+  httpChecker,
+  httpStatusChecker,
 } from "./scalability-k6-test.js";
 
 // k6 test options
@@ -38,24 +40,14 @@ export default function () {
   const loginChecker = `[ 🤖 ${username} ] Step 1 - Login Status is 200/201`;
   const tokenChecker = `[ 🤖 ${username} ] Step 1 - Token Received`;
   const loginPassed = check(loginRes, {
-    [loginChecker]: (r) => {
-      const isOk = [200, 201].includes(r.status);
-      if (!isOk) {
-        console.log(
-          `[ 🤖 ${username} ${r.status} ] Login Response: ${
-            r?.body || "Response No Data"
-          }`
-        );
-      }
-      return isOk;
-    },
-    [tokenChecker]: (r) => {
+    ...httpStatusChecker(loginChecker, [200, 201]),
+    ...httpChecker(tokenChecker, (r) => {
       const cookiesReceived = r.cookies;
       return (
         (cookiesReceived["seat-access-token"] || "").length ||
         (cookiesReceived["seat-firebase-session"] || "").length
       );
-    },
+    }),
   });
 
   if (!loginPassed) {

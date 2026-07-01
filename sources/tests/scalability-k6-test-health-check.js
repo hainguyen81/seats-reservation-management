@@ -3,6 +3,8 @@ import { check, sleep } from "k6";
 import {
   generateDynamicK6TestOptions,
   debugUniversalValue,
+  httpChecker,
+  httpStatusChecker,
 } from "./scalability-k6-test.js";
 
 // k6 test options
@@ -40,10 +42,17 @@ export default function () {
   const response = http.get(url, params);
 
   // Validate transactional status response maps
+  const responseDurationChecker = `packet integrity network response time < ${options?.thresholdsConditions?.acceptedRespInMs}ms`;
+  const responseStatusChecker = "http transmission status is 200";;
   check(response, {
-    "http transmission status is 200": (r) => r.status === 200,
-    "packet integrity network response time < 500ms": (r) =>
-      r.timings.duration < 500,
+    ...httpStatusChecker(responseStatusChecker, 200),
+    ...httpChecker(
+      responseDurationChecker,
+      (r) =>
+        (options?.thresholdsConditions?.acceptedRespInMs || 0) <= 0 ||
+        r.timings.duration <=
+          (options?.thresholdsConditions?.acceptedRespInMs || 0)
+    ),
   });
 
   // ⏳ Controlled Throttling Buffer:

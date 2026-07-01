@@ -3,8 +3,8 @@
 // =========================================================================
 /**
  * Dynamically computes and compiles the k6 execution profile options matrix
- * directly from the environment RAM variables inside the active execution process thread [3.2].
- * @returns {object} Pristine, fully-mapped k6 core configuration options block [3.2].
+ * directly from the environment RAM variables inside the active execution process thread.
+ * @returns {object} Pristine, fully-mapped k6 core configuration options block.
  */
 export function generateDynamicK6TestOptions() {
   const TARGET_URL = (__ENV.TARGET_URL || "http://localhost:3000")
@@ -38,16 +38,16 @@ export function generateDynamicK6TestOptions() {
   // 🛡️ QUALITY GATES & METRIC THRESHOLDS (FAIL-FAST POLICY)
   const FAIL_FAST_POLICY = {};
 
-  // Gài động điều kiện gác cổng lỗi nếu cấu hình phần trăm lớn hơn 0 [3.2]
+  // accepted failed requests rate in percentage
   if (K6_ACCEPTED_FAILED_REQ_PERCENTAGE >= 0) {
     FAIL_FAST_POLICY["http_req_failed"] = [
       `rate<=${K6_ACCEPTED_FAILED_REQ_PERCENTAGE / 100}`,
     ];
   } else {
-    FAIL_FAST_POLICY["http_req_failed"] = ["rate<=0.01"]; // Mặc định 1%
+    FAIL_FAST_POLICY["http_req_failed"] = ["rate<=0.01"]; // default 1%
   }
 
-  // Gài động điều kiện độ trễ p95 sử dụng toán tử nhỏ hơn hoặc bằng (<=) chuẩn chỉ của bạn [3.2]
+  // accepted latency p95, require response in duration milliseconds
   if (K6_ACCEPTED_RESPONSE_IN_MS > 0) {
     FAIL_FAST_POLICY["http_req_duration"] = [
       `p(95)<=${K6_ACCEPTED_RESPONSE_IN_MS}`,
@@ -58,6 +58,14 @@ export function generateDynamicK6TestOptions() {
   return {
     baseUrl: TARGET_URL,
     data: TEST_DATA,
+    thresholdsConditions: {
+      acceptedReqPercentage:
+        K6_ACCEPTED_FAILED_REQ_PERCENTAGE > 0
+          ? K6_ACCEPTED_FAILED_REQ_PERCENTAGE
+          : 1,
+      acceptedRespInMs:
+        K6_ACCEPTED_RESPONSE_IN_MS > 0 ? K6_ACCEPTED_RESPONSE_IN_MS : 0,
+    },
 
     // 🤖 Test bots
     vus: MAX_VUS,
@@ -135,5 +143,25 @@ export function debugUniversalValue(label, targetPayload) {
   }
   console.log(
     `=========================================================================`
+  );
+}
+
+export function httpChecker(checkerDescription, checkerCondition) {
+  return {
+    [checkerDescription]: (r) => {
+      const isOk = checkerCondition(r);
+      if (!isOk) {
+        console.log(
+          `[ ❌ 🤖 ${r.status} ] Response: ${r?.body || "Response No Data"}`
+        );
+      }
+      return isOk;
+    },
+  };
+}
+
+export function httpStatusChecker(checkerDescription, status) {
+  return httpChecker(checkerDescription, (r) =>
+    (Array.isArray(status) ? status : [status]).includes(r?.status || 0)
   );
 }

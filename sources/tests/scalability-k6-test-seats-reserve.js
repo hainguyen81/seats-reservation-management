@@ -4,6 +4,8 @@ import {
   generateDynamicK6TestOptions,
   getBaseParams,
   debugUniversalValue,
+  httpChecker,
+  httpStatusChecker,
 } from "./scalability-k6-test.js";
 
 // k6 test options
@@ -41,24 +43,14 @@ export default function () {
   const loginChecker = `[ 🤖 ${username} ] Step 1 - Login Status is 200/201`;
   const tokenChecker = `[ 🤖 ${username} ] Step 1 - Token Received`;
   const loginPassed = check(loginRes, {
-    [loginChecker]: (r) => {
-      const isOk = [200, 201].includes(r.status);
-      if (!isOk) {
-        console.log(
-          `[ 🤖 ${username} ${r.status} ] AUTH Response: ${
-            r?.body || "Response No Data"
-          }`
-        );
-      }
-      return isOk;
-    },
-    [tokenChecker]: (r) => {
+    ...httpStatusChecker(loginChecker, [200, 201]),
+    ...httpChecker(tokenChecker, (r) => {
       const cookiesReceived = r.cookies;
       return (
         (cookiesReceived["seat-access-token"] || "").length ||
         (cookiesReceived["seat-firebase-session"] || "").length
       );
-    },
+    }),
   });
 
   if (!loginPassed) {
@@ -81,17 +73,7 @@ export default function () {
 
   const holdChecker = `[ 🤖 ${username} ] Step 2 - Hold Concurrency Handled (200/201/400 or 409)`;
   check(holdRes, {
-    [holdChecker]: (r) => {
-      const isOk = [200, 201, 400, 409].includes(r.status);
-      if (!isOk) {
-        console.log(
-          `[ 🤖 ${username} ${r.status} ] HOLD Response: ${
-            r?.body || "Response No Data"
-          }`
-        );
-      }
-      return isOk;
-    },
+    ...httpStatusChecker(holdChecker, [200, 201, 400, 409]),
   });
 
   if (!isWinnerOfHold) return; // Evict losers gracefully to prevent database inflation
@@ -109,16 +91,6 @@ export default function () {
   );
   const paymentChecker = `🏆 [ 🤖 ${username} ] Step 3 - Final Payment Successful (HTTP 200)`;
   check(paymentRes, {
-    [paymentChecker]: (r) => {
-      const isOk = r.status === 200;
-      if (!isOk) {
-        console.log(
-          `[ 🤖 ${username} ${r.status} ] PAYMENT Response: ${
-            r?.body || "Response No Data"
-          }`
-        );
-      }
-      return isOk;
-    },
+    ...httpStatusChecker(paymentChecker, 200),
   });
 }

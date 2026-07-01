@@ -1,5 +1,5 @@
 import http from "k6/http";
-import { check, sleep } from "k6";
+import { sleep } from "k6";
 import { getBaseParams } from "./scalability-k6-test";
 
 // =========================================================================
