@@ -1,0 +1,6 @@
+{
+  "appId": "org.nlh4j.seats.reservation",
+  "appName": "Seats Reservation",
+  "webDir": "out",
+  "bundledWebRuntime": false
+}
