@@ -21,8 +21,10 @@ export class UpstashRedisRateLimiterService {
         this.windowSeconds = timeoutPerRequestInMs || 10;
 
         // Validate existence of critical serverless connection tokens before initializing context
-        if (!(url || '').length || !(token || '').length) {
+        if (!(url || '').length) {
             throw new Error("🚨 [RedisRateLimiterService] Critical configuration missing: URL or TOKEN is not defined!");
+        } else if (!(token || '').length) {
+            console.log(`⚠️ [RedisRateLimiterService] Using URL ${url} but TOKEN is not defined!`);
         }
 
         // Initialize stateful remote serverless REST client connection agent
