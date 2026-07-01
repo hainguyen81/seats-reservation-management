@@ -97,8 +97,10 @@ spec:
         - containerPort: 7379
           name: webdis
         env:
-        - REDIS_HOST=redis-service
-        - REDIS_PORT=6379
+        - name: REDIS_HOST
+          value: redis-service
+        - name: REDIS_PORT
+          value: 6379
         livenessProbe:
           exec:
             command:
