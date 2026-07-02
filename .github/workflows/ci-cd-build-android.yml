@@ -116,7 +116,7 @@ jobs:
       # 7. Grant permission to Gradle to build Android
       - name: 🛡️ Grant permissions for gradlew
         if: success()                 # if previous step is successful
-        run: chmod +x android/gradlew
+        run: chmod +x sources/android/gradlew
 
       # 8. Chạy lệnh đóng gói thành file APK bản Release
       - name: 🏗️ Build Android Release APK
