@@ -218,7 +218,7 @@ jobs:
           echo "| 📦 **Seats Reservation APK** | \`${{ github.sha }}\` | [📥 Download APK]($ARTIFACT_URL) |" >> $GITHUB_STEP_SUMMARY
           
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "💡 *Note: Artifact preservation lifecycle is locked to exactly 7 days before automated eviction.*" >> $GITHUB_STEP_SUMMARY
+          echo "💡 *Note: Artifact preservation lifecycle is locked to exactly 3 days before automated eviction.*" >> $GITHUB_STEP_SUMMARY
           echo "========================================================================="
           echo "✅ Job Summary visualization completed successfully!"
           echo "========================================================================="

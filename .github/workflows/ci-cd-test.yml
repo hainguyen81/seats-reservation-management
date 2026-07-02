@@ -142,7 +142,7 @@ jobs:
       with:
         name: playwright-report
         path: playwright-report/
-        retention-days: 7
+        retention-days: 3
  
   # ===================================================
   # 📋 REGRESSION & AUTOMATION E2E TEST (CI) - SQLITE
@@ -232,5 +232,5 @@ jobs:
       with:
         name: playwright-report
         path: playwright-report/
-        retention-days: 7
+        retention-days: 3
 
