@@ -142,6 +142,10 @@ jobs:
       - name: 🍏 Install CocoaPods Internal Dependencies
         if: success()                 # if previous step is successful
         working-directory: ./sources/ios/App
+        # pod install require UTF-8
+        env:
+          LANG: "en_US.UTF-8"
+          LC_ALL: "en_US.UTF-8"
         run: |
           cd ../..
           
@@ -159,8 +163,6 @@ jobs:
           
           # run pod install to download network native driver of Apple
           cd ios/App
-          # pod install require UTF-8
-          export LANG=en_US.UTF-8 export LANGUAGE=en_US.UTF-8 export LC_ALL=en_US.UTF-8
           pod install
       
       # =========================================================================
