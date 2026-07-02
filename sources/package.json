@@ -16,7 +16,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "build_start": "npm run build && npm run start"
+    "build_start": "npm run build && npm run start",
+    "mobile_build": "NODE_ENV=mobile && npm run build"
   },
   "dependencies": {
     "@prisma/client": "^5.10.0",

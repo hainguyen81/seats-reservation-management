@@ -97,7 +97,7 @@ jobs:
           NODE_ENV: 'mobile'
         run: |
           cd sources
-          npm run build
+          npm run mobile_build
       
       # 5. Sync Project Assets to Capacitor Android
       - name: 🔄 Sync Project Assets to Capacitor Android
