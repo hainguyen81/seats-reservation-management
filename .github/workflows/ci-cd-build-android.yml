@@ -324,21 +324,4 @@ jobs:
           # Kill background node process
           echo "--- 1. Cleaning background host processes ---"
           pkill -f node || true
-          
-          # Clean all container sidecar (Postgres, Redis) and Volume to avoid cache port
-          echo "--- 2. Flushing dynamic docker infrastructure ---"
-          docker ps -aq | xargs -r docker rm -f || true
-          docker volume prune -f || true
-          
-          # !!!IMPORTANT!!!
-          # Use Prisma CLI to clean all data in Database Neon/Postgres Production
-          # Help next build to have clean database, not conflicting data
-          # Only running if database local (virtual local test).
-          # If DATABASE_URL is PRODUCTION (Neon / GCP Cloud SQL), skip to protect Production
-          if [[ "$DATABASE_URL" == *"localhost"* || "$DATABASE_URL" == *"127.0.0.1"* ]]; then
-            echo "⚠️ - Detected local test database. Running safe purge..."
-            npx prisma db purge --force || npx prisma migrate reset --force || true
-          else
-            echo "🔒 - !!!ATTENTION!!! Detected PRODUCTION Database. Skipping purge to protect live data!"
-          fi
 
