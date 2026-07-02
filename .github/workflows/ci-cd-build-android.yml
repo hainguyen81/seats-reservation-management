@@ -80,7 +80,7 @@ jobs:
       # 1. Check out source code
       - name: ⬇️ Checkout Source Code
         if: success()                 # if previous step is successful
-        uses: actions/checkout@v4with:
+        uses: actions/checkout@v4
         path: '.' # force checkout code to root context (not ./sources, to next steps working context in ./sources)
       
       # 2. Setup node to build code
