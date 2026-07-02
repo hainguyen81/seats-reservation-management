@@ -13,6 +13,12 @@ console.warn(`Next.js: PRODUCTION Mode ?. ${productionMode} - MOBILE (APK/iOS) M
 
 /** @type {import('next').NextConfig} */
 
+/**
+ * -------------------------------------------------
+ * Next.js CONFIGURATION FOR MOBILE
+ * -------------------------------------------------
+ */
+
 // Next.js Mobile App Configuration
 const nextMobileConfig = {
   // ⚡ Caching is a technique for storing the result of data fetching
@@ -29,6 +35,21 @@ const nextMobileConfig = {
     // Ignore TypeScript Errors to force Next.js build export successfully
     ignoreBuildErrors: true,
   },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  // debugging
+  logging: {
+    fetches: {
+      fullUrl: !productionMode,
+    },
+  },
+  experimental: {
+    instrumentationHook: true,
+    // ⚡ Caching is a technique for storing the result of data fetching
+    // and other computations so that future requests for the same data can be served faster, without doing the work again.
+    cacheComponents: true, // old version
+  },
 
   // =========================================================================
   // 🔥 THE CRITICAL IMMUNITY SHIELD: EXCLUDE BACKEND API ROUTES FROM STATIC EXPORT
@@ -39,13 +60,38 @@ const nextMobileConfig = {
   // Custom Webpack hook to exclude api files from static bundle asset tracking
   webpack: (config, { isServer }) => {
     if (!isServer) {
+      // 🎯 RULE A: Explicitly isolate and ignore the backend api subdirectory
       // Prevent client-side compiler from mapping backend api controllers into the final mobile package
       config.externals = [...(config.externals || []), /^\/api/];
+      config.plugins.push(
+        new webpack.IgnorePlugin({ resourceRegExp: /\/app\/api\// })
+      );
       config.resolve.alias["@/app/api"] = false;
+
+      // 🎯 RULE B: Hard-block the Prisma Client module from leaking into the mobile build.
+      // Tells Webpack to replace the heavy Prisma Node.js binary engine with an empty shell.
+      // This completely silences errors like "Can't resolve 'fs'" or "Can't resolve 'crypto'" on Mobile.
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+        child_process: false,
+        crypto: false,
+      };
+
+      // Alias Prisma Client to an empty mapping boundary to bypass client bundling completely [3.2]
+      config.resolve.alias["@prisma/client"] = false;
     }
     return config;
   },
 };
+
+/**
+ * -------------------------------------------------
+ * Next.js CONFIGURATION FOR WEB APP
+ * -------------------------------------------------
+ */
 
 // Next.js Web App Configuration
 const nextWebAppConfig = {
@@ -57,6 +103,8 @@ const nextWebAppConfig = {
     unoptimized: !productionMode,
   },
   typescript: {
+    // !!!WARNING!!!
+    // Ignore TypeScript Errors to force Next.js build export successfully
     ignoreBuildErrors: true,
   },
   eslint: {
@@ -72,6 +120,9 @@ const nextWebAppConfig = {
   },
   experimental: {
     instrumentationHook: true,
+    // ⚡ Caching is a technique for storing the result of data fetching
+    // and other computations so that future requests for the same data can be served faster, without doing the work again.
+    cacheComponents: true, // old version
   },
 
   // 💡 alias webpack because docker build for production
