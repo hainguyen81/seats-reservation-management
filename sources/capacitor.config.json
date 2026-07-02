@@ -7,5 +7,13 @@
     "CapacitorHttp": {
       "enabled": true
     }
+  },
+  "server": {
+    "androidScheme": "https",
+    "hostname": "://mock-domain.com",
+    "allowNavigation": [
+      "://mock-domain.com"
+    ],
+    "cleartext": true
   }
 }

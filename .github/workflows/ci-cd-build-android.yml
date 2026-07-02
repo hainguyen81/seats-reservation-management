@@ -129,7 +129,8 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version: '21'
+          cache: 'gradle'
 
       # 7. Grant permission to Gradle to build Android
       - name: 🛡️ Grant permissions for gradlew
@@ -194,7 +195,7 @@ jobs:
           RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           ARTIFACT_URL="$RUN_URL#artifacts"
           
-          # 🏁 Print out to GITHUB_STEP_SUMMARY [4.2]
+          # 🏁 Print out to GITHUB_STEP_SUMMARY
           echo "### 📱 NEXT.JS APP MOBILE PRODUCTION BUILDS OUT" >> $GITHUB_STEP_SUMMARY
           echo "🚀 **Android APK Compilation Suite Finished Processing Successfully!**" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -202,7 +203,7 @@ jobs:
           echo "| :--- | :--- | :--- |" >> $GITHUB_STEP_SUMMARY
           
           # Use Markdown [Text](URL) for downloading APK
-          echo "| 📦 **Seats Reservation APK** | \`${{ github.sha }}\` | [📥 Download Release APK]($ARTIFACT_URL) |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📦 **Seats Reservation APK** | \`${{ github.sha }}\` | [📥 Download APK]($ARTIFACT_URL) |" >> $GITHUB_STEP_SUMMARY
           
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "💡 *Note: Artifact preservation lifecycle is locked to exactly 7 days before automated eviction.*" >> $GITHUB_STEP_SUMMARY
