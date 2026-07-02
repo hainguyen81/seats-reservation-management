@@ -142,7 +142,7 @@ jobs:
           npm run mobile_build
       
       # =========================================================================
-      # 5. ASSETS SYNCHRONIZATION & DYNAMIC CONFIG INJECTION
+      # 5. 💉 ASSETS SYNCHRONIZATION & DYNAMIC CONFIG INJECTION
       # =========================================================================
       - name: 💉 Inject Dynamic Server Domains & Sync Capacitor Assets
         if: success()                 # if previous step is successful
@@ -177,7 +177,7 @@ jobs:
           # sync app information such as appId, appName to Manifest
           npx cap copy android
       
-      # 6. Setup JDK (require to Gradle compiler package APK)
+      # 6. ⚙️ Setup JDK (require to Gradle compiler package APK)
       - name: ⚙️ Setup Java JDK
         if: success()                 # if previous step is successful
         uses: actions/setup-java@v4
@@ -186,12 +186,12 @@ jobs:
           java-version: '21'
           cache: 'gradle'
 
-      # 7. Grant permission to Gradle to build Android
+      # 7. 🛡️ Grant permission to Gradle to build Android
       - name: 🛡️ Grant permissions for gradlew
         if: success()                 # if previous step is successful
         run: chmod +x android/gradlew
 
-      # 8. Chạy lệnh đóng gói thành file APK bản Release
+      # 8. 🏗️ Build Android Release APK
       - name: 🏗️ Build Android Release APK
         if: success()                 # if previous step is successful
         working-directory: ./sources/android
@@ -226,7 +226,7 @@ jobs:
           echo "🎉 SUCCESS: Unsigned APK artifact materialized inside outputs/apk/release!"
           echo "========================================================================="
       
-      # 9. Decode secrets keystore base64 to keystore file for singing
+      # 9. 🔓 Decode secrets keystore base64 to keystore file for singing
       - name: 🔓 Decode Android Keystore Cryptographic Vector safely
         if: success() && inputs.sign == true        # if previous step is successful
         working-directory: ./sources/android
@@ -244,7 +244,7 @@ jobs:
           echo "🛡️ Certified pristine binary keystore file materialized cleanly on RAM disk."
       
       # =========================================================================
-      # 10. BASH SIGNING PIPELINE: ZIPALIGN + APKSIGNER (ZERO THIRD-PARTY RISK)
+      # 10. 📝 BASH SIGNING PIPELINE: ZIPALIGN + APKSIGNER (ZERO THIRD-PARTY RISK)
       # =========================================================================
       - name: 📝 Run Native Linux Bash Zipalign & Apksigner Toolchains
         if: success() && inputs.sign == true
@@ -273,7 +273,7 @@ jobs:
           echo "🏆 SUCCESS: Pristine certified production seats-reservation-signed.apk generated!"
           echo "========================================================================="
 
-      # 11. Upload signed APK to GitHub Artifacts for download
+      # 11. 📤 Upload signed APK to GitHub Artifacts for download
       - name: 📤 Upload RELEASED APK Artifact for Download
         if: success() && inputs.sign == true        # if previous step is successful
         uses: actions/upload-artifact@v4
@@ -282,7 +282,7 @@ jobs:
           path: sources/android/app/build/outputs/apk/release/seats-reservation-signed.apk
           retention-days: 3     # auto delete file on GitHub after 3 days to save resources
 
-      # 11.1. Upload unsigned APK to GitHub Artifacts for download
+      # 11.1. 📤 Upload unsigned APK to GitHub Artifacts for download
       - name: 📤 Upload APK Artifact for Download
         if: success() && inputs.sign != true        # if previous step is successful
         uses: actions/upload-artifact@v4
@@ -291,7 +291,7 @@ jobs:
           path: sources/android/app/build/outputs/apk/release/seats-resevation-unsigned-app.apk
           retention-days: 3     # auto delete file on GitHub after 3 days to save resources
       
-      # 12. Inject Absolute APK Download Link Into Job Run Summary
+      # 12. 📊 Inject Absolute APK Download Link Into Job Run Summary
       - name: 📊 Inject Absolute APK Download Link Into Job Run Summary
         if: success()                               # if previous step is successful
         run: |

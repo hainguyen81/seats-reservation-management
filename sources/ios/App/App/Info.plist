@@ -62,9 +62,16 @@
     <key>NSHumanReadableCopyright</key>
     <string>Copyright © 2026 Seats Reservation Platform. All Rights Reserved Under org.nlh4j License.</string>
 
-    <!-- 🎨 4. TÊN APP HIỂN THỊ TRÊN MÀN HÌNH ĐIỆN THOẠI IPHONE -->
-    <!-- Mặc định Capacitor tự bốc từ file json, nhưng gài cứng ở đây sẽ mang quyền lực tối cao [3.2] -->
+    <!-- 🎨 4. AppName IPHONE -->
     <key>CFBundleDisplayName</key>
     <string>Seats Reservation Management</string>
+	
+	<!-- Network Permissions -->
+	<key>NSAppTransportSecurity</key>
+    <dict>
+        <!-- 🔥 Allow App pass through SSL filter, access every IP Server -->
+        <key>NSAllowsArbitraryLoads</key>
+        <true/>
+    </dict>
 </dict>
 </plist>

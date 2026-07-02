@@ -112,7 +112,7 @@ jobs:
           npm run mobile_build
       
       # =========================================================================
-      # 5. ASSETS SYNCHRONIZATION & DYNAMIC CONFIG INJECTION [3.2]
+      # 5. ASSETS SYNCHRONIZATION & DYNAMIC CONFIG INJECTION
       # =========================================================================
       - name: 💉 Inject Dynamic Server Domains & Sync Capacitor Assets
         if: success()                 # if previous step is successful
@@ -210,7 +210,7 @@ jobs:
           path: sources/ios/App/build/App.xcarchive
           retention-days: 3
       
-      # 12. Inject Absolute IPA Download Link Into Job Run Summary
+      # 12. 📊 Inject Absolute IPA Download Link Into Job Run Summary
       - name: 📊 Inject Absolute XCArchive Download Link Into Job Run Summary
         if: success()                               # if previous step is successful
         run: |
