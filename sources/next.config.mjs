@@ -1,5 +1,6 @@
 import path from "path";
 import { fileURLToPath } from "url";
+import webpack from "next/dist/compiled/webpack/webpack-lib.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,9 +22,6 @@ console.warn(`Next.js: PRODUCTION Mode ?. ${productionMode} - MOBILE (APK/iOS) M
 
 // Next.js Mobile App Configuration
 const nextMobileConfig = {
-  // ⚡ Caching is a technique for storing the result of data fetching
-  // and other computations so that future requests for the same data can be served faster, without doing the work again.
-  cacheComponents: true,
   // 🔥 THE CRITICAL MOBILE SWITCH: Force Next.js compiler to generate flat static files
   output: "export",
   // Disable image optimization because mobile runtime nodes lack a running server-side sharp engine
@@ -46,9 +44,6 @@ const nextMobileConfig = {
   },
   experimental: {
     instrumentationHook: true,
-    // ⚡ Caching is a technique for storing the result of data fetching
-    // and other computations so that future requests for the same data can be served faster, without doing the work again.
-    cacheComponents: true, // old version
   },
 
   // =========================================================================
@@ -96,9 +91,6 @@ const nextMobileConfig = {
 // Next.js Web App Configuration
 const nextWebAppConfig = {
   output: productionMode || buildStandalone ? "standalone" : undefined,
-  // ⚡ Caching is a technique for storing the result of data fetching
-  // and other computations so that future requests for the same data can be served faster, without doing the work again.
-  cacheComponents: true,
   images: {
     unoptimized: !productionMode,
   },
@@ -120,9 +112,6 @@ const nextWebAppConfig = {
   },
   experimental: {
     instrumentationHook: true,
-    // ⚡ Caching is a technique for storing the result of data fetching
-    // and other computations so that future requests for the same data can be served faster, without doing the work again.
-    cacheComponents: true, // old version
   },
 
   // 💡 alias webpack because docker build for production

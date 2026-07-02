@@ -93,8 +93,6 @@ jobs:
       # 4. Build project
       - name: 🏗️ Build Next.js Project
         if: success()                 # if previous step is successful
-        env:
-          NODE_ENV: 'mobile'
         run: |
           cd sources
           npm run mobile_build
