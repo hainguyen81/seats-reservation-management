@@ -101,6 +101,7 @@ jobs:
       - name: 🔄 Sync Project Assets to Capacitor Android
         if: success()                 # if previous step is successful
         run: |
+          cd sources
           npx cap sync android
       
       # 6. Setup JDK (require to Gradle compiler package APK)
@@ -120,7 +121,7 @@ jobs:
       - name: 🏗️ Build Android Release APK
         if: success()                 # if previous step is successful
         run: |
-          cd android
+          cd sources/android
           ./gradlew assembleRelease
       
       # 9. Sign APK
