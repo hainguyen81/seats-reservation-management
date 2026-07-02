@@ -129,8 +129,14 @@ jobs:
       # 8. Chạy lệnh đóng gói thành file APK bản Release
       - name: 🏗️ Build Android Release APK
         if: success()                 # if previous step is successful
+        working-directory: ./sources/android
         run: |
-          ./android/gradlew assembleRelease
+          echo "📌 Current Gradle execution workspace: $(pwd)"
+          ./gradlew assembleRelease --stacktrace --debug
+          
+          echo "========================================================================="
+          echo "🎉 SUCCESS: Unsigned APK artifact materialized inside outputs/apk/release!"
+          echo "========================================================================="
       
       # 9. Sign APK
       - name: ✍️ Sign APK
