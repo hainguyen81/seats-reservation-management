@@ -159,7 +159,7 @@ jobs:
           npx cap copy ios
           
           # run pod install to download network native driver of Apple
-          cd sources/ios/App
+          cd ios/App
           pod install
       
       # =========================================================================
