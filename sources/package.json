@@ -18,12 +18,15 @@
     "lint": "next lint",
     "build_start": "npm run build && npm run start",
     "mobile_build": "cross-env NODE_ENV=mobile npm run build",
-    "mobile_android_generate_assets": "capacitor-assets generate --android --assetPath=.assets/.mobile --android-project=./android"
+    "mobile_generate_android": "npx -p @capacitor/core -p @capacitor/cli -p @capacitor/android cap add android",
+    "mobile_android_generate_assets": "capacitor-assets generate --android --assetPath=.assets/.mobile"
   },
   "assets": {
     "android": {
       "icon": {
-        "sources": [ ".assets/.mobile/logo_1024x1024.png" ]
+        "sources": [
+          ".assets/.mobile/logo_1024x1024.png"
+        ]
       }
     }
   },
@@ -48,7 +51,10 @@
     "tsx": "^4.22.4"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.4.1",
     "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.4.1",
+    "@capacitor/core": "^8.4.1",
     "@playwright/test": "^1.61.0",
     "@types/node": "^20.19.43",
     "@types/react": "18.3.31",
