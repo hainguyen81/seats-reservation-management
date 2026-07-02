@@ -54,8 +54,17 @@ Open `sources/capacitor.config.json` and declare your explicit reverse domain au
     "overScrollMode": "never",
     "loggingBehavior": "none"
   },
+  "ios": {
+    "backgroundColor": "#ffffff",
+    "runtimeConfiguration": true,
+    "scrollExecutionMode": "never",
+    "screenOrientation": "portrait",
+    "handleApplicationNotifications": false,
+    "loggingBehavior": "none"
+  },
   "server": {
     "androidScheme": "https",
+    "iosScheme": "seatsapp", 
     "hostname": "://mock-domain.com",
     "allowNavigation": [
       "://mock-domain.com"
@@ -352,8 +361,17 @@ Open `sources/capacitor.config.json` and declare your explicit reverse domain au
     "overScrollMode": "never",
     "loggingBehavior": "none"
   },
+  "ios": {
+    "backgroundColor": "#ffffff",
+    "runtimeConfiguration": true,
+    "scrollExecutionMode": "never",
+    "screenOrientation": "portrait",
+    "handleApplicationNotifications": false,
+    "loggingBehavior": "none"
+  },
   "server": {
     "androidScheme": "https",
+    "iosScheme": "seatsapp", 
     "hostname": "://mock-domain.com",
     "allowNavigation": [
       "://mock-domain.com"
@@ -467,7 +485,7 @@ run: |
   # Assets must be generated before on local, because it requires Graphics Hardware to generate.
   # Not running in pipeline, it will make CI/CD crash.
   # -------------------------------------------------
-  echo "🍏 Syncing structural android assets pipeline..."
+  echo "🍏 Syncing structural ios assets pipeline..."
   npx cap sync ios
   
   # sync app information such as appId, appName to Manifest

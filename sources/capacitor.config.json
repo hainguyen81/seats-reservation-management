@@ -1,6 +1,6 @@
 {
   "appId": "org.nlh4j.seats.reservation",
-  "appName": "Seats Reservation by nlh4j",
+  "appName": "Seats Reservation Management",
   "webDir": "out",
   "bundledWebRuntime": false,
   "plugins": {
