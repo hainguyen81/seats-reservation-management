@@ -4,42 +4,38 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
 
+// could not use enviroment variable. `@/` ~ `./src`
+const messagesPath = '@/app/messages/*.json';
+
 // =========================================================================
 // 🎛️ AUTOMATED DICTIONARY LOADER ENGINE (WEBPACK REQUIRE.CONTEXT)
 // =========================================================================
 // Create an atomic reactive registry map to host the loaded language JSON objects
 const dynamicMessagesMap: Record<string, any> = {};
-const messagesPath = '../../app/messages';
 
-export const availableLocales: string[] = [];
-
-try {
-    /**
-     * Leverage Webpack dynamic context parsing capability to scan the directory.
-     * Arguments: (directory_path, look_in_subdirectories, regex_file_filter)
-     * This looks up exactly 4 levels to target the root '/messages' folder cleanly!
-     */
-    const contextLocator = require.context(messagesPath, false, /\.json$/);
-
-    // Loop across every discovered JSON file footprint array inside the target folder
-    contextLocator.keys().forEach((filePathKey: string) => {
-        // Extract the raw file name token to use as the locale key (e.g., './vi.json' -> 'vi')
-        const localeKey = filePathKey.replace(/^\.\//, '').replace(/\.json$/, '');
-
-        // Resolve and extract the raw nested JSON dictionary structure from memory cache
-        const fileModulePayload = contextLocator(filePathKey);
-
-        // Assign mapped keys dynamically: dynamicMessagesMap['vi'] = viJsonData
-        dynamicMessagesMap[localeKey] = fileModulePayload.default || fileModulePayload;
-
-        // 🎯 Push parsed token identifier dynamically into our shared global array [3.2]
-        availableLocales.push(localeKey);
-
-        console.log(`📡 [i18n Automation] Successfully compiled locale token from file structure: [ ${localeKey} ]`);
-    });
-} catch (webpackCompilationError: any) {
-    console.error('🚨 [i18n Engine Crash] Failed to auto-load dictionaries:', webpackCompilationError.message);
+// 🔥 THE ARCHITECTURE FEATURE FLAG SWITCH:
+// We evaluate the current phase environment variable inside the configuration stack [3.2, 4.2].
+// If we are NOT in production static compile build phase, boot up the automated scanning radar [3.2]!
+if (process.env.NEXT_PHASE !== 'phase-production-build') {
+    try {
+        const contextLocator = (require as any).context(messagesPath, false, /\.json$/);
+        contextLocator.keys().forEach((filePathKey: string) => {
+            const localeTokenKey = filePathKey.replace(/^\.\//, '').replace(/\.json$/, '');
+            if ((localeTokenKey || '').length) {
+                const fileModulePayload = contextLocator(filePathKey);
+                dynamicMessagesMap[localeTokenKey] = fileModulePayload.default || fileModulePayload;
+                console.log(`📡 [i18n Automation] Successfully compiled locale token from file structure: [ ${localeTokenKey} ]`);
+            } else {
+                console.log(`🚨 [i18n Automation] Invalid locale token file: [ ${filePathKey} ]`);
+            }
+        });
+    } catch (webpackError: any) {
+        console.error('🚨 [i18n Engine Crash] Failed to auto-load dictionaries:', webpackError.message);
+    }
 }
+
+// Dynamic array automatically tracking folder file configurations time-stamps [3.2]
+export const availableLocales: string[] = Object.keys(dynamicMessagesMap);
 
 // =========================================================================
 // 🌍 STATEFUL LANGUAGE CONTEXT MANAGEMENT LAYERS

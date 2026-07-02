@@ -18,7 +18,14 @@
     "lint": "next lint",
     "build_start": "npm run build && npm run start",
     "mobile_build": "cross-env NODE_ENV=mobile npm run build",
-    "mobile_android_generate_assets": "capacitor-assets generate --android --icon=.assets/.mobile/logo_1024x1024.png"
+    "mobile_android_generate_assets": "capacitor-assets generate --android --assetPath=.assets/.mobile --android-project=./android"
+  },
+  "assets": {
+    "android": {
+      "icon": {
+        "sources": [ ".assets/.mobile/logo_1024x1024.png" ]
+      }
+    }
   },
   "dependencies": {
     "@capacitor-community/sqlite": "^8.1.0",
