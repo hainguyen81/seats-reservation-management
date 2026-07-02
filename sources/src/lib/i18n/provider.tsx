@@ -5,7 +5,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
 
 // require defined locales from Next.js build enviroment
-const envMobileMode = process.env.NEXT_MOBILE_ENV || false;
+const envMobileMode = process.env.NEXT_PUBLIC_MOBILE_ENV || false;
 const envAvailableLocales: string = process.env.NEXT_PUBLIC_AVAILABLE_LOCALES || '';
 const envI18nBundles: string = process.env.NEXT_PUBLIC_I18N_BUNDLE_MATRIX || '';
 const messagesPath = (process.env.NEXT_PUBLIC_I18N_MESSAGES_PATH || '@messages').trim();
