@@ -1,4 +1,3 @@
-// sources/middleware.ts
 import { withGlobalErrorHandler } from '@/lib/apiWrapper';
 import { handleRateLimit } from '@/lib/rate-limiter';
 import { NextResponse } from 'next/server';

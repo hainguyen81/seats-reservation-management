@@ -26,7 +26,7 @@ const nextMobileConfig = {
     // Ignore TypeScript Errors to force Next.js build export successfully
     ignoreBuildErrors: true,
   },
-  
+
   // =========================================================================
   // 🔥 THE CRITICAL IMMUNITY SHIELD: EXCLUDE BACKEND API ROUTES FROM STATIC EXPORT
   // =========================================================================
@@ -37,6 +37,7 @@ const nextMobileConfig = {
   webpack: (config, { isServer }) => {
     if (!isServer) {
       // Prevent client-side compiler from mapping backend api controllers into the final mobile package
+      config.externals = [...(config.externals || []), /^\/api/];
       config.resolve.alias["@/app/api"] = false;
     }
     return config;

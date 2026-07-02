@@ -1,6 +1,3 @@
-// Enforce Next.js Server to treat this controller as an uncacheable, purely runtime dynamic route
-export const dynamic = 'force-dynamic';
-
 import { NextResponse } from 'next/server';
 import { verifyAccessToken } from '@/lib/auth';
 import { prisma } from '@/lib/db';

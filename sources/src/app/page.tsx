@@ -1,4 +1,5 @@
 'use client';
+
 import React, { useState, useEffect, useRef } from 'react';
 import { logEvent } from 'firebase/analytics';
 import { firebaseClientAnalytics } from '../lib/firebase-client';
