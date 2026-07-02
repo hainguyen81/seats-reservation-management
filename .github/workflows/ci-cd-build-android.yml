@@ -168,17 +168,26 @@ jobs:
           DEBUG_MODE: ${{ inputs.debug_mode }}
         run: |
           echo "📌 Current Gradle execution workspace: $(pwd)"
-          if [ "$DEBUG_MODE" == "true" && "$ASSEMBLE_DEBUG_BUILD" == "true" ]; then
+          
+          # 🔥 FIXED BASH SYNTAX: Standardized bracket spacing logic and flags
+          if [ "$DEBUG_MODE" == "true" ] && [ "$ASSEMBLE_DEBUG_BUILD" == "true" ]; then
             ./gradlew assembleDebug --stacktrace --debug
           
-          elfi [ "$DEBUG_MODE" != "true" && "$ASSEMBLE_DEBUG_BUILD" == "true" ]; then
+          elif [ "$DEBUG_MODE" != "true" ] && [ "$ASSEMBLE_DEBUG_BUILD" == "true" ]; then
             ./gradlew assembleDebug
           
-          elif [ "$DEBUG_MODE" == "true" && "$ASSEMBLE_DEBUG_BUILD" != "true" ]; then
+          elif [ "$DEBUG_MODE" == "true" ] && [ "$ASSEMBLE_DEBUG_BUILD" != "true" ]; then
             ./gradlew assembleRelease --stacktrace --debug
           
           else
             ./gradlew assembleRelease
+          fi
+          
+          # change the built APK file name
+          if [ -f "app/build/outputs/apk/debug/app-debug.apk" ]; then
+            mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/release/seats-reservation-unsigned-app.apk
+          else
+            mv app/build/outputs/apk/release/app-release-unsigned.apk app/build/outputs/apk/release/seats-reservation-unsigned-app.apk
           fi
           
           echo "========================================================================="
@@ -188,6 +197,7 @@ jobs:
       # 9. Decode secrets keystore base64 to keystore file for singing
       - name: 🔓 Decode Android Keystore Cryptographic Vector safely
         if: success() && inputs.sign == true        # if previous step is successful
+        working-directory: ./sources/android
         env:
           KEYSTORE_APK: ${{ secrets.KEYSTORE_APK }}
         run: |
@@ -198,44 +208,55 @@ jobs:
           # -------------------------------------------------
           echo "🔓 Reconstituting binary keystore artifact structure safely..."
           # decode secrets sign key base64 to file for signing APK
-          echo -n "$KEYSTORE_APK" | base64 --decode > android/app/build/outputs/apk/release/seats-reservation-signing-key.jks
+          echo -n "$KEYSTORE_APK" | base64 --decode > app/build/outputs/apk/release/seats-reservation-signing-key.jks
           echo "🛡️ Certified pristine binary keystore file materialized cleanly on RAM disk."
       
-      # 10. Sign APK
-      - name: ✍️ Run Automated Zipalign & Sign Production APK
-        if: success() && inputs.sign == true        # if previous step is successful
-        uses: ILovePacking/sign-android-release@v2
-        id: sign_app
-        with:
-          unsignedApkFile: sources/android/app/build/outputs/apk/release/app-release-unsigned.apk
-          appSigningKeyBase64: ${{ secrets.KEYSTORE_APK }}
-          keyAlias: ${{ secrets.KEYSTORE_APK_ALIAS }}
-          keyStorePassword: ${{ secrets.KEYSTORE_APK_KEYSTORE_PWD }}
-          keyPassword: ${{ secrets.KEYSTORE_APK_KEY_PWD }}
-          # -------------------------------------------------
-          # !!!IMPORTANT!!! Due to bug in decode base64 of `ILovePacking/sign-android-release@v2`.
-          # So require decode manually to remove `\n` characters.
-          # and specify keystore file manually here
-          # -------------------------------------------------
-          useExistingKeystore: true
-          keystoreFile: sources/android/app/build/outputs/apk/release/seats-reservation-signing-key.jks
+      # =========================================================================
+      # 10. BASH SIGNING PIPELINE: ZIPALIGN + APKSIGNER (ZERO THIRD-PARTY RISK) [3.2]
+      # =========================================================================
+      - name: 📝 Run Native Linux Bash Zipalign & Apksigner Toolchains
+        if: success() && inputs.sign == true
+        working-directory: ./sources/android
+        run: |
+          # Step A: Navigate deep into the local binary output depository [3.2]
+          cd app/build/outputs/apk/release
+          
+          # 🔥 FIND BUILD TOOLS VERSION: use * to find build-tools path
+          SDK_TOOLS_PATH=$(ls -d $ANDROID_HOME/build-tools/* | tail -n 1)
+          echo "🎯 Automated SDK Radar Detected Build-Tools Path at: $SDK_TOOLS_PATH"
+          
+          echo "⏰ Executing hardware byte alignment alignment for Android 11+ compatibility..."
+          $SDK_TOOLS_PATH/zipalign -v 4 seats-reservation-unsigned-app.apk seats-reservation-aligned-app.apk
+          
+          echo "📌 Injecting cryptographic signatures directly into the application core layout..."
+          $SDK_TOOLS_PATH/apksigner sign \
+            --ks seats-reservation-signing-key.jks \
+            --ks-key-alias "${{ secrets.KEYSTORE_APK_ALIAS }}" \
+            --ks-pass pass:"${{ secrets.KEYSTORE_APK_KEYSTORE_PWD }}" \
+            --key-pass pass:"${{ secrets.KEYSTORE_APK_KEY_PWD }}" \
+            --out seats-reservation-signed.apk \
+            seats-reservation-aligned-app.apk
+            
+          echo "========================================================================="
+          echo "🏆 SUCCESS: Pristine certified production seats-reservation-signed.apk generated!"
+          echo "========================================================================="
 
       # 11. Upload signed APK to GitHub Artifacts for download
-      - name: Upload RELEASED APK Artifact for Download
+      - name: 📤 Upload RELEASED APK Artifact for Download
         if: success() && inputs.sign == true        # if previous step is successful
         uses: actions/upload-artifact@v4
         with:
           name: seats-reservation-app
-          path: ${{ steps.sign_app.outputs.signedApkFile }}
+          path: sources/android/app/build/outputs/apk/release/seats-reservation-signed.apk
           retention-days: 3     # auto delete file on GitHub after 3 days to save resources
 
       # 11.1. Upload unsigned APK to GitHub Artifacts for download
-      - name: Upload APK Artifact for Download
+      - name: 📤 Upload APK Artifact for Download
         if: success() && inputs.sign != true        # if previous step is successful
         uses: actions/upload-artifact@v4
         with:
           name: seats-reservation-unsigned-app
-          path: sources/android/app/build/outputs/apk/release/app-release-unsigned.apk
+          path: sources/android/app/build/outputs/apk/release/seats-resevation-unsigned-app.apk
           retention-days: 3     # auto delete file on GitHub after 3 days to save resources
       
       # 12. Inject Absolute APK Download Link Into Job Run Summary
