@@ -40,7 +40,8 @@ export class SeatService {
             // if Circuit Breaker is OPEN (Redis broken), or seat was kept in RAM
             if (breakerError.message === errorConflictCode) {
                 return {
-                    error: `[ MUTEX ${lockStatus} ] Race condition '${errorConflictCode}' mitigated: This seat is concurrently locked at host memory tier. Cause: ${breakerError?.cause}`,
+                    error: `⚠️ Seat is concurrently locked at host memory tier.`,
+                    code: errorConflictCode,
                     stack: breakerError,
                     status: 409
                 };
@@ -55,7 +56,8 @@ export class SeatService {
             if (!tryToLockedResult) {
                 // still be error
                 return {
-                    error: `[ MUTEX ${lockStatus} ] Fallback Gatekeeper: Seat is locked on this runtime container pod node. Present Mutex: ${tryToLockedResult?.present}`,
+                    error: `⚠️ Seat is concurrently locked at host memory tier.`,
+                    code: errorConflictCode,
                     stack: breakerError,
                     status: 409
                 };
@@ -88,7 +90,8 @@ export class SeatService {
             // if Circuit Breaker is OPEN (Redis broken), or seat was kept in RAM
             if (breakerError.message === errorConflictCode) {
                 return {
-                    error: `[ MUTEX | OLD: ${oldLockStatus} | NEW: ${newLockStatus} ] Invalid operation '${errorConflictCode}': This seat cannot be reserved because it is not currently held by any session. Cause: ${breakerError?.cause}`,
+                    error: `⚠️ Seat cannot be reserved because it is not currently held by any session.`,
+                    code: errorConflictCode,
                     stack: breakerError,
                     status: 400
                 };
@@ -103,7 +106,8 @@ export class SeatService {
             if (!lockedResult) {
                 // still be error
                 return {
-                    error: `[ MUTEX | OLD: ${oldLockStatus} | NEW: ${newLockStatus} ] Fallback Gatekeeper: Seat is locked on this runtime container pod node. Present Mutex: ${lockedResult?.oldLocked}`,
+                    error: `⚠️ Seat cannot be reserved because it is not currently held by any session.`,
+                    code: errorConflictCode,
                     stack: breakerError,
                     status: 400
                 };
@@ -208,11 +212,12 @@ export class SeatService {
         status: number;
         stack?: any;
         error?: string;
+        code?: string;
     }> {
         const { seatId, seatIds } = await req.json();
         const targetSeatIds: string[] = seatIds || (seatId ? [seatId] : []);
         if (!targetSeatIds || !Array.isArray(targetSeatIds) || targetSeatIds.length === 0) {
-            return { error: 'Invalid or empty seat list', status: 400 };
+            return { error: '⚠️ Invalid or empty seat list', status: 400 };
         }
         const mutexLockStatus = 'PENDING';
         let mutexLockError;
@@ -279,7 +284,8 @@ export class SeatService {
                     req
                 });
                 return {
-                    error: '[ P2025 ] Race condition detected: This seat was captured by another user at the same millisecond!',
+                    error: '[ ⚠️ P2025 ] Race condition detected: This seat was captured by another user at the same millisecond!',
+                    code: error?.code || 'P2025',
                     stack: error,
                     status: 409
                 };
@@ -294,7 +300,7 @@ export class SeatService {
                 details: { error: error.message },
                 req
             });
-            return { error: error.message, stack: error, status: 500 };
+            return { error: error.message, code: error?.code || 'Unknown Error', stack: error, status: 500 };
         } finally {
             // unlock mutex in RAM
             if (!mutexLockError || !(mutexLockError?.error || '').length) {
@@ -320,7 +326,8 @@ export class SeatService {
             // validate 1: seat is not BOOKED
             const seat = await tx.seat.findUnique({ where: { id: seatId } });
             if (!seat || seat.status === 'BOOKED') {
-                throw new Error(`Seat ${seatId} is not found or already been fully booked and sold.`);
+                console.error(`⚠️ Seat is not found or already been fully booked and sold. ${seatId}`);
+                throw new Error(`⚠️ Seat is not found or already been fully booked and sold.`);
             }
 
             // validate 2: seat whether is RESERVED for other
@@ -335,7 +342,8 @@ export class SeatService {
                 },
             });
             if (activeHoldByOthers) {
-                throw new Error(`Seat ${seatId} is temporarily reserved by another user. Please choose another one.`);
+                console.error(`⚠️ Seat is temporarily reserved by another user. Please choose another one. ${seatId}`);
+                throw new Error(`⚠️ Seat is temporarily reserved by another user. Please choose another one.`);
             }
 
             // 💡 SOLUTION Optimistic Concurrency Control OCC (COMPARE-AND-SWAP):
@@ -384,11 +392,12 @@ export class SeatService {
         status: number;
         stack?: any;
         error?: string;
+        code?: string;
     }> {
         const { seatId, seatIds } = await req.json();
         const targetSeatIds: string[] = seatIds || (seatId ? [seatId] : []);
         if (!targetSeatIds || !Array.isArray(targetSeatIds) || targetSeatIds.length === 0) {
-            return { error: 'Invalid or empty seat list', status: 400 };
+            return { error: '⚠️ Invalid or empty seat list', status: 400 };
         }
         const mutexLockStatus = 'PENDING';
 
@@ -423,11 +432,12 @@ export class SeatService {
                     action: 'SINGLE_RELEASE',
                     target: targetSeatIds.join(','),
                     status: 'FAILED',
-                    details: { error: "[ P2025 ] Conflict: This seat state was modified. Refreshing dashboard." },
+                    details: { error: "[ ⚠️ P2025 ] Conflict: This seat state was modified. Refreshing dashboard." },
                     req
                 });
                 return {
-                    error: '[ P2025 ] Conflict: This seat state was modified. Refreshing dashboard.',
+                    error: '[ ⚠️ P2025 ] Conflict: This seat state was modified. Refreshing dashboard.',
+                    code: error?.code || 'P2025',
                     stack: error,
                     status: 409
                 };
@@ -442,7 +452,7 @@ export class SeatService {
                 details: { error: error.message },
                 req
             });
-            return { error: error.message, stack: error, status: 500 };
+            return { error: error.message, code: error?.code || 'Unknown Error', stack: error, status: 500 };
         }
     }
 
@@ -466,7 +476,7 @@ export class SeatService {
             const booking = await tx.booking.findFirst({
                 where: { seatId: seatId, userId: session?.userId, status: 'PENDING' },
             });
-            if (!booking) throw new Error('No active reservation found under your account.');
+            if (!booking) throw new Error('ℹ No active reservation found under your account.');
 
             await tx.seat.update({
                 where: { id: seatId, version: seat.version },
@@ -497,13 +507,14 @@ export class SeatService {
         status: number;
         stack?: any;
         error?: string;
+        code?: string;
     }> {
         const { seatIds, mockPaymentSuccess } = await req.json();
         const mutexLockPendingStatus = 'PENDING';
         const mutexLockBookedStatus = 'BOOKED';
         let mutexLockError: any[];
         if (!seatIds || !Array.isArray(seatIds) || seatIds.length === 0) {
-            return { error: 'Invalid or empty seat list', status: 400 };
+            return { error: '⚠️ Invalid or empty seat list', status: 400 };
         }
 
         try {
@@ -600,7 +611,8 @@ export class SeatService {
                     req
                 });
                 return {
-                    error: '[ P2025 ] Conflict: This seat state was modified. Refreshing dashboard.',
+                    error: '[ ⚠️ P2025 ] Conflict: This seat state was modified. Refreshing dashboard.',
+                    code: error?.code || 'P2025',
                     stack: error,
                     status: 409
                 };
@@ -615,7 +627,7 @@ export class SeatService {
                 details: { error: error.message },
                 req
             });
-            return { error: error.message, stack: error, status: 500 };
+            return { error: error.message, code: error?.code || 'Unknown Error', stack: error, status: 500 };
         }
     }
 
@@ -635,7 +647,10 @@ export class SeatService {
         for (const seatId of seatIds) {
             // check seat existing
             const seat = await tx.seat.findUnique({ where: { id: seatId } });
-            if (!seat) throw new Error(`Seat ${seatId} does not exist.`);
+            if (!seat) {
+                console.error(`Seat ${seatId} does not exist.`);
+                throw new Error(`⚠️ Seat does not exist.`);
+            }
 
             // check booking existing
             const booking = await tx.booking.findFirst({
@@ -647,7 +662,8 @@ export class SeatService {
                 },
             });
             if (!booking) {
-                throw new Error(`Hold expired or invalid for seat ${seat.number}.`);
+                console.error(`Hold expired or invalid for seat ${seat.number}.`);
+                throw new Error(`⚠️ Hold expired or invalid for seat.`);
             }
 
             // 3. Mock Payment with version
@@ -692,6 +708,7 @@ export class SeatService {
         status: number;
         stack?: any;
         error?: string;
+        code?: string;
     }> {
         try {
             // =========================================================================
@@ -729,11 +746,12 @@ export class SeatService {
                 });
             }
 
+            console.log(`Successfully released ${result.count} expired seat reservations via global sweeper.`);
             return {
                 success: true,
                 releasedCount: result.count,
                 releasedSeats: result.seatIds,
-                message: `Successfully released ${result.count} expired seat reservations via global sweeper.`,
+                message: `✅ Successfully released expired seat reservations via global sweeper.`,
                 status: 200
             };
         } catch (error: any) {
@@ -746,7 +764,7 @@ export class SeatService {
                 details: { error: error.message },
                 req
             });
-            return { error: error.message, stack: error, status: 500 };
+            return { error: error.message, code: error?.code || 'Unknown Error', stack: error, status: 500 };
         }
     }
 

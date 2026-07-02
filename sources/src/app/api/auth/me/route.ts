@@ -45,7 +45,7 @@ export const GET = withGlobalErrorHandler(async () => {
     }
 
     if (!session) {
-        return NextResponse.json({ loggedIn: false, error: 'Session expired' }, { status: 401 });
+        return NextResponse.json({ loggedIn: false, error: '💀 Session expired' }, { status: 401 });
     }
 
     // 3. Request user information

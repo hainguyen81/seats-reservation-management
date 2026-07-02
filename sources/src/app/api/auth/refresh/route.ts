@@ -22,7 +22,7 @@ export const POST = withGlobalErrorHandler(async () => {
         const cookieStore = await cookies();
         const refreshToken = cookieStore.get(REFRESH_COOKIE)?.value;
         if (!refreshToken) {
-            return NextResponse.json({ error: 'Refresh token missing' }, { status: 401 });
+            return NextResponse.json({ error: '🛡️ Refresh token missing' }, { status: 401 });
         }
 
         // 1. check Refresh Token
@@ -31,7 +31,7 @@ export const POST = withGlobalErrorHandler(async () => {
             const { payload: verifiedPayload } = await jwtVerify(refreshToken, JWT_SECRET);
             payload = verifiedPayload as { userId: string };
         } catch {
-            return NextResponse.json({ error: 'Invalid or expired refresh token' }, { status: 401 });
+            return NextResponse.json({ error: '🛡️ Invalid or expired refresh token' }, { status: 401 });
         }
 
         // 2. check Refresh Token from DB
@@ -39,7 +39,7 @@ export const POST = withGlobalErrorHandler(async () => {
             where: { id: payload.userId },
         });
         if (!user || user.refreshToken !== refreshToken) {
-            return NextResponse.json({ error: 'Token revoked or session hijacked' }, { status: 401 });
+            return NextResponse.json({ error: '🛡️ Token revoked or session hijacked' }, { status: 401 });
         }
 
         // 3. Valid: Generate Access Token
@@ -49,7 +49,7 @@ export const POST = withGlobalErrorHandler(async () => {
             maxAge: 15 * 60,
         });
 
-        return NextResponse.json({ success: true, message: 'Token rotated successfully' });
+        return NextResponse.json({ success: true, message: '🛡️ Token rotated successfully' });
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }

@@ -170,7 +170,7 @@ jobs:
         uses: r0adkll/sign-android-release@v1
         id: sign_app
         with:
-          releaseDirectory: android/app/build/outputs/apk/release
+          releaseDirectory: sources/android/app/build/outputs/apk/release
           signingKeyBase64: ${{ secrets.KEYSTORE_APK }}
           alias: ${{ secrets.KEYSTORE_APK_ALIAS }}
           singleOp: true # only sign main APK
@@ -194,7 +194,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: seats-reservation-unsigned-app
-          path: android/app/build/outputs/apk/release/app-release-unsigned.apk
+          path: sources/android/app/build/outputs/apk/release/app-release-unsigned.apk
           retention-days: 3     # auto delete file on GitHub after 3 days to save resources
       
       # 10. Inject Absolute APK Download Link Into Job Run Summary

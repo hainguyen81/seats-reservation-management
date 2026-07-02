@@ -21,7 +21,8 @@
     "jsx": "preserve",
 	  "baseUrl": ".",
     "plugins": [{ "name": "next" }],
-    "paths": { "@/*": ["./src/*"] }
+    "paths": { "@/*": ["./src/*"] },
+    "types": ["node", "webpack-env"]
   },
   "include": [
     "next-env.d.ts",

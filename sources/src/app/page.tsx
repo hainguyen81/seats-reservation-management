@@ -4,6 +4,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { logEvent } from 'firebase/analytics';
 import { firebaseClientAnalytics } from '../lib/firebase-client';
 import { nativeClient } from '@/lib/api-client';
+import { useTranslations } from 'next-intl';
+import { availableLocales, useAppLanguage } from '@/lib/i18n/provider';
 
 const REFRESH_TOKEN_EXPIRY = process.env.REFRESH_TOKEN_EXPIRY;
 const REFRESH_TOKEN_EXPIRY_DAYS = REFRESH_TOKEN_EXPIRY ? parseInt(REFRESH_TOKEN_EXPIRY, 10) : 1;
@@ -20,6 +22,10 @@ export default function Home() {
     const [timeLeft, setTimeLeft] = useState<number | null>(null);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const [isPaying, setIsPaying] = useState<boolean>(false);
+
+    // i18n
+    const i18n = useTranslations('Seats');
+    const { locale, setLocale } = useAppLanguage();
 
     // 1. check Cookie for valid session and request seats
     const fetchSeats = () => nativeClient.get('/api/seats')
@@ -70,7 +76,7 @@ export default function Home() {
             // 💡 Timeout: cancel booking and reset seats Frontend
             setSelectedSeats([]);
             setTimeLeft(null);
-            setMessage('⚠️ Reservation window expired! Your selected seats have been released.');
+            setMessage(i18n('⚠️ Reservation window expired! Your selected seats have been released.'));
 
             // call API Backend to release expired seats
             nativeClient.post('/api/release').then(() => fetchSeats());
@@ -138,10 +144,10 @@ export default function Home() {
             if (!data?.success || (data?.error || '').length) {
                 // revert seat selection status
                 revertSeatSelection(seatId, hold);
-                setMessage(hold ? `❌ Failed to reserve seat: ${data?.error || 'Unknown Error'}`
-                    : `❌ Failed to release seat: ${data?.error || 'Unknown Error'}`);
+                setMessage(hold ? `${i18n('❌ Failed to reserve seat')}: ${i18n(data?.error || 'Unknown Error')}`
+                    : `${i18n('❌ Failed to release seat')}: ${i18n(data?.error || 'Unknown Error')}`);
             } else {
-                setMessage(hold ? '✅ Seat reserved successfully.' : '✅ Seat released successfully.');
+                setMessage(i18n(hold ? '✅ Seat reserved successfully.' : '✅ Seat released successfully.'));
             }
             processSeat(seatId, false);
         };
@@ -151,13 +157,13 @@ export default function Home() {
                 // ===================================================
                 // 🔓 RELEASE
                 // ===================================================
-                setMessage('⏳ Releasing seat reservation...');
+                setMessage(i18n('⏳ Releasing seat reservation...'));
                 unselectSeat(targetSeatString);
                 await nativeClient.postIncludeCredentials(
                     '/api/reserve/release-single', { seatId: targetSeatString }
                 ).then(res => {
                     if (!res?.ok) {
-                        throw new Error(`Request Error - Status: ${res.status}`);
+                        throw new Error(`${i18n('Request Error - Status')}: ${res.status}`);
                     }
                     return res.json();
 
@@ -165,7 +171,7 @@ export default function Home() {
                     nativeClient.get('/api/seats')
                         .then(res => {
                             if (!res?.ok) {
-                                throw new Error(`Request Error - Status: ${res.status}`);
+                                throw new Error(`${i18n('Request Error - Status')}: ${res.status}`);
                             }
                             return res.json();
                         }).then(seats => {
@@ -184,13 +190,13 @@ export default function Home() {
                 // ===================================================
                 // 🔒 HOLD: Reserve in expired minutes
                 // ===================================================
-                setMessage('⏳ Holding seat...');
+                setMessage(i18n('⏳ Holding seat...'));
                 selectSeat(targetSeatString);
                 await nativeClient.postIncludeCredentials(
                     '/api/reserve/hold', { seatId: targetSeatString }
                 ).then(res => {
                     if (!res?.ok) {
-                        throw new Error(`Request Error - Status: ${res.status}`);
+                        throw new Error(`${i18n('Request Error - Status')}: ${res.status}`);
                     }
                     return res.json();
 
@@ -198,7 +204,7 @@ export default function Home() {
                     nativeClient.get('/api/seats')
                         .then(res => {
                             if (!res?.ok) {
-                                throw new Error(`Request Error - Status: ${res.status}`);
+                                throw new Error(`${i18n('Request Error - Status')}: ${res.status}`);
                             }
                             return res.json();
                         }).then(seats => {
@@ -215,7 +221,7 @@ export default function Home() {
             }
         } catch (e) {
             console.error('Transactional communication fracture:', e);
-            setMessage('Transactional communication fracture.');
+            setMessage(i18n('Transactional communication fracture.'));
             revertSeatSelection(targetSeatString, !isCurrentlySelectedByMe);
         }
     };
@@ -224,13 +230,13 @@ export default function Home() {
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!username.trim() || !password.trim()) {
-            setMessage('⚠️ Please enter both username and password.');
+            setMessage(i18n('⚠️ Please enter both username and password.'));
             return;
         }
 
         const isFirebaseEnabled = process.env.NEXT_PUBLIC_AUTH_PROVIDER === 'firebase';
         if (isFirebaseEnabled) {
-            setMessage('⏳ Authenticating via Firebase Cloud...');
+            setMessage(i18n('⏳ Authenticating via Firebase Cloud...'));
             try {
                 const { authClient } = require('../lib/firebase-client');
                 const { signInWithEmailAndPassword, createUserWithEmailAndPassword } = require('firebase/auth');
@@ -253,10 +259,10 @@ export default function Home() {
                 if (data.success) {
                     setUser(data.user);
                     setPassword('');
-                    setMessage('🎉 Firebase Session connected!');
-                } else { setMessage(`❌ Error: ${data.error}`); }
+                    setMessage(i18n('🎉 Firebase Session connected!'));
+                } else { setMessage(`${i18n('❌ Error')}: ${data.error}`); }
             } catch (error: any) {
-                setMessage(`❌ Firebase Refused: ${error.message}`);
+                setMessage(`${i18n('❌ Firebase Refused')}: ${error.message}`);
             }
             return;
         }
@@ -267,9 +273,9 @@ export default function Home() {
         if (data.success) {
             setUser(data.user);
             setPassword(''); // clear password after login successful
-            setMessage('👋 Welcome back!');
+            setMessage(i18n('👋 Welcome back!'));
         } else {
-            setMessage(`❌ Login failed: ${data.error}`);
+            setMessage(`${i18n('❌ Login failed')}: ${data.error}`);
         }
     };
 
@@ -279,7 +285,7 @@ export default function Home() {
         if (res.ok) {
             setUser(null);
             setSelectedSeats([]);
-            setMessage('🔒 Session terminated safely.');
+            setMessage(i18n('🔒 Session terminated safely.'));
         }
     };
 
@@ -287,7 +293,7 @@ export default function Home() {
     const handleReserve = async (mockSuccess: boolean) => {
         if (selectedSeats.length === 0 || processingSeats.size > 0 || isPaying) return;
         setIsPaying(true);
-        setMessage('⏳ Processing payment transaction...');
+        setMessage(i18n('⏳ Processing payment transaction...'));
 
         try {
             const res = await nativeClient.postIncludeCredentials(
@@ -303,25 +309,55 @@ export default function Home() {
                         transaction_status: mockSuccess ? 'SUCCESS' : 'FAILED'
                     });
                 }
-                setMessage(mockSuccess ? '🎉 Seats successfully booked!' : '❌ Payment failed. Seats released.');
+                setMessage(mockSuccess ? `${i18n('🎉 Seats successfully booked')}: ${selectedSeats.join(',')}`
+                    : `${i18n('❌ Payment failed. Seats released')}:  ${selectedSeats.join(',')}`);
                 setSelectedSeats([]);
                 setTimeLeft(null);
                 fetchSeats();
             } else {
-                setMessage(`❌ Transaction Error: ${data.error}`);
+                setMessage(`${i18n('❌ Transaction Error')}: ${data.error}`);
             }
         } catch (e) {
             console.error('Payment connection error:', e);
-            setMessage('❌ Payment Connection Error');
+            setMessage(i18n('❌ Payment Connection Error'));
         } finally {
             setIsPaying(false);
         }
     };
 
+    const translateFallback = (key: string, fallback: string) => {
+        let translated = i18n(key);
+        return !(translated || '').length || translated === key
+            ? fallback : translated;
+    };
+
     return (
         <main className="p-8 max-w-xl mx-auto space-y-6">
             {loading && <div className="top-loading-bar" />}
-            {!loading && <h1 className="text-2xl font-bold">Seat Reservation Management</h1>}
+
+            {/* =========================================================================
+              * 📊 AUTOMATED DYNAMIC BUTTON LAYER LOOP (ZERO RE-CODING MAINTENANCE) [3.2]
+              * ========================================================================= */}
+            {(availableLocales || []).length && (
+                <div className="flex gap-2 justify-end mb-4">
+                    {availableLocales.map((localeCode: string) => (
+                        <button
+                            key={localeCode}
+                            onClick={() => setLocale(localeCode)}
+                            className={`px-3 py-1 rounded text-sm font-semibold transition-all duration-200 ${locale === localeCode
+                                    ? 'bg-blue-600 text-white shadow-md'
+                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                }`}
+                        >
+                            {/* Display custom title string or fallback to raw locale key codes if missing [3.2] */}
+                            {translateFallback(`language.${localeCode}`, localeCode.toUpperCase())}
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            {/* title */}
+            {!loading && <h1 className="text-2xl font-bold">{i18n('💺 Seats Reservation Management')}</h1>}
 
             {/* login block */}
             {!loading && !user ? (
@@ -329,10 +365,10 @@ export default function Home() {
                     <form onSubmit={handleLogin}>
                         <div style={{ marginBottom: '20px' }}>
                             <h3 className="font-semibold text-lg text-emerald-400" style={{ margin: 0, fontSize: '1.25rem', color: '#10b981' }}>
-                                Identity Authentication
+                                {i18n('🛡️ Identity Authentication')}
                             </h3>
                             <p className="text-xs text-gray-400" style={{ margin: '4px 0 0 0', fontSize: '0.75rem', color: '#9ca3af' }}>
-                                Please authenticate to unblock the seat matrix mapping loop.
+                                {i18n('📌 Please authenticate to unblock the seat matrix mapping loop')}
                             </p>
                         </div>
 
@@ -341,7 +377,7 @@ export default function Home() {
                             {/* username */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                 <label style={{ fontSize: '0.75rem', color: '#9ca3af', fontWeight: 500, textAlign: 'left' }}>
-                                    Username
+                                    {i18n('👤 Username / Email')}
                                 </label>
                                 <input
                                     type="text"
@@ -355,7 +391,7 @@ export default function Home() {
                             {/* password */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                 <label style={{ fontSize: '0.75rem', color: '#9ca3af', fontWeight: 500, textAlign: 'left' }}>
-                                    Password
+                                    {i18n('🔑 Password')}
                                 </label>
                                 <input
                                     type="password"
@@ -370,7 +406,7 @@ export default function Home() {
                         {/* login/register */}
                         <div>
                             <button className="btn-primary" type="submit">
-                                Login / Register
+                                {i18n('🔓 Login / Register')}
                             </button>
                         </div>
                     </form>
@@ -404,7 +440,7 @@ export default function Home() {
                                     display: 'inline-block'
                                 }}
                             >
-                                Session Active ({REFRESH_TOKEN_EXPIRY_DAYS}d)
+                                    {i18n('⏱️ Session Active')} ({i18n('⏱️ Expire in')} {REFRESH_TOKEN_EXPIRY_DAYS} {i18n('days')})
                             </span>
                         </div>
                     </div>
@@ -525,8 +561,8 @@ export default function Home() {
                                             letterSpacing: '0.05em'
                                         }}
                                     >
-                                        {isTargetProcessing ? 'RESERVING'
-                                            : isSelected ? 'SELECTED' : seat.status === 'PENDING' ? 'Reserved' : seat.status.toLowerCase()}
+                                        {i18n(isTargetProcessing ? '🛎️ RESERVING'
+                                            : isSelected ? '📌 SELECTED' : seat.status === 'PENDING' ? '📅 RESERVED' : seat.status.toUpperCase())}
                                     </span>
                                 </button>
                             );
@@ -541,7 +577,7 @@ export default function Home() {
                     {/* Timer countdown */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', backgroundColor: 'rgba(249, 115, 22, 0.08)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(249, 115, 22, 0.2)' }}>
                         <span style={{ fontSize: '0.85rem', color: '#ffeddf' }}>
-                            {'⚠️ Complete payment before timeout:'}
+                            {i18n('⚠️ Complete payment before timeout')}
                         </span>
                         <strong id="countdown-time" style={{ fontSize: '1.15rem', color: '#f97316', fontFamily: 'monospace', letterSpacing: '1px' }}>
                             {formatTime(timeLeft)}
@@ -550,10 +586,10 @@ export default function Home() {
 
                     {/* Selected seats */}
                     <p style={{ margin: '0 0 16px 0', fontSize: '0.875rem', color: '#9ca3af' }}>
-                        Reserved Seats: <strong style={{ color: '#10b981', fontSize: '1.125rem' }}>
+                        {i18n('📅 Reserved Seats')}: <strong style={{ color: '#10b981', fontSize: '1.125rem' }}>
                             {selectedSeats.map(id => seats.find(s => s.id === id)?.number).join(', ')}
                         </strong><br />
-                        Processing Seats: <strong style={{ color: '#10b981', fontSize: '1.125rem' }}>
+                        {i18n('🛎️ Processing Seats')}: <strong style={{ color: '#10b981', fontSize: '1.125rem' }}>
                             {Array.from(processingSeats).map(id => seats.find(s => s.id === id)?.number).join(', ')}
                         </strong>
                     </p>
@@ -582,7 +618,7 @@ export default function Home() {
                             onMouseOver={(e) => e.currentTarget.style.filter = 'brightness(1.1)'}
                             onMouseOut={(e) => e.currentTarget.style.filter = 'none'}
                         >
-                            Simulate Success Payment
+                            {i18n('💳 Simulate Success Payment')}
                         </button>
 
                         {/* Mock Fail Payment */}
@@ -605,7 +641,7 @@ export default function Home() {
                             onMouseOver={(e) => e.currentTarget.style.filter = 'brightness(1.1)'}
                             onMouseOut={(e) => e.currentTarget.style.filter = 'none'}
                         >
-                            Simulate Fail Payment
+                            {i18n('💸 Simulate Fail Payment')}
                         </button>
 
                     </div>

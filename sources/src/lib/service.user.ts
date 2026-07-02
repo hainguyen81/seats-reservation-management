@@ -46,7 +46,7 @@ export class UserService {
                 if (result?.status === 200) {
                     const isMatchedPassword = await comparePassword(cleanPassword, result?.user?.password);
                     if (!isMatchedPassword) {
-                        return { error: 'Invalid credentials. Please verify your password and try again.', status: 401 };
+                        return { error: '🚫 Invalid credentials. Please verify your password and try again.', status: 401 };
                     }
                 }
 
@@ -80,7 +80,7 @@ export class UserService {
         // firebase
         if (authProvider === 'firebase') {
             const { idToken, username } = authData;
-            if (!idToken) return { error: 'Identity token is missing', status: 400 };
+            if (!idToken) return { error: '🛡️ Identity token is missing', status: 400 };
 
             // handle DB
             let user = await tx.user.findUnique({ where: { username } });
@@ -101,7 +101,7 @@ export class UserService {
 
         // 🕵️ Validate
         if (!username || !password || !hashedPassword) {
-            return { error: 'Both username and password fields are strictly required.', status: 400 };
+            return { error: '⚠️ Both username and password fields are strictly required.', status: 400 };
         }
 
         const cleanUsername = username.trim();
@@ -165,7 +165,7 @@ export class UserService {
         return {
             status: 200,
             success: true,
-            message: 'Session successfully revoked and cookies cleared.'
+            message: '🎉 Session successfully revoked and cookies cleared.'
         };
     } catch (error: any) {
         return { error: error.message, status: 500, stack: error };
