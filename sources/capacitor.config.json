@@ -19,6 +19,14 @@
     "overScrollMode": "never",
     "loggingBehavior": "none"
   },
+  "ios": {
+    "backgroundColor": "#ffffff",
+    "runtimeConfiguration": true,
+    "scrollExecutionMode": "never",
+    "screenOrientation": "portrait",
+    "handleApplicationNotifications": false,
+    "loggingBehavior": "none"
+  },
   "server": {
     "androidScheme": "https",
     "hostname": "://mock-domain.com",
