@@ -141,6 +141,7 @@ jobs:
       # Xcode require CocoaPods packet engines to bind native Swift/Obj-C layers.
       - name: 🍏 Install CocoaPods Internal Dependencies
         if: success()                 # if previous step is successful
+        working-directory: ./sources/ios/App
         # pod install require UTF-8
         env:
           LANG: "en_US.UTF-8"
@@ -153,13 +154,12 @@ jobs:
           # Not running in pipeline, it will make CI/CD crash.
           # -------------------------------------------------
           echo "🍏 Syncing structural ios assets pipeline..."
-          npx cap sync ios
+          npx --prefix ../.. cap sync ios
           
           # sync app information such as appId, appName to Manifest
-          npx cap copy ios
+          npx --prefix ../.. cap copy ios
           
           # run pod install to download network native driver of Apple
-          cd ios/App
           pod install
       
       # =========================================================================
