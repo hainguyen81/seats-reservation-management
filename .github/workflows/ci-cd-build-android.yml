@@ -240,7 +240,7 @@ jobs:
       
       # 12. Inject Absolute APK Download Link Into Job Run Summary
       - name: 📊 Inject Absolute APK Download Link Into Job Run Summary
-        if: always()
+        if: success()                               # if previous step is successful
         run: |
           echo "📚 Compiling Markdown interface parameters for Github Steps Summary..."
           
