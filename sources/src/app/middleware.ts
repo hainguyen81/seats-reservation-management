@@ -6,12 +6,6 @@ import { NextResponse } from 'next/server';
 // 🎛️ PIPELINE ORCHESTRATION LAYER: EXECUTE PLUGINS IN SEQUENTIAL ORDER
 // =========================================================================
 export const middleware = withGlobalErrorHandler(async (req) => {
-    // 🔥 IMPORTANT: if running in Build Static Phase to export for mobile, 
-    // accept all requests to avoid cookies()
-    if (process.env.NEXT_PHASE === 'phase-production-build') {
-        return NextResponse.next();
-    }
-
     // Handle preflight OPTIONS requests seamlessly for cross-origin handshakes
     if (req.method === 'OPTIONS') {
         const response = NextResponse.next();
