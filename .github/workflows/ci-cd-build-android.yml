@@ -56,7 +56,16 @@ jobs:
     name: 📱 Build Android Mobile App APK
     runs-on: ubuntu-latest
     # needs: [ postgres-e2e-test, sqlite-e2e-test ]     # not require test running, due to be triggered standalone
-        
+    
+    # =========================================================================
+    # 🔥 THE CRITICAL ROOT CONTEXT BENDER: JOB-LEVEL WORKING DIRECTORY
+    # =========================================================================
+    # Enforces EVERY sequential shell script step underneath to automatically 
+    # execute inside the './sources' subdirectory context right at boot-up
+    defaults:
+      run:
+        working-directory: ./sources
+    
     steps:
       # Check whether allow for running workflow
       - name: 🛡️ Gatekeeper - Validate Administrative Access
@@ -71,7 +80,8 @@ jobs:
       # 1. Check out source code
       - name: ⬇️ Checkout Source Code
         if: success()                 # if previous step is successful
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4with:
+        path: '.' # force checkout code to root context (not ./sources, to next steps working context in ./sources)
       
       # 2. Setup node to build code
       - name: ⚙️ Setup Node.js Environment
@@ -85,7 +95,6 @@ jobs:
       - name: 📦 Install Package Dependencies
         if: success()                 # if previous step is successful
         run: |
-          cd sources
           cp tsconfig.prod.json tsconfig.json
           npm ci
           npm install @capacitor/core @capacitor/cli @capacitor/android  @capacitor/preferences --save-optional
@@ -95,14 +104,12 @@ jobs:
       - name: 🏗️ Build Next.js Project
         if: success()                 # if previous step is successful
         run: |
-          cd sources
           npm run mobile_build
       
       # 5. Sync Project Assets to Capacitor Android
       - name: 🔄 Sync Project Assets to Capacitor Android
         if: success()                 # if previous step is successful
         run: |
-          cd sources
           npx cap sync android
       
       # 6. Setup JDK (require to Gradle compiler package APK)
@@ -116,14 +123,13 @@ jobs:
       # 7. Grant permission to Gradle to build Android
       - name: 🛡️ Grant permissions for gradlew
         if: success()                 # if previous step is successful
-        run: chmod +x sources/android/gradlew
+        run: chmod +x android/gradlew
 
       # 8. Chạy lệnh đóng gói thành file APK bản Release
       - name: 🏗️ Build Android Release APK
         if: success()                 # if previous step is successful
         run: |
-          cd sources/android
-          ./gradlew assembleRelease
+          ./android/gradlew assembleRelease
       
       # 9. Sign APK
       - name: ✍️ Sign APK
