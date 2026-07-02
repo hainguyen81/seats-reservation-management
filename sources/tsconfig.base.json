@@ -21,7 +21,7 @@
     "jsx": "preserve",
 	  "baseUrl": ".",
     "plugins": [{ "name": "next" }],
-    "paths": { "@/*": ["./src/*"] },
+    "paths": { "@/*": ["./src/*"], "@messages/*": ["./src/app/messages/*"] },
     "types": ["node", "webpack-env"]
   },
   "include": [

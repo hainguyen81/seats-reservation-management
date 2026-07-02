@@ -1,4 +1,5 @@
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 import webpack from "next/dist/compiled/webpack/webpack-lib.js";
 
@@ -6,11 +7,47 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const nodeEnv = process.env.NODE_ENV;
-const standalone = process.env.BUILD_STANDALONE;;
+const standalone = process.env.BUILD_STANDALONE;
+const messagesPath = process.env.I18N_MESSAGES_PATH || '';
 const productionMode = nodeEnv === "production";
 const mobileMode = ["mobile", "android", "ios"].includes(nodeEnv);
 const buildStandalone = standalone === "true";
 console.warn(`Next.js: PRODUCTION Mode ?. ${productionMode} - MOBILE (APK/iOS) Mode?. ${mobileMode ? "true" : "false"}`);
+
+/**
+ * -------------------------------------------------
+ * Next.js SCAN I18N MESSAGES FOR MOBILE
+ * -------------------------------------------------
+ */
+// 🎯 AUTOMATED COMPILE-TIME LOCALE SCANNER RADAR
+const messagesDirectory = fs.existsSync(messagesPath) ? messagesPath : path.join(process.cwd(), 'app/messages');
+let compiledBundleMatrix = {};
+let availableLocales = [];
+try {
+  if (fs.existsSync(messagesDirectory)) {
+    const files = fs.readdirSync(messagesDirectory);
+
+    files.forEach((file) => {
+      if (file.endsWith(".json")) {
+        const localeKey = file.replace(".json", "");
+        const filePath = path.join(messagesDirectory, file);
+
+        // 🚀 READ I18N JSON: parse to JSON Object data
+        const rawContent = mobileMode ? fs.readFileSync(filePath, "utf8") : '';
+        compiledBundleMatrix[localeKey] = mobileMode && (rawContent || '').length ? JSON.parse(rawContent) : localeKey;
+        availableLocales.push(localeKey);
+      }
+    });
+
+    console.log(
+      `📡 [Next Config] Hard-embedded localized profiles for: ${Object.keys(
+        compiledBundleMatrix
+      ).join(", ")}`
+    );
+  }
+} catch (e) {
+  console.warn("⚠️ Failed to compile i18n bundle matrix at buildtime.");
+}
 
 /** @type {import('next').NextConfig} */
 
@@ -44,6 +81,13 @@ const nextMobileConfig = {
   },
   experimental: {
     instrumentationHook: true,
+  },
+  // 🔥 Next.js Enviroment Variables.
+  // Next.js Compiler will freeze enviroment and bypass it to Client Component.
+  env: {
+    NEXT_PUBLIC_AVAILABLE_LOCALES: JSON.stringify(availableLocales),
+    NEXT_PUBLIC_I18N_BUNDLE_MATRIX: JSON.stringify(compiledBundleMatrix),
+    NEXT_PUBLIC_MOBILE_ENV: true,
   },
 
   // =========================================================================
@@ -112,6 +156,13 @@ const nextWebAppConfig = {
   },
   experimental: {
     instrumentationHook: true,
+  },
+  // 🔥 Next.js Enviroment Variables.
+  // Next.js Compiler will freeze enviroment and bypass it to Client Component.
+  env: {
+    NEXT_PUBLIC_AVAILABLE_LOCALES: JSON.stringify(availableLocales),
+    NEXT_PUBLIC_MOBILE_ENV: false,
+    NEXT_PUBLIC_I18N_MESSAGES_PATH: messagesPath,
   },
 
   // 💡 alias webpack because docker build for production
