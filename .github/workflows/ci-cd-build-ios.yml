@@ -147,8 +147,6 @@ jobs:
           LANG: "en_US.UTF-8"
           LC_ALL: "en_US.UTF-8"
         run: |
-          cd ../..
-          
           # -------------------------------------------------
           # !!!IMPORTANT!!!
           # Sync anything from next.js build and generated assets (must run it on local first, and push to repository) such as logo, etc.
@@ -156,10 +154,10 @@ jobs:
           # Not running in pipeline, it will make CI/CD crash.
           # -------------------------------------------------
           echo "🍏 Syncing structural android assets pipeline..."
-          npx cap sync ios
+          npx --prefix ../.. cap sync ios
           
           # sync app information such as appId, appName to Manifest
-          npx cap copy ios
+          npx --prefix ../.. cap copy ios
           
           # run pod install to download network native driver of Apple
           cd ios/App
