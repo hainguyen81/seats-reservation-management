@@ -81,7 +81,8 @@ jobs:
       - name: ⬇️ Checkout Source Code
         if: success()                 # if previous step is successful
         uses: actions/checkout@v4
-        path: '.' # force checkout code to root context (not ./sources, to next steps working context in ./sources)
+        with:
+          path: '.' # force checkout code to root context (not ./sources, to next steps working context in ./sources)
       
       # 2. Setup node to build code
       - name: ⚙️ Setup Node.js Environment

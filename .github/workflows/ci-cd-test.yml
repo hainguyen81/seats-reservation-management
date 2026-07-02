@@ -69,7 +69,8 @@ jobs:
     steps:
     - name: 📥 Check out repository code
       uses: actions/checkout@v4
-      path: '.' # force checkout code to root context (not ./sources, to next steps working context in ./sources)
+      with:
+        path: '.' # force checkout code to root context (not ./sources, to next steps working context in ./sources)
 
     - name: ⚙️ Setup Node.js Environment
       if: success()                 # if previous step is successful
@@ -169,7 +170,8 @@ jobs:
     steps:
     - name: 📥 Check out repository code
       uses: actions/checkout@v4
-      path: '.' # force checkout code to root context (not ./sources, to next steps working context in ./sources)
+      with:
+        path: '.' # force checkout code to root context (not ./sources, to next steps working context in ./sources)
 
     - name: ⚙️ Setup Node.js Environment
       if: success()                 # if previous step is successful
