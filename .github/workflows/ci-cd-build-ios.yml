@@ -98,10 +98,6 @@ jobs:
         run: |
           cp tsconfig.prod.json tsconfig.json
           npm ci
-          if [ ! -d "ios" ]; then
-            npm install @capacitor/core @capacitor/cli @capacitor/ios  @capacitor/preferences --save-optional
-            npx cap add ios
-          fi
       
       # 4. Build project
       - name: 🏗️ Build Next.js Project
