@@ -128,8 +128,10 @@ jobs:
         run: |
           cp tsconfig.prod.json tsconfig.json
           npm ci
-          npm install @capacitor/core @capacitor/cli @capacitor/android  @capacitor/preferences --save-optional
-          npx cap add android
+          if [ ! -d "android" ]; then
+            npm install @capacitor/core @capacitor/cli @capacitor/android  @capacitor/preferences --save-optional
+            npx cap add android
+          fi
       
       # 4. Build project
       - name: 🏗️ Build Next.js Project
