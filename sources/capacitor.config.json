@@ -29,6 +29,7 @@
   },
   "server": {
     "androidScheme": "https",
+    "iosScheme": "seatsapp", 
     "hostname": "://mock-domain.com",
     "allowNavigation": [
       "://mock-domain.com"
