@@ -1,12 +1,23 @@
 {
   "appId": "org.nlh4j.seats.reservation",
-  "appName": "Seats Reservation",
+  "appName": "Seats Reservation by nlh4j",
   "webDir": "out",
   "bundledWebRuntime": false,
   "plugins": {
     "CapacitorHttp": {
       "enabled": true
+    },
+    "CapacitorCookies": {
+      "enabled": true
     }
+  },
+  "android": {
+    "backgroundColor": "#ffffff",
+    "allowMixedContent": true,
+    "screenOrientation": "portrait",
+    "hardwareAcceleration": true,
+    "overScrollMode": "never",
+    "loggingBehavior": "none"
   },
   "server": {
     "androidScheme": "https",

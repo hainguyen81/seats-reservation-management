@@ -139,11 +139,40 @@ jobs:
         run: |
           npm run mobile_build
       
-      # 5. Sync Project Assets to Capacitor Android
-      - name: 🔄 Sync Project Assets to Capacitor Android
+      # =========================================================================
+      # 5. ASSETS SYNCHRONIZATION & DYNAMIC CONFIG INJECTION [3.2]
+      # =========================================================================
+      - name: 💉 Inject Dynamic Server Domains & Sync Capacitor Assets
         if: success()                 # if previous step is successful
+        env:
+          API_BASE_URL: ${{ inputs.target_url }}
         run: |
+          echo "🔌 Connecting to local configuration context layers..."
+          
+          # update API base URL
+          CLEAN_DOMAIN=$(echo "$TARGET_URL" | awk -F[/:] '{print $4}')
+          echo "🌐 Dynamic Target Domain detected for Mobile Whitelisting: $CLEAN_DOMAIN"
+          
+          # update capacitor config to target url
+          jq --arg host "$CLEAN_DOMAIN" \
+             '.server.hostname = $host | .server.allowNavigation = [$host]' \
+             capacitor.config.json > temp.json && mv temp.json capacitor.config.json
+          
+          echo "-------------------------------------------------------------------------"
+          echo "📊 PRINTING FINALIZED SANITIZED CAPACITOR APP CONFIGURATION:"
+          cat capacitor.config.json
+          echo "-------------------------------------------------------------------------"
+          
+          # -------------------------------------------------
+          # !!!IMPORTANT!!!
+          # Sync anything from next.js build and generated assets (must run it on local first, and push to repository) such as logo, etc.
+          # Assets must be generated before on local, because it requires Graphics Hardware to generate.
+          # Not running in pipeline, it will make CI/CD crash.
+          # -------------------------------------------------
           npx cap sync android
+          
+          # sync app information such as appId, appName to Manifest
+          npx cap copy android
       
       # 6. Setup JDK (require to Gradle compiler package APK)
       - name: ⚙️ Setup Java JDK
