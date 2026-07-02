@@ -26,7 +26,7 @@ if /I "%OUTPUT%"=="" (
 
 :: Encode the file to Base64
 echo %TAB%- ⚡ Read file %INPUT% to base64 file %OUTPUT%
-certutil -encode "%INPUT%" "%OUTPUT%" >nul
+certutil -encodehex -f "%INPUT%" "%OUTPUT%" 0x40000001 >nul
 echo %TAB%---^> 🎉 Successfully! Base64 Output File: %OUTPUT%
 
 pause
