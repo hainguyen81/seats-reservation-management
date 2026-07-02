@@ -106,6 +106,7 @@ jobs:
           API_BASE_URL: ${{ inputs.target_url }}
         run: |
           npm run mobile_build
+          ls -la .
       
       # =========================================================================
       # 5. ASSETS SYNCHRONIZATION & DYNAMIC CONFIG INJECTION
