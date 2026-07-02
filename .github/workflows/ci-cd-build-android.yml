@@ -89,6 +89,7 @@ jobs:
           cp tsconfig.prod.json tsconfig.json
           npm ci
           npm install @capacitor/core @capacitor/cli @capacitor/android  @capacitor/preferences --save-optional
+          npx cap add android
       
       # 4. Build project
       - name: 🏗️ Build Next.js Project
