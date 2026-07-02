@@ -3,7 +3,8 @@ import { handleAll, circuitBreaker, CircuitBreakerPolicy, SamplingBreaker } from
 
 // Redis URL. Ex: redis://localhost:6379
 // const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-const redisUrl = process.env.REDIS_URL;
+const envMobileMode = process.env.NEXT_PUBLIC_MOBILE_ENV || process.env.NEXT_PUBLIC_MOBILE_ENV === 'true' || false;
+const redisUrl = process.env.REDIS_URL || '';
 const retriesPerRequest = process.env.REDIS_RETIES_PER_REQUEST ? parseInt(process.env.REDIS_RETIES_PER_REQUEST) : 1;
 const connTimeout = process.env.REDIS_CONN_TIMEOUT ? parseInt(process.env.REDIS_CONN_TIMEOUT) : 2000;
 const redisOpts: RedisOptions = {
@@ -30,7 +31,7 @@ const globalForRedis = globalThis as unknown as {
 // 🧩 SINGLETON REDIS CONNECTION POOL WITH CONFIGURATION
 // =========================================================================
 // Graceful Error Interception
-if ((redisUrl || '').length && !globalForRedis.redis) {
+if (!envMobileMode && (redisUrl || '').length && !globalForRedis.redis) {
     // INITIALIZE HIGH-PERFORMANCE REDIS CONNECTION POOL
     const instance = new Redis(redisUrl, redisOpts);
 
@@ -46,7 +47,7 @@ if ((redisUrl || '').length && !globalForRedis.redis) {
 // =========================================================================
 // 🛡️ 2. PRODUCTION-GRADE CIRCUIT BREAKER CONFIGURATION (COCKATIEL NATIVE)
 // =========================================================================
-if (!globalForRedis.circuitBreaker) {
+if (!envMobileMode && !globalForRedis.circuitBreaker) {
     // Initialize breaker engine
     const samplingBreakerEngine = new SamplingBreaker({
         threshold: 0.5,   // error ratio (50%)
@@ -64,5 +65,5 @@ if (!globalForRedis.circuitBreaker) {
 // =========================================================================
 // EXPORT MODULE
 // =========================================================================;
-export const redis: Redis = globalForRedis.redis;
-export const redisBreaker: CircuitBreakerPolicy = globalForRedis.circuitBreaker;
+export const redis: Redis | undefined = globalForRedis.redis;
+export const redisBreaker: CircuitBreakerPolicy | undefined = globalForRedis.circuitBreaker;

@@ -87,7 +87,7 @@ const nextMobileConfig = {
   env: {
     NEXT_PUBLIC_AVAILABLE_LOCALES: JSON.stringify(availableLocales),
     NEXT_PUBLIC_I18N_BUNDLE_MATRIX: JSON.stringify(compiledBundleMatrix),
-    NEXT_PUBLIC_MOBILE_ENV: true,
+    NEXT_PUBLIC_MOBILE_ENV: 'true',
   },
 
   // =========================================================================
@@ -161,7 +161,7 @@ const nextWebAppConfig = {
   // Next.js Compiler will freeze enviroment and bypass it to Client Component.
   env: {
     NEXT_PUBLIC_AVAILABLE_LOCALES: JSON.stringify(availableLocales),
-    NEXT_PUBLIC_MOBILE_ENV: false,
+    NEXT_PUBLIC_MOBILE_ENV: 'false',
     NEXT_PUBLIC_I18N_MESSAGES_PATH: messagesPath,
   },
 
