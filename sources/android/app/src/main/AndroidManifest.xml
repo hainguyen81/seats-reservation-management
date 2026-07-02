@@ -36,7 +36,7 @@
         <!-- LEGAL COPYRIGHT CLAIM -->
         <meta-data
             android:name="copyright_claim"
-            android:value="Copyright © 2026 Seats Reservation Platform. All Rights Reserved Under org.nlh4j license."
+            android:value="Copyright © 2026 Seats Reservation Platform. All Rights Reserved Under org.nlh4j License."
         />
     </application>
 
