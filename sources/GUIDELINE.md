@@ -131,7 +131,7 @@ run: |
   echo "🔌 Connecting to local configuration context layers..."
   
   # update API base URL
-  CLEAN_DOMAIN=$(echo "$TARGET_URL" | awk -F[/:] '{print $4}')
+  CLEAN_DOMAIN=$(echo "$API_BASE_URL" | awk -F[/:] '{print $4}')
   echo "🌐 Dynamic Target Domain detected for Mobile Whitelisting: $CLEAN_DOMAIN"
   
   # update capacitor config to target url
@@ -438,7 +438,7 @@ run: |
   echo "🔌 Connecting to local configuration context layers..."
   
   # update API base URL
-  CLEAN_DOMAIN=$(echo "$TARGET_URL" | awk -F[/:] '{print $4}')
+  CLEAN_DOMAIN=$(echo "$API_BASE_URL" | awk -F[/:] '{print $4}')
   echo "🌐 Dynamic Target Domain detected for Mobile Whitelisting: $CLEAN_DOMAIN"
   
   # update capacitor config to target url
