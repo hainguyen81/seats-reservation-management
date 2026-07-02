@@ -25,6 +25,11 @@ on:
         required: false   # not require, due to be triggered standalone
         type: boolean     # receive enviroment from parent workflow under JSON string
         default: false
+      debug_mode:
+        description: "🐜 Verbose"
+        required: false
+        type: boolean
+        default: false
   
   # allow other workflow call into (inputs same as workflow_dispatch but required)
   workflow_call:
@@ -33,6 +38,11 @@ on:
         description: "✍️ Sign APK"
         required: false   # not require, due to be triggered standalone
         type: boolean     # receive enviroment from parent workflow under JSON string
+        default: false
+      debug_mode:
+        description: "🐜 Verbose"
+        required: false
+        type: boolean
         default: false
 
 # permissions for GitHub Actions READ/WRITE
@@ -130,9 +140,12 @@ jobs:
       - name: 🏗️ Build Android Release APK
         if: success()                 # if previous step is successful
         working-directory: ./sources/android
+        env:
+          DEBUG_MODE: ${{ inputs.debug_mode }}
         run: |
           echo "📌 Current Gradle execution workspace: $(pwd)"
-          ./gradlew assembleRelease --stacktrace --debug
+          [ "$DEBUG_MODE" == "true" ] && ./gradlew assembleRelease --stacktrace --debug \
+              || ./gradlew assembleRelease
           
           echo "========================================================================="
           echo "🎉 SUCCESS: Unsigned APK artifact materialized inside outputs/apk/release!"
@@ -170,6 +183,32 @@ jobs:
           name: seats-reservation-unsigned-app
           path: android/app/build/outputs/apk/release/app-release-unsigned.apk
           retention-days: 3     # auto delete file on GitHub after 3 days to save resources
+      
+      # 10. Inject Absolute APK Download Link Into Job Run Summary
+      - name: 📊 Inject Absolute APK Download Link Into Job Run Summary
+        if: always()
+        run: |
+          echo "📚 Compiling Markdown interface parameters for Github Steps Summary..."
+          
+          # 🎯 GitHub compile link automatically:
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          ARTIFACT_URL="$RUN_URL#artifacts"
+          
+          # 🏁 Print out to GITHUB_STEP_SUMMARY [4.2]
+          echo "### 📱 NEXT.JS APP MOBILE PRODUCTION BUILDS OUT" >> $GITHUB_STEP_SUMMARY
+          echo "🚀 **Android APK Compilation Suite Finished Processing Successfully!**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Artifact Name | Build Version | Download Action Link |" >> $GITHUB_STEP_SUMMARY
+          echo "| :--- | :--- | :--- |" >> $GITHUB_STEP_SUMMARY
+          
+          # Use Markdown [Text](URL) for downloading APK
+          echo "| 📦 **Seats Reservation APK** | \`${{ github.sha }}\` | [📥 Download Release APK]($ARTIFACT_URL) |" >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "💡 *Note: Artifact preservation lifecycle is locked to exactly 7 days before automated eviction.*" >> $GITHUB_STEP_SUMMARY
+          echo "========================================================================="
+          echo "✅ Job Summary visualization completed successfully!"
+          echo "========================================================================="
       
       # Clean up
       - name: ⚙️ Force Kill Orphan Processes
