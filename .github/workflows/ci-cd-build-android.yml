@@ -30,6 +30,11 @@ on:
         required: false   # not require, due to be triggered standalone
         type: boolean     # receive enviroment from parent workflow under JSON string
         default: false
+      assemble_debug:
+        description: "🛠️ Assemble Debug Build"
+        required: false
+        type: boolean
+        default: false
       debug_mode:
         description: "🐜 Verbose"
         required: false
@@ -48,6 +53,11 @@ on:
         description: "✍️ Sign APK"
         required: false   # not require, due to be triggered standalone
         type: boolean     # receive enviroment from parent workflow under JSON string
+        default: false
+      assemble_debug:
+        description: "🛠️ Assemble Debug Build"
+        required: false
+        type: boolean
         default: false
       debug_mode:
         description: "🐜 Verbose"
@@ -154,11 +164,22 @@ jobs:
         if: success()                 # if previous step is successful
         working-directory: ./sources/android
         env:
+          ASSEMBLE_DEBUG_BUILD: ${{ inputs.assemble_debug }}
           DEBUG_MODE: ${{ inputs.debug_mode }}
         run: |
           echo "📌 Current Gradle execution workspace: $(pwd)"
-          [ "$DEBUG_MODE" == "true" ] && ./gradlew assembleRelease --stacktrace --debug \
-              || ./gradlew assembleRelease
+          if [ "$DEBUG_MODE" == "true" && "$ASSEMBLE_DEBUG_BUILD" == "true" ]; then
+            ./gradlew assembleDebug --stacktrace --debug
+          
+          elfi [ "$DEBUG_MODE" != "true" && "$ASSEMBLE_DEBUG_BUILD" == "true" ]; then
+            ./gradlew assembleDebug
+          
+          elif [ "$DEBUG_MODE" == "true" && "$ASSEMBLE_DEBUG_BUILD" != "true" ]; then
+            ./gradlew assembleRelease --stacktrace --debug
+          
+          else
+            ./gradlew assembleRelease
+          fi
           
           echo "========================================================================="
           echo "🎉 SUCCESS: Unsigned APK artifact materialized inside outputs/apk/release!"
