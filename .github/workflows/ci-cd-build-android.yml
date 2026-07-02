@@ -181,7 +181,7 @@ jobs:
 
       # 9. Upload signed APK to GitHub Artifacts for download
       - name: Upload RELEASED APK Artifact for Download
-        if: success() && inputs.sign == 'true'        # if previous step is successful
+        if: success() && inputs.sign == true        # if previous step is successful
         uses: actions/upload-artifact@v4
         with:
           name: seats-reservation-app
@@ -190,7 +190,7 @@ jobs:
 
       # 9.1. Upload unsigned APK to GitHub Artifacts for download
       - name: Upload APK Artifact for Download
-        if: success() && inputs.sign != 'true'        # if previous step is successful
+        if: success() && inputs.sign != true        # if previous step is successful
         uses: actions/upload-artifact@v4
         with:
           name: seats-reservation-unsigned-app
