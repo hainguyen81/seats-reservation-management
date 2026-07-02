@@ -166,7 +166,7 @@ jobs:
       
       # 9. Sign APK
       - name: ✍️ Sign APK
-        if: success() && inputs.sign == 'true'        # if previous step is successful
+        if: success() && inputs.sign == true        # if previous step is successful
         uses: r0adkll/sign-android-release@v1
         id: sign_app
         with:
