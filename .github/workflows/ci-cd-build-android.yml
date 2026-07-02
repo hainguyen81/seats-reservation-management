@@ -185,31 +185,51 @@ jobs:
           echo "🎉 SUCCESS: Unsigned APK artifact materialized inside outputs/apk/release!"
           echo "========================================================================="
       
-      # 9. Sign APK
-      - name: ✍️ Sign APK
+      # 9. Decode secrets keystore base64 to keystore file for singing
+      - name: 🔓 Decode Android Keystore Cryptographic Vector safely
         if: success() && inputs.sign == true        # if previous step is successful
-        uses: r0adkll/sign-android-release@v1
+        env:
+          KEYSTORE_APK: ${{ secrets.KEYSTORE_APK }}
+        run: |
+          # -------------------------------------------------
+          # !!!IMPORTANT!!! Due to standards of android, module is `app`.
+          # and rule of built APK file name is `<module name. ex: app>-release-unsigned.apk`.
+          # so not configure `build.gradle`, built APK file name will be `app-release-unsigned.apk`
+          # -------------------------------------------------
+          echo "🔓 Reconstituting binary keystore artifact structure safely..."
+          # decode secrets sign key base64 to file for signing APK
+          echo -n "$KEYSTORE_APK" | base64 --decode > android/app/build/outputs/apk/release/seats-reservation-signing-key.jks
+          echo "🛡️ Certified pristine binary keystore file materialized cleanly on RAM disk."
+      
+      # 10. Sign APK
+      - name: ✍️ Run Automated Zipalign & Sign Production APK
+        if: success() && inputs.sign == true        # if previous step is successful
+        uses: ILovePacking/sign-android-release@v2
         id: sign_app
         with:
-          releaseDirectory: sources/android/app/build/outputs/apk/release
-          signingKeyBase64: ${{ secrets.KEYSTORE_APK }}
-          alias: ${{ secrets.KEYSTORE_APK_ALIAS }}
-          singleOp: true # only sign main APK
-        env:
-          BUILD_TOOLS_VERSION: "34.0.0"
-          STORE_PASS: ${{ secrets.KEYSTORE_APK_KEYSTORE_PWD }}
-          KEY_PASS: ${{ secrets.KEYSTORE_APK_KEY_PWD }}
+          unsignedApkFile: sources/android/app/build/outputs/apk/release/app-release-unsigned.apk
+          appSigningKeyBase64: ${{ secrets.KEYSTORE_APK }}
+          keyAlias: ${{ secrets.KEYSTORE_APK_ALIAS }}
+          keyStorePassword: ${{ secrets.KEYSTORE_APK_KEYSTORE_PWD }}
+          keyPassword: ${{ secrets.KEYSTORE_APK_KEY_PWD }}
+          # -------------------------------------------------
+          # !!!IMPORTANT!!! Due to bug in decode base64 of `ILovePacking/sign-android-release@v2`.
+          # So require decode manually to remove `\n` characters.
+          # and specify keystore file manually here
+          # -------------------------------------------------
+          useExistingKeystore: true
+          keystoreFile: sources/android/app/build/outputs/apk/release/seats-reservation-signing-key.jks
 
-      # 9. Upload signed APK to GitHub Artifacts for download
+      # 11. Upload signed APK to GitHub Artifacts for download
       - name: Upload RELEASED APK Artifact for Download
         if: success() && inputs.sign == true        # if previous step is successful
         uses: actions/upload-artifact@v4
         with:
           name: seats-reservation-app
-          path: ${{ steps.sign_app.outputs.signedReleaseFile }}
+          path: ${{ steps.sign_app.outputs.signedApkFile }}
           retention-days: 3     # auto delete file on GitHub after 3 days to save resources
 
-      # 9.1. Upload unsigned APK to GitHub Artifacts for download
+      # 11.1. Upload unsigned APK to GitHub Artifacts for download
       - name: Upload APK Artifact for Download
         if: success() && inputs.sign != true        # if previous step is successful
         uses: actions/upload-artifact@v4
@@ -218,7 +238,7 @@ jobs:
           path: sources/android/app/build/outputs/apk/release/app-release-unsigned.apk
           retention-days: 3     # auto delete file on GitHub after 3 days to save resources
       
-      # 10. Inject Absolute APK Download Link Into Job Run Summary
+      # 12. Inject Absolute APK Download Link Into Job Run Summary
       - name: 📊 Inject Absolute APK Download Link Into Job Run Summary
         if: always()
         run: |

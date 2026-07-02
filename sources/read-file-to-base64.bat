@@ -15,11 +15,9 @@ if /I "%OUTPUT%"=="" (
 	for %%I in ("%INPUT%") do (
         :: parse full file name including extension
         set "OUTPUT=%%~nxI"
-        echo FULL NAMEEEEEEEEEEEEEEEE !OUTPUT!
         
         :: parse only base file name
         for %%A in ("!OUTPUT!") do set "OUTPUT=%%~nA"
-        echo FILE NAMEEEEEEEEEEEEEEEE !OUTPUT!
         
 		:: build output file name
         set "OUTPUT=!OUTPUT!.base64.txt"
