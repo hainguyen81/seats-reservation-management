@@ -20,6 +20,11 @@ on:
   # manual trigger workflow
   workflow_dispatch:
     inputs:
+      target_url:
+        description: "🌐 API URL (LoadBalancer IP or Domain)"
+        required: false
+        type: string
+        default: "http://localhost:3000"
       sign:
         description: "✍️ Sign APK"
         required: false   # not require, due to be triggered standalone
@@ -34,6 +39,11 @@ on:
   # allow other workflow call into (inputs same as workflow_dispatch but required)
   workflow_call:
     inputs:
+      target_url:
+        description: "🌐 API URL (LoadBalancer IP or Domain)"
+        required: false
+        type: string
+        default: "http://localhost:3000"
       sign:
         description: "✍️ Sign APK"
         required: false   # not require, due to be triggered standalone
@@ -114,6 +124,8 @@ jobs:
       # 4. Build project
       - name: 🏗️ Build Next.js Project
         if: success()                 # if previous step is successful
+        env:
+          API_BASE_URL: ${{ inputs.target_url }}
         run: |
           npm run mobile_build
       
