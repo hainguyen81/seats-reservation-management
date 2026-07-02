@@ -7,12 +7,14 @@ import { NextResponse } from 'next/server';
 // =========================================================================
 export const middleware = withGlobalErrorHandler(async (req) => {
     // Handle preflight OPTIONS requests seamlessly for cross-origin handshakes
-    if (req.method === 'OPTIONS') {
+    const origin = req.headers.get('origin') || '';
+    if (req.method === 'OPTIONS' || origin === 'http://localhost'
+        || origin === 'android://localhost' || origin.startsWith('capacitor://')) {
         const response = NextResponse.next();
 
         // 🕵️ ANTI-CORS BOUNDARY LEAK DETECTOR:
         // Allow standard localhost ports used natively by Capacitor WebView (Android/iOS) to fetch data
-        response.headers.set('Access-Control-Allow-Origin', 'http://localhost');
+        response.headers.set('Access-Control-Allow-Origin', origin);
         response.headers.set('Access-Control-Allow-Credentials', 'true'); // Require Cookie for authentication
         response.headers.set('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
         response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
