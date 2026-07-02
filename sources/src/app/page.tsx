@@ -24,7 +24,7 @@ export default function Home() {
     const [isPaying, setIsPaying] = useState<boolean>(false);
 
     // i18n
-    const i18n = useTranslations('Seats');
+    const i18n = useTranslations();
     const { locale, setLocale } = useAppLanguage();
 
     // 1. check Cookie for valid session and request seats

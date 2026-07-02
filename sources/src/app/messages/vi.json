@@ -64,5 +64,13 @@
     "ℹ No active reservation found under your account.": "ℹ Không có bất kỳ thông tin giữ chỗ nào của bạn.",
     "⚠️ Seat does not exist.": "⚠️ Không có tông tin ghế.",
     "⚠️ Hold expired or invalid for seat.": "⚠️ Thông tin giữ ghế không có hoặc đã hết hạn.",
-    "✅ Successfully released expired seat reservations via global sweeper.": "✅ Thông tin giữ ghế hết hạn đã được xóa."
+    "✅ Successfully released expired seat reservations via global sweeper.": "✅ Thông tin giữ ghế hết hạn đã được xóa.",
+    "🔄 Try Again": "🔄 Thử lại",
+    "🏠 Hard Refresh": "🏠 Home",
+    "⚠️ Something went wrong inside the UI!": "⚠️ Đã xảy ra lỗi!",
+    "⚠️ An unhandled error occurred during application execution runtime loop.": "⚠️ Một lỗi ngoại lệ đã xảy ra trong lúc chạy",
+    "⚠️ Details": "⚠️ Chi tiết",
+    "💀 CRITICAL INFRASTRUCTURE CRASH": "💀 Lỗi nghiêm trọng",
+    "❌ The application root container execution state collapsed.": "❌ Hệ thống bị sập. Vui lòng liên hệ quản trị để tái khởi động.",
+    "🔄 Force Application Recovery Loop": "🔄 Cố gắng khôi phục"
 }
