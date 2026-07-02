@@ -15,6 +15,9 @@ console.warn(`Next.js: PRODUCTION Mode ?. ${productionMode} - MOBILE (APK/iOS) M
 
 // Next.js Mobile App Configuration
 const nextMobileConfig = {
+  // ⚡ Caching is a technique for storing the result of data fetching
+  // and other computations so that future requests for the same data can be served faster, without doing the work again.
+  cacheComponents: true,
   // 🔥 THE CRITICAL MOBILE SWITCH: Force Next.js compiler to generate flat static files
   output: "export",
   // Disable image optimization because mobile runtime nodes lack a running server-side sharp engine
@@ -47,6 +50,9 @@ const nextMobileConfig = {
 // Next.js Web App Configuration
 const nextWebAppConfig = {
   output: productionMode || buildStandalone ? "standalone" : undefined,
+  // ⚡ Caching is a technique for storing the result of data fetching
+  // and other computations so that future requests for the same data can be served faster, without doing the work again.
+  cacheComponents: true,
   images: {
     unoptimized: !productionMode,
   },
